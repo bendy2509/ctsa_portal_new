@@ -1,0 +1,28 @@
+# Environnement virtuel Python
+.venv/
+venv/
+env/
+
+# Bytecode et caches Python
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+
+# Base de données locale et fichiers d'environnement
+db.sqlite3
+db.sqlite3-journal
+.env
+.env.*
+
+# Médias et fichiers statiques collectés
+staticfiles/
+media/
+
+# Éditeurs / IDE (PyCharm, VS Code)
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db

@@ -1,0 +1,145 @@
+{% extends 'base.html' %}
+
+{% block title %}Vérification de Conteneur — Cap Terminal S.A.{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+
+  <div class="bg-white rounded-lg shadow-sm p-6 sm:p-8 border border-gray-200 border-t-4 border-t-[#2c3741]">
+    <h1 id="verification-form-title" class="font-heading text-2xl font-extrabold text-[#2c3741] mb-2">
+      Vérification d'un conteneur
+    </h1>
+    <p class="text-sm text-[#59626a] mb-6">
+      Entrez le numéro exact de votre conteneur (4 lettres suivies de 7 chiffres) pour consulter son statut à la RAMPE.
+    </p>
+
+    <search>
+      <form action="{% url 'terminal:verification' %}" method="get" aria-labelledby="verification-form-title" class="grid grid-cols-1 sm:grid-cols-12 gap-4 items-start">
+        <div class="sm:col-span-8 form-field mb-0">
+          <label for="verif-q">Numéro du conteneur</label>
+          <input
+            type="search"
+            id="verif-q"
+            name="q"
+            value="{{ query }}"
+            required
+            pattern="[A-Za-z]{4}[\s\-]?[0-9]{7}"
+            autocorrect="off"
+            autocapitalize="characters"
+            spellcheck="false"
+            enterkeyhint="search"
+            placeholder="4 lettres et 7 chiffres"
+            data-error="verif-q-error"
+            class="form-control font-mono text-lg uppercase tracking-wider"
+          >
+          <div id="verif-q-error" class="error-msg">
+            Veuillez saisir un numéro valide composé de 4 lettres et 7 chiffres.
+          </div>
+        </div>
+        <div class="sm:col-span-4 sm:pt-7">
+          <button type="submit" class="btn-ctsa btn-ctsa-filled w-full">
+            Rechercher
+          </button>
+        </div>
+      </form>
+    </search>
+  </div>
+
+  {% if normalized %}
+    {% if format_warning %}
+      <div class="mt-6 p-4 rounded bg-[#fef3c7] border border-[#d97706] text-[#92400e] text-sm font-semibold">
+        {{ format_warning }}
+      </div>
+    {% elif result %}
+      <div class="mt-8 bg-white rounded-lg shadow-sm overflow-hidden border border-gray-200">
+        <div class="px-6 py-5 bg-[#2c3741] text-white flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <div class="text-xs uppercase tracking-wider text-gray-300 font-heading font-semibold">Conteneur recherché</div>
+            <div class="text-2xl font-mono font-bold tracking-wider mt-0.5">{{ result.container_number }}</div>
+          </div>
+          <div>
+            {% if result.status == 'confirmed' %}
+              <span class="status-badge status-confirmed text-sm px-4 py-1.5">Confirmé</span>
+            {% elif result.status == 'pending' %}
+              <span class="status-badge status-pending text-sm px-4 py-1.5">En attente</span>
+            {% else %}
+              <span class="status-badge status-unavailable text-sm px-4 py-1.5">Indisponible</span>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="p-6 sm:p-8 space-y-6">
+          {% if result.status == 'confirmed' %}
+            <div class="p-4 rounded bg-[#e6f6ed] border border-[#009e49] text-[#006b31]">
+              <strong class="block font-heading text-sm uppercase tracking-wider">Conteneur confirmé</strong>
+              <span class="text-sm block mt-1">Ce conteneur est disponible à la RAMPE pour la séance du {{ result.scheduled_date|date:"d/m/Y" }}. Vous pouvez vous présenter au terminal.</span>
+            </div>
+          {% elif result.status == 'pending' %}
+            <div class="p-4 rounded bg-[#fef3c7] border border-[#d97706] text-[#92400e]">
+              <strong class="block font-heading text-sm uppercase tracking-wider">En attente de confirmation</strong>
+              <span class="text-sm block mt-1">Ce conteneur est inscrit pour le {{ result.scheduled_date|date:"d/m/Y" }} mais n'est pas encore confirmé à la RAMPE.</span>
+            </div>
+          {% else %}
+            <div class="p-4 rounded bg-[#fceae8] border border-[#e74c3c] text-[#991b1b]">
+              <strong class="block font-heading text-sm uppercase tracking-wider">Conteneur indisponible</strong>
+              <span class="text-sm block mt-1">Motif : {{ result.full_reason_display }}</span>
+            </div>
+          {% endif %}
+
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div class="p-4 rounded bg-[#f4f4f4] border border-gray-200">
+              <div class="text-xs uppercase font-heading font-bold text-[#59626a]">Date programmée</div>
+              <div class="text-base font-bold text-[#2c3741] mt-1">
+                {{ result.scheduled_date|date:"d/m/Y" }}
+              </div>
+            </div>
+
+            <div class="p-4 rounded bg-[#f4f4f4] border border-gray-200">
+              <div class="text-xs uppercase font-heading font-bold text-[#59626a]">Ligne maritime</div>
+              <div class="text-base font-bold text-[#2c3741] mt-1">
+                {% if result.shipping_line %}
+                  {{ result.shipping_line.name }}
+                {% else %}
+                  Non spécifiée
+                {% endif %}
+              </div>
+            </div>
+
+            <div class="p-4 rounded bg-[#f4f4f4] border border-gray-200">
+              <div class="text-xs uppercase font-heading font-bold text-[#59626a]">Dernière mise à jour</div>
+              <div class="text-base font-bold text-[#2c3741] mt-1">
+                {{ result.updated_at|date:"d/m/Y à H:i" }}
+              </div>
+            </div>
+          </div>
+
+          {% if user.is_authenticated %}
+            <div class="pt-4 border-t border-gray-200">
+              {% if is_saved %}
+                <span class="text-xs text-[#009e49] font-semibold">Ce conteneur est enregistré dans votre liste de suivi.</span>
+              {% else %}
+                <form action="{% url 'terminal:client_watchlist' %}" method="post" class="inline">
+                  {% csrf_token %}
+                  <input type="hidden" name="container_number" value="{{ result.container_number }}">
+                  <button type="submit" class="btn-ctsa text-xs py-2 px-4">
+                    Enregistrer dans mes conteneurs suivis
+                  </button>
+                </form>
+              {% endif %}
+            </div>
+          {% endif %}
+        </div>
+      </div>
+    {% else %}
+      <div class="mt-8 bg-white rounded-lg shadow-sm p-6 border border-gray-200 border-l-4 border-l-[#2c3741]">
+        <h2 class="font-heading text-lg font-bold text-[#2c3741]">
+          Aucune programmation trouvée pour « {{ normalized }} »
+        </h2>
+        <p class="text-sm text-[#59626a] mt-1">
+          Ce conteneur ne figure pas sur la liste de vérification douanière du jour ({{ today|date:"d/m/Y" }}).
+        </p>
+      </div>
+    {% endif %}
+  {% endif %}
+</div>
+{% endblock %}

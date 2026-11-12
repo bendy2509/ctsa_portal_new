@@ -1,0 +1,344 @@
+/* ==========================================================================
+   CTSA Portal — Charte Graphique Officielle Cap Terminal S.A. (capterminal.com)
+   Palette extraite de https://www.capterminal.com/css/custom.css & theme.css :
+   - Slate Maritime Foncé (Top-bar, Footer, Titres) : #2c3741 / #2c3e50
+   - Bleu Action CTSA (.btn-primary, .bg-secondary-2) : #3498db
+   - Vert Logo CTSA (Confirmé / Identité)             : #009e49
+   - Rouge Corail CTSA (.bg-primary / Indisponible)   : #e74c3c
+   - Orange Ambre (En attente)                        : #d97706
+   - Fond de section alterné                          : #f4f4f4
+   - Texte principal / secondaire                     : #333333 / #777777
+   - Bordures                                         : #dadada
+   ========================================================================== */
+
+:root {
+  --ctsa-slate: #2c3741;
+  --ctsa-slate-dark: #222b33;
+  --ctsa-slate-secondary: #2c3e50;
+  --ctsa-subnav: #687077;
+  --ctsa-blue: #3498db;
+  --ctsa-blue-hover: #217dbb;
+  --ctsa-green: #009e49;
+  --ctsa-green-bg: #e6f6ed;
+  --ctsa-red: #e74c3c;
+  --ctsa-red-bg: #fceae8;
+  --ctsa-amber: #d97706;
+  --ctsa-amber-bg: #fef3c7;
+  --ctsa-bg-alt: #f4f4f4;
+  --ctsa-surface: #ffffff;
+  --ctsa-text: #333333;
+  --ctsa-text-muted: #59626a;
+  --ctsa-border: #dadada;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  color: var(--ctsa-text);
+  background-color: var(--ctsa-bg-alt);
+  margin: 0;
+  line-height: 1.6;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: "Raleway", "Open Sans", Arial, sans-serif;
+  font-weight: 800;
+  color: var(--ctsa-slate);
+  margin-block-start: 0;
+}
+
+/* Visually hidden utility (keeps element in accessibility tree) */
+.visually-hidden:where(:not(:focus-within, :active)) {
+  position: absolute !important;
+  clip-path: inset(50%) !important;
+  overflow: hidden !important;
+  width: 1px !important;
+  height: 1px !important;
+  margin: -1px !important;
+  padding: 0 !important;
+  border: 0 !important;
+  white-space: nowrap !important;
+}
+
+/* Boutons style Cap Terminal S.A. (border-radius: 25px, Raleway, uppercase) */
+.btn-ctsa {
+  border-radius: 25px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.6rem;
+  min-height: 48px;
+  font-family: "Raleway", "Open Sans", sans-serif;
+  font-weight: 700;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  border: 2px solid var(--ctsa-blue);
+  color: var(--ctsa-blue);
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  text-decoration: none;
+}
+
+.btn-ctsa:hover {
+  background-color: var(--ctsa-blue);
+  color: #ffffff;
+}
+
+.btn-ctsa-filled {
+  background-color: var(--ctsa-blue);
+  border-color: var(--ctsa-blue);
+  color: #ffffff;
+}
+
+.btn-ctsa-filled:hover {
+  background-color: var(--ctsa-blue-hover);
+  border-color: var(--ctsa-blue-hover);
+  color: #ffffff;
+}
+
+.btn-ctsa-green {
+  background-color: var(--ctsa-green);
+  border-color: var(--ctsa-green);
+  color: #ffffff;
+}
+
+.btn-ctsa-green:hover {
+  background-color: #007d3a;
+  border-color: #007d3a;
+  color: #ffffff;
+}
+
+.btn-ctsa-outline-white {
+  border-color: #ffffff;
+  color: #ffffff;
+}
+
+.btn-ctsa-outline-white:hover {
+  background-color: #ffffff;
+  color: var(--ctsa-slate);
+}
+
+/* Formulaires accessibles (Guide: forms & validate-input-after-interaction) */
+.form-field {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.25rem;
+  margin-block-end: 1.25rem;
+}
+
+.form-field label {
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: var(--ctsa-slate);
+}
+
+.form-hint {
+  display: block;
+  color: var(--ctsa-text-muted);
+  font-size: 0.82rem;
+  margin-block-end: 0.15rem;
+}
+
+.form-control {
+  font: inherit;
+  font-size: max(1rem, 1em);
+  padding: 0.65rem 0.9rem;
+  min-height: 48px;
+  border: 1.5px solid #767676;
+  border-radius: 0.5rem;
+  background-color: #ffffff;
+  color: var(--ctsa-text);
+  width: 100%;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.form-control:focus-visible,
+button:focus-visible,
+a:focus-visible {
+  outline: 3px solid var(--ctsa-blue);
+  outline-offset: 2px;
+}
+
+.error-msg {
+  display: none;
+  color: #c62828;
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-block-start: 0.25rem;
+}
+
+:is(:user-invalid, .user-invalid-fallback) {
+  border-color: #c62828 !important;
+  background-color: #fce8e6 !important;
+}
+
+:is(:user-invalid, .user-invalid-fallback) + .error-msg {
+  display: block;
+}
+
+input.form-control:user-valid {
+  border-color: var(--ctsa-green);
+}
+
+/* Badges de statut */
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.3rem 0.85rem;
+  border-radius: 9999px;
+  font-weight: 700;
+  font-size: 0.8rem;
+  letter-spacing: 0.03em;
+}
+
+.status-confirmed {
+  background-color: var(--ctsa-green-bg);
+  color: #006b31;
+  border: 1px solid #86efac;
+}
+
+.status-pending {
+  background-color: var(--ctsa-amber-bg);
+  color: #92400e;
+  border: 1px solid #fcd34d;
+}
+
+.status-unavailable {
+  background-color: var(--ctsa-red-bg);
+  color: #991b1b;
+  border: 1px solid #fca5a5;
+}
+
+/* Responsive Data Table (Guide: responsive-table) */
+.table-wrapper {
+  overflow: auto;
+  max-inline-size: 100%;
+  max-block-size: min(680px, 82vh);
+  container-type: inline-size;
+  background: var(--ctsa-surface);
+  border-radius: 0.75rem;
+  border: 1px solid var(--ctsa-border);
+}
+
+.ctsa-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  text-align: left;
+  --label-2: "Ligne maritime";
+  --label-3: "Date RAMPE";
+  --label-4: "Statut";
+  --label-5: "Motif / Détail";
+  --label-6: "Mise à jour";
+  --label-7: "Actions";
+}
+
+.ctsa-table thead {
+  position: sticky;
+  inset-block-start: 0;
+  z-index: 2;
+  background-color: var(--ctsa-slate);
+  color: #ffffff;
+}
+
+.ctsa-table th,
+.ctsa-table td {
+  padding: 0.85rem 1rem;
+  border-block-end: 1px solid #e5e7eb;
+  vertical-align: middle;
+}
+
+.ctsa-table thead th {
+  font-family: "Raleway", "Open Sans", sans-serif;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.ctsa-table tbody th {
+  position: sticky;
+  inset-inline-start: 0;
+  background: #ffffff;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--ctsa-slate);
+  z-index: 1;
+}
+
+.ctsa-table tbody tr:hover td,
+.ctsa-table tbody tr:hover th {
+  background-color: #f8fafc;
+}
+
+@container (width < 640px) {
+  .ctsa-table,
+  .ctsa-table thead,
+  .ctsa-table tbody,
+  .ctsa-table tr,
+  .ctsa-table th,
+  .ctsa-table td {
+    display: block;
+  }
+
+  .ctsa-table thead {
+    display: none;
+  }
+
+  .ctsa-table tbody tr {
+    margin-block-end: 1rem;
+    border: 1px solid var(--ctsa-border);
+    border-radius: 0.5rem;
+    overflow: hidden;
+  }
+
+  .ctsa-table tbody th {
+    position: sticky;
+    inset-block-start: 0;
+    z-index: 2;
+    background: #eef2f6;
+    border-block-end: 1px solid var(--ctsa-border);
+  }
+
+  .ctsa-table td:nth-child(2)::before {
+    content: var(--label-2) " : ";
+    font-weight: 700;
+    color: var(--ctsa-slate);
+  }
+  .ctsa-table td:nth-child(3)::before {
+    content: var(--label-3) " : ";
+    font-weight: 700;
+    color: var(--ctsa-slate);
+  }
+  .ctsa-table td:nth-child(4)::before {
+    content: var(--label-4) " : ";
+    font-weight: 700;
+    color: var(--ctsa-slate);
+  }
+  .ctsa-table td:nth-child(5)::before {
+    content: var(--label-5) " : ";
+    font-weight: 700;
+    color: var(--ctsa-slate);
+  }
+  .ctsa-table td:nth-child(6)::before {
+    content: var(--label-6) " : ";
+    font-weight: 700;
+    color: var(--ctsa-slate);
+  }
+  .ctsa-table td:nth-child(7)::before {
+    content: var(--label-7) " : ";
+    font-weight: 700;
+    color: var(--ctsa-slate);
+  }
+}

@@ -1,0 +1,117 @@
+{% extends 'base.html' %}
+
+{% block title %}Cap Terminal S.A. — Vérification Douanière RAMPE{% endblock %}
+
+{% block content %}
+<!-- Bannière sobre aux couleurs de Cap Terminal S.A. -->
+<section class="bg-[#2c3741] text-white py-14 sm:py-20 border-b border-white/10">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+    <div class="lg:col-span-7 space-y-5">
+      <div class="text-xs font-heading uppercase tracking-widest text-[#3498db] font-bold">
+        Port du Cap-Haïtien — Service Clientèle
+      </div>
+      <h1 class="font-heading text-3xl sm:text-4xl font-extrabold text-white leading-tight">
+        Consultez la disponibilité de votre conteneur pour la vérification à la RAMPE
+      </h1>
+      <p class="text-gray-300 text-base leading-relaxed max-w-2xl">
+        Avant de vous présenter au terminal, saisissez le numéro de votre conteneur afin de vérifier s'il est confirmé pour la séance de vérification douanière du jour.
+      </p>
+      <div class="flex flex-wrap gap-4 pt-2">
+        <a href="{% url 'terminal:verification' %}" class="btn-ctsa btn-ctsa-filled">
+          Vérifier un conteneur
+        </a>
+        {% if not user.is_authenticated %}
+          <a href="{% url 'accounts:login' %}" class="btn-ctsa btn-ctsa-outline-white">
+            Accès espace client
+          </a>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Formulaire de recherche directe (sans exposer de numéros tiers) -->
+    <div class="lg:col-span-5">
+      <div class="bg-white text-[#333333] rounded-lg shadow-lg p-6 sm:p-8 border-t-4 border-[#3498db]">
+        <h2 id="quick-search-heading" class="font-heading text-lg font-extrabold text-[#2c3741] mb-1">
+          Recherche par numéro de conteneur
+        </h2>
+        <p class="text-xs text-[#59626a] mb-5">
+          Saisissez le numéro complet figurant sur votre connaissement (4 lettres et 7 chiffres).
+        </p>
+
+        <search>
+          <form action="{% url 'terminal:verification' %}" method="get" aria-labelledby="quick-search-heading">
+            <div class="form-field">
+              <label for="home-container-q">Numéro du conteneur</label>
+              <input
+                type="search"
+                id="home-container-q"
+                name="q"
+                required
+                pattern="[A-Za-z]{4}[\s\-]?[0-9]{7}"
+                autocorrect="off"
+                autocapitalize="characters"
+                spellcheck="false"
+                enterkeyhint="search"
+                placeholder="4 lettres et 7 chiffres"
+                data-error="home-q-error"
+                class="form-control font-mono uppercase tracking-wider"
+              >
+              <div id="home-q-error" class="error-msg">
+                Veuillez saisir un numéro composé de 4 lettres suivies de 7 chiffres.
+              </div>
+            </div>
+
+            <button type="submit" class="btn-ctsa btn-ctsa-filled w-full">
+              Vérifier le statut
+            </button>
+          </form>
+        </search>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Signification des statuts -->
+<section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14">
+  <div class="mb-8">
+    <h2 class="font-heading text-2xl font-extrabold text-[#2c3741]">
+      Signification des statuts de vérification
+    </h2>
+    <p class="text-sm text-[#59626a] mt-1">
+      Les listes sont mises à jour quotidiennement par les équipes d'exploitation de Cap Terminal S.A.
+    </p>
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+    <div class="bg-white rounded-lg p-6 border border-gray-200 border-t-4 border-t-[#009e49]">
+      <div class="mb-3">
+        <span class="status-badge status-confirmed">Confirmé</span>
+      </div>
+      <h3 class="font-heading text-base font-bold text-[#2c3741] mb-2">Conteneur disponible à la RAMPE</h3>
+      <p class="text-sm text-[#59626a] leading-relaxed">
+        Le conteneur est prêt pour la vérification douanière du jour. Le client ou son représentant peut se présenter au terminal.
+      </p>
+    </div>
+
+    <div class="bg-white rounded-lg p-6 border border-gray-200 border-t-4 border-t-[#d97706]">
+      <div class="mb-3">
+        <span class="status-badge status-pending">En attente</span>
+      </div>
+      <h3 class="font-heading text-base font-bold text-[#2c3741] mb-2">En attente de confirmation</h3>
+      <p class="text-sm text-[#59626a] leading-relaxed">
+        Le conteneur est inscrit mais sa mise à disposition à la RAMPE n'est pas encore confirmée. Veuillez vérifier à nouveau avant de vous déplacer.
+      </p>
+    </div>
+
+    <div class="bg-white rounded-lg p-6 border border-gray-200 border-t-4 border-t-[#e74c3c]">
+      <div class="mb-3">
+        <span class="status-badge status-unavailable">Indisponible</span>
+      </div>
+      <h3 class="font-heading text-base font-bold text-[#2c3741] mb-2">Non disponible ce jour</h3>
+      <p class="text-sm text-[#59626a] leading-relaxed">
+        Le conteneur ne peut pas être présenté à la vérification ce jour-là. Le motif communiqué par l'exploitation est indiqué lors de votre recherche.
+      </p>
+    </div>
+  </div>
+</section>
+{% endblock %}
