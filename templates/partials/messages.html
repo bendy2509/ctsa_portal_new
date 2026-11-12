@@ -1,0 +1,9 @@
+{% for message in messages %}
+  <div class="px-4 py-3 rounded border text-sm font-semibold
+    {% if message.tags == 'error' %}bg-[#fdf2f1] border-[#e74c3c] text-[#b82c1f]
+    {% elif message.tags == 'warning' %}bg-[#eef7fd] border-[#3498db] text-[#1d6fa5]
+    {% elif message.tags == 'success' %}bg-[#eef8f3] border-[#008751] text-[#006b3f]
+    {% else %}bg-[#f4f4f4] border-[#dadada] text-[#2c3741]{% endif %}">
+    {{ message }}
+  </div>
+{% endfor %}

@@ -96,23 +96,14 @@ def unverified_backlog(target_date: datetime.date):
     )
 
 
-def _list_in_preparation():
-    """Date de la liste en cours de préparation : la plus lointaine (aujourd'hui ou après)
-    qui contient déjà au moins un conteneur. None tant qu'aucune liste n'est commencée."""
-    return (
-        Container.objects.filter(scheduled_date__gte=timezone.localdate())
-        .order_by('-scheduled_date')
-        .values_list('scheduled_date', flat=True)
-        .first()
-    )
-
-
 def default_carry_target(user) -> datetime.date:
-    """Liste que la page « Non vérifiés » et le compteur de la sidebar visent par défaut."""
-    if getattr(user, 'is_morning_supervisor', False):
-        # Le superviseur matin n'inscrit que sur la liste du jour.
-        return timezone.localdate()
-    return _list_in_preparation() or default_work_date(user)
+    """Liste que la page « Non vérifiés » et le compteur de la sidebar visent par défaut.
+
+    C'est la liste de travail de l'utilisateur (demain pour le superviseur soir, aujourd'hui
+    sinon) : la séance en cours n'est donc comptée « non vérifiée » que pour celui qui
+    prépare déjà la liste du lendemain. Même périmètre que l'encart du tableau de bord.
+    """
+    return default_work_date(user)
 
 
 def _carry_into(old: Container, target_date: datetime.date, user) -> Container:

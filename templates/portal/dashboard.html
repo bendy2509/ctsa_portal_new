@@ -8,10 +8,7 @@
   <!-- 1. En-tête de page sobre : Titre de la journée à gauche + Choix de la date à droite -->
   <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 pb-5 border-b border-[#dadada]">
     <div>
-      <div class="text-xs font-heading uppercase tracking-widest text-[#3498db] font-bold">
-        Exploitation Douanière RAMPE — {{ user.get_role_display }}
-      </div>
-      <h1 class="font-heading text-2xl sm:text-3xl font-extrabold text-[#2c3741] mt-1 mb-0 flex flex-wrap items-center gap-3">
+      <h1 class="mb-0 flex flex-wrap items-center gap-3">
         <span>Conteneurs du {{ selected_date|date:"d/m/Y" }}</span>
         {% if selected_date == today %}
           <span class="text-[11px] px-2.5 py-0.5 rounded bg-[#eef8f3] text-[#008751] border border-[#99d5bc] font-heading font-bold uppercase tracking-wider">
@@ -23,6 +20,9 @@
           </span>
         {% endif %}
       </h1>
+      <p class="text-sm text-[#5b656d] mt-1 mb-0">
+        {{ selected_date|date:"l j F Y"|capfirst }} · {{ stats.total }} conteneur{{ stats.total|pluralize }} programmé{{ stats.total|pluralize }}
+      </p>
     </div>
 
     <!-- Sélecteur de date groupé et aligné -->
@@ -55,7 +55,7 @@
 
   <!-- 1 bis. Conteneurs déjà programmés mais pas encore vérifiés : à reprendre en un clic, sans ressaisie -->
   {% if backlog and backlog.total %}
-    <section aria-labelledby="backlog-heading" class="bg-white rounded-lg border border-[#dadada] border-t-4 border-t-[#2c3741] shadow-sm overflow-hidden">
+    <section aria-labelledby="backlog-heading" class="bg-white rounded-lg border border-[#dadada] shadow-sm overflow-hidden">
       <div class="px-5 py-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
         <div>
           <h2 id="backlog-heading" class="font-heading text-base font-extrabold text-[#2c3741] m-0">
@@ -128,7 +128,7 @@
   {% endif %}
 
   <!-- 2. Bloc d'ajout de conteneurs structuré (Bordure supérieure bleue #3498db) -->
-  <section aria-labelledby="add-containers-heading" class="bg-white rounded-lg border border-[#dadada] border-t-4 border-t-[#3498db] shadow-sm overflow-hidden">
+  <section aria-labelledby="add-containers-heading" class="bg-white rounded-lg border border-[#dadada] shadow-sm overflow-hidden">
     <div class="bg-[#f4f4f4] border-b border-[#dadada] px-5 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
       <div>
         <h2 id="add-containers-heading" class="font-heading text-sm font-extrabold text-[#2c3741] uppercase tracking-wider m-0">

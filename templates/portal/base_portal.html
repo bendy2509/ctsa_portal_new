@@ -1,36 +1,38 @@
 {% extends 'base.html' %}
 
-{% block content %}
+{% block body_class %}portal-body{% endblock %}
+
+{# L'administration a sa propre coque : pas d'en-tête ni de pied de page du site public. #}
+{% block chrome_top %}{% endblock %}
+{% block chrome_bottom %}{% endblock %}
+
+{% block main %}
 {% with current=request.resolver_match.url_name %}
-<div class="portal-shell">
+<div class="portal">
 
-  <!-- Sidebar de l'administration : remplace l'ancienne sous-barre d'onglets -->
-  <aside class="portal-sidebar">
-    <button type="button"
-            id="portal-nav-toggle"
-            aria-expanded="false"
-            aria-controls="portal-nav"
-            class="portal-nav-toggle">
-      <span>Menu exploitation</span>
-      <span aria-hidden="true" class="portal-nav-toggle-icon">▾</span>
-    </button>
+  <!-- Sidebar : navigation de l'exploitation -->
+  <aside id="portal-nav" class="portal-sidebar" aria-label="Navigation de l'exploitation">
+    <a href="{% url 'terminal:dashboard' %}" class="portal-brand">
+      <span class="portal-brand-mark" aria-hidden="true">CTSA</span>
+      <span class="portal-brand-text">
+        <strong>Exploitation RAMPE</strong>
+        <span>Cap Terminal S.A.</span>
+      </span>
+    </a>
 
-    <nav id="portal-nav" aria-label="Navigation de l'exploitation" class="portal-nav">
-      <div class="portal-nav-role">
-        Espace d'exploitation
-        <strong>{{ user.get_role_display }}</strong>
-      </div>
-
+    <nav class="portal-nav">
       <div class="portal-nav-group">
         <div class="portal-nav-title">Exploitation</div>
         <a href="{% url 'terminal:dashboard' %}"
            {% if current == 'dashboard' %}aria-current="page"{% endif %}
            class="portal-nav-link">
-          Conteneurs du jour
+          <svg class="portal-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7h18v10H3z"/><path d="M7 7v10M11 7v10M15 7v10M19 7v10"/></svg>
+          <span>Conteneurs du jour</span>
         </a>
         <a href="{% url 'terminal:carryover' %}"
            {% if current == 'carryover' %}aria-current="page"{% endif %}
            class="portal-nav-link">
+          <svg class="portal-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
           <span>Non vérifiés</span>
           {% if portal_unverified_count %}
             <span class="portal-nav-count" aria-label="{{ portal_unverified_count }} conteneurs à suivre">{{ portal_unverified_count }}</span>
@@ -39,7 +41,8 @@
         <a href="{% url 'terminal:status_logs' %}"
            {% if current == 'status_logs' %}aria-current="page"{% endif %}
            class="portal-nav-link">
-          Historique
+          <svg class="portal-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 6h13M8 12h13M8 18h13"/><path d="M3.5 6h.01M3.5 12h.01M3.5 18h.01"/></svg>
+          <span>Historique</span>
         </a>
       </div>
 
@@ -48,7 +51,8 @@
         <a href="{% url 'terminal:statistics' %}"
            {% if current == 'statistics' %}aria-current="page"{% endif %}
            class="portal-nav-link">
-          Statistiques
+          <svg class="portal-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>
+          <span>Statistiques</span>
         </a>
       </div>
 
@@ -58,26 +62,72 @@
           <a href="{% url 'terminal:shipping_lines' %}"
              {% if current == 'shipping_lines' %}aria-current="page"{% endif %}
              class="portal-nav-link">
-            Lignes maritimes
+            <svg class="portal-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 17l2 3h14l2-3"/><path d="M5 17V11h14v6"/><path d="M9 11V6h6v5"/><path d="M12 6V3"/></svg>
+            <span>Lignes maritimes</span>
           </a>
           <a href="{% url 'terminal:prefixes' %}"
              {% if current == 'prefixes' or current == 'prefixes_legacy' %}aria-current="page"{% endif %}
              class="portal-nav-link">
-            Motifs d'indisponibilité
+            <svg class="portal-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l9 16H3z"/><path d="M12 10v4M12 16.5h.01"/></svg>
+            <span>Motifs d'indisponibilité</span>
           </a>
           <a href="{% url 'accounts:user_list' %}"
              {% if current == 'user_list' or current == 'user_edit' %}aria-current="page"{% endif %}
              class="portal-nav-link">
-            Utilisateurs
+            <svg class="portal-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.6-3.4 3.2-5.5 6.5-5.5s5.900 2.100 6.500 5.500"/><path d="M16 4.800a3.500 3.500 0 010 6.400M18.500 14.800c1.700.800 2.700 2.500 3 5.200"/></svg>
+            <span>Utilisateurs</span>
           </a>
         </div>
       {% endif %}
     </nav>
+
+    <div class="portal-sidebar-foot">
+      <a href="{% url 'terminal:home' %}" class="portal-nav-link">
+        <svg class="portal-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4h6v6"/><path d="M20 4l-9 9"/><path d="M19 14v5a1 1 0 01-1 1H5a1 1 0 01-1-1V6a1 1 0 011-1h5"/></svg>
+        <span>Portail public</span>
+      </a>
+    </div>
   </aside>
 
-  <div class="portal-main">
-    {% block portal_content %}{% endblock %}
+  <div class="portal-frame">
+    <!-- Barre supérieure compacte : menu mobile, date du jour, compte -->
+    <header class="portal-topbar">
+      <button type="button"
+              id="portal-nav-toggle"
+              aria-expanded="false"
+              aria-controls="portal-nav"
+              class="portal-menu-btn">
+        <svg class="portal-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+        <span>Menu</span>
+      </button>
+
+      <div class="portal-topbar-date">
+        {% now "l j F Y" as today_label %}{{ today_label|capfirst }}
+      </div>
+
+      <div class="portal-account">
+        <div class="portal-account-id">
+          <strong>{{ user.display_name }}</strong>
+          <span>{{ user.get_role_display }}</span>
+        </div>
+        <a href="{% url 'accounts:profile' %}" class="btn-admin">Mon profil</a>
+        <form action="{% url 'accounts:logout' %}" method="post">
+          {% csrf_token %}
+          <button type="submit" class="btn-admin">Déconnexion</button>
+        </form>
+      </div>
+    </header>
+
+    {% if messages %}
+      <div class="portal-messages" role="status" aria-live="polite">
+        {% include 'partials/messages.html' %}
+      </div>
+    {% endif %}
+
+    <main class="portal-main">
+      {% block portal_content %}{% endblock %}
+    </main>
   </div>
 </div>
 {% endwith %}
-{% endblock %}
+{% endblock main %}

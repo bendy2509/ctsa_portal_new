@@ -8,10 +8,7 @@
   <!-- En-tête : période affichée + navigation -->
   <div class="flex flex-col xl:flex-row xl:items-end xl:justify-between gap-4 pb-5 border-b border-[#dadada]">
     <div>
-      <div class="text-xs font-heading uppercase tracking-widest text-[#3498db] font-bold">
-        Analyse d'exploitation RAMPE
-      </div>
-      <h1 class="font-heading text-2xl sm:text-3xl font-extrabold text-[#2c3741] mt-1 mb-1">
+      <h1 class="mb-1">
         Statistiques de vérification
       </h1>
       <p class="text-sm text-[#666666] m-0">
@@ -34,9 +31,9 @@
       </div>
 
       {% if prev_ref %}
-        <a href="{% url 'terminal:statistics' %}?periode={{ kind }}&ref={{ prev_ref|date:'Y-m-d' }}" class="btn-admin">← Précédent</a>
+        <a href="{% url 'terminal:statistics' %}?periode={{ kind }}&ref={{ prev_ref|date:'Y-m-d' }}" class="btn-admin"><svg class="portal-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>Précédent</a>
         <a href="{% url 'terminal:statistics' %}?periode={{ kind }}&ref={{ today|date:'Y-m-d' }}" class="btn-admin">Aujourd'hui</a>
-        <a href="{% url 'terminal:statistics' %}?periode={{ kind }}&ref={{ next_ref|date:'Y-m-d' }}" class="btn-admin">Suivant →</a>
+        <a href="{% url 'terminal:statistics' %}?periode={{ kind }}&ref={{ next_ref|date:'Y-m-d' }}" class="btn-admin">Suivant<svg class="portal-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></a>
       {% endif %}
 
       <a href="?periode={{ kind }}&ref={{ ref|date:'Y-m-d' }}&du={{ start|date:'Y-m-d' }}&au={{ end|date:'Y-m-d' }}&export=csv" class="btn-admin btn-admin-slate">
@@ -60,7 +57,7 @@
   </form>
 
   <!-- Indicateurs de la période -->
-  <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+  <div class="metric-strip">
     <div class="stat-tile">
       <div class="stat-tile-label">Programmés</div>
       <div class="stat-tile-value">{{ totals.scheduled }}</div>
@@ -71,7 +68,7 @@
       <div class="stat-tile-value">{{ totals.confirmed }}</div>
       <div class="stat-tile-note">disponibles à la RAMPE</div>
     </div>
-    <div class="stat-tile border-t-4 border-t-[#008751]">
+    <div class="stat-tile">
       <div class="stat-tile-label">Vérifiés</div>
       <div class="stat-tile-value text-[#006b3f]">{{ totals.verified }}</div>
       <div class="stat-tile-note">

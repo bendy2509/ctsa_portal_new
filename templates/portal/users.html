@@ -8,10 +8,7 @@
   <!-- En-tête de page sobre avec bouton d'ouverture du formulaire de création -->
   <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-5 border-b border-[#dadada]">
     <div>
-      <div class="text-xs font-heading uppercase tracking-widest text-[#3498db] font-bold">
-        Administration des accès
-      </div>
-      <h1 class="font-heading text-2xl sm:text-3xl font-extrabold text-[#2c3741] mt-1 mb-1">
+      <h1 class="mb-1">
         Utilisateurs et rôles
       </h1>
       <p class="text-sm text-[#666666] m-0">
@@ -29,7 +26,7 @@
   </div>
 
   <!-- Panneau dépliable de création d'utilisateur -->
-  <section id="create-user-panel" {% if not create_form.errors %}hidden{% endif %} aria-labelledby="user-create-title" class="bg-white rounded-lg p-6 border border-[#dadada] border-t-4 border-t-[#3498db] shadow-sm">
+  <section id="create-user-panel" {% if not create_form.errors %}hidden{% endif %} aria-labelledby="user-create-title" class="bg-white rounded-lg p-6 border border-[#dadada] shadow-sm">
     <h2 id="user-create-title" class="font-heading text-sm font-extrabold uppercase tracking-wider text-[#2c3741] mb-4">
       Nouveau compte utilisateur
     </h2>

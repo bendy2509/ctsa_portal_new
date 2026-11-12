@@ -36,8 +36,9 @@
   </script>
   <link rel="stylesheet" href="{% static 'css/ctsa.css' %}">
 </head>
-<body class="min-h-screen flex flex-col bg-white text-[#333333]">
+<body class="min-h-screen flex flex-col bg-white text-[#333333] {% block body_class %}{% endblock %}">
 
+  {% block chrome_top %}
   <!-- En-tête officiel Cap Terminal S.A. (.top-bar #2c3741) -->
   <header class="bg-[#2c3741] text-white sticky top-0 z-30 shadow-sm">
     <!-- Barre utilitaire supérieure (.utility-menu de capterminal.com) -->
@@ -154,22 +155,18 @@
 
   {% if messages %}
     <div class="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 mt-5 space-y-2" role="status" aria-live="polite">
-      {% for message in messages %}
-        <div class="px-4 py-3 rounded border text-sm font-semibold
-          {% if message.tags == 'error' %}bg-[#fdf2f1] border-[#e74c3c] text-[#b82c1f]
-          {% elif message.tags == 'warning' %}bg-[#eef7fd] border-[#3498db] text-[#1d6fa5]
-          {% elif message.tags == 'success' %}bg-[#eef8f3] border-[#008751] text-[#006b3f]
-          {% else %}bg-[#f4f4f4] border-[#dadada] text-[#2c3741]{% endif %}">
-          {{ message }}
-        </div>
-      {% endfor %}
+      {% include 'partials/messages.html' %}
     </div>
   {% endif %}
+  {% endblock chrome_top %}
 
+  {% block main %}
   <main class="flex-1">
     {% block content %}{% endblock %}
   </main>
+  {% endblock main %}
 
+  {% block chrome_bottom %}
   <!-- Pied de page officiel Cap Terminal S.A. (footer.dark #2c3741) -->
   <footer class="bg-[#2c3741] text-white mt-16 border-t border-white/10">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 grid grid-cols-1 md:grid-cols-12 gap-10">
@@ -199,6 +196,7 @@
       </div>
     </div>
   </footer>
+  {% endblock chrome_bottom %}
 
   <script src="{% static 'js/ctsa.js' %}"></script>
 </body>
