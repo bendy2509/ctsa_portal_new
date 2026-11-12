@@ -10,22 +10,65 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.1/ref/settings/
 """
 
+import os
 from pathlib import Path
+
+from django.core.exceptions import ImproperlyConfigured
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/6.1/howto/deployment/checklist/
+# Réglages sensibles lus dans l'environnement (voir .env.example et le README).
+#   DJANGO_ENV=production  -> mode production : clé secrète et hôtes obligatoires, HTTPS forcé.
+#   (absent)               -> mode développement : valeurs par défaut pratiques, jamais en ligne.
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-jxz(_^aj^p&%ni548muj1e$^c+=(k+wnzgo(5ym(2#e*-rq@u*'
 
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+def _env_bool(name: str, default: bool) -> bool:
+    value = os.environ.get(name)
+    if value is None or value.strip() == '':
+        return default
+    return value.strip().lower() in ('1', 'true', 'yes', 'on', 'oui')
 
-ALLOWED_HOSTS = ['*']
+
+def _env_list(name: str) -> list:
+    return [item.strip() for item in os.environ.get(name, '').split(',') if item.strip()]
+
+
+PRODUCTION = os.environ.get('DJANGO_ENV', 'development').strip().lower() == 'production'
+
+DEBUG = _env_bool('DJANGO_DEBUG', default=not PRODUCTION)
+
+SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', '')
+if not SECRET_KEY:
+    if PRODUCTION:
+        raise ImproperlyConfigured(
+            "DJANGO_SECRET_KEY est obligatoire en production. Générez-en une avec : "
+            "python -c \"from django.core.management.utils import get_random_secret_key as k; print(k())\""
+        )
+    # Clé de développement uniquement : elle figure dans l'historique git, ne jamais l'utiliser en ligne.
+    SECRET_KEY = 'django-insecure-jxz(_^aj^p&%ni548muj1e$^c+=(k+wnzgo(5ym(2#e*-rq@u*'
+
+ALLOWED_HOSTS = _env_list('DJANGO_ALLOWED_HOSTS')
+if not ALLOWED_HOSTS:
+    if PRODUCTION:
+        raise ImproperlyConfigured(
+            "DJANGO_ALLOWED_HOSTS est obligatoire en production (ex. rampe.capterminal.com)."
+        )
+    ALLOWED_HOSTS = ['*']
+
+# Origines autorisées pour les formulaires, avec le schéma (ex. https://rampe.capterminal.com).
+CSRF_TRUSTED_ORIGINS = _env_list('DJANGO_CSRF_TRUSTED_ORIGINS')
+
+if PRODUCTION:
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_SSL_REDIRECT = _env_bool('DJANGO_SECURE_SSL_REDIRECT', default=True)
+    # Derrière un proxy ou un équilibreur qui termine le HTTPS.
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    # HSTS : une heure par défaut ; à allonger (31536000) une fois le HTTPS validé.
+    SECURE_HSTS_SECONDS = int(os.environ.get('DJANGO_HSTS_SECONDS', '3600'))
+    SECURE_CONTENT_TYPE_NOSNIFF = True
 
 
 # Application definition
@@ -75,8 +118,6 @@ WSGI_APPLICATION = 'config.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/6.1/ref/settings/#databases
 # Set DB_ENGINE=mysql or DB_ENGINE=postgres to connect to a local DBMS instead of SQLite.
-import os
-
 DB_ENGINE_CHOICE = os.environ.get('DB_ENGINE', 'sqlite').lower()
 
 if DB_ENGINE_CHOICE in ('mysql', 'mariadb'):
@@ -158,8 +199,15 @@ LOGOUT_REDIRECT_URL = 'terminal:home'
 # Email
 # https://docs.djangoproject.com/en/6.1/topics/email/#topic-email-configuration
 
+# Le portail n'envoie aucun e-mail pour l'instant. En développement les messages iraient dans la
+# console ; en production on déclare le backend SMTP, à compléter (serveur, identifiants) le
+# jour où l'envoi d'alertes sera activé.
 MAILERS = {
     'default': {
-        'BACKEND': 'django.core.mail.backends.console.EmailBackend',
+        'BACKEND': (
+            'django.core.mail.backends.smtp.EmailBackend'
+            if PRODUCTION
+            else 'django.core.mail.backends.console.EmailBackend'
+        ),
     },
 }

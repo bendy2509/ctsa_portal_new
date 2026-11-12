@@ -1,5 +1,8 @@
 import datetime
-from django.core.management.base import BaseCommand
+import os
+
+from django.conf import settings
+from django.core.management.base import BaseCommand, CommandError
 from django.utils import timezone
 from accounts.models import User
 from terminal.models import (
@@ -15,6 +18,19 @@ class Command(BaseCommand):
     help = "Initialise les données de démonstration pour Cap Terminal S.A. (CTSA Portal)"
 
     def handle(self, *args, **options):
+        # Données de démonstration : jamais sur un portail en ligne.
+        if not settings.DEBUG:
+            raise CommandError(
+                "seed_ctsa crée des comptes de démonstration : la commande est refusée hors mode développement."
+            )
+        # Le mot de passe des comptes de démonstration n'est plus écrit dans le dépôt.
+        password = os.environ.get('CTSA_SEED_PASSWORD', '')
+        if len(password) < 8:
+            raise CommandError(
+                "Définissez CTSA_SEED_PASSWORD (8 caractères minimum) avant de lancer seed_ctsa : "
+                "c'est le mot de passe des comptes de démonstration."
+            )
+
         # 1. Comptes utilisateurs par rôle
         admin_user, created = User.objects.get_or_create(
             username='admin',
@@ -29,7 +45,7 @@ class Command(BaseCommand):
             },
         )
         if created:
-            admin_user.set_password('Ctsa2026!')
+            admin_user.set_password(password)
             admin_user.save()
 
         evening_sup, created = User.objects.get_or_create(
@@ -43,7 +59,7 @@ class Command(BaseCommand):
             },
         )
         if created:
-            evening_sup.set_password('Ctsa2026!')
+            evening_sup.set_password(password)
             evening_sup.save()
 
         morning_sup, created = User.objects.get_or_create(
@@ -57,7 +73,7 @@ class Command(BaseCommand):
             },
         )
         if created:
-            morning_sup.set_password('Ctsa2026!')
+            morning_sup.set_password(password)
             morning_sup.save()
 
         client_user, created = User.objects.get_or_create(
@@ -71,7 +87,7 @@ class Command(BaseCommand):
             },
         )
         if created:
-            client_user.set_password('Ctsa2026!')
+            client_user.set_password(password)
             client_user.save()
 
         # 2. Lignes maritimes (capterminal.com + résumé métier)

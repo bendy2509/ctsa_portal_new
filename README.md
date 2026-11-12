@@ -34,7 +34,14 @@ Extraite directement de `https://www.capterminal.com/css/custom.css` et `theme.c
 .\.venv\Scripts\python.exe manage.py runserver
 ```
 
-## Comptes de démonstration (Mot de passe : `Ctsa2026!`)
+## Comptes de démonstration
+
+Les comptes ci-dessous sont créés par `seed_ctsa`, en développement uniquement. Leur mot de passe est celui que vous donnez dans `CTSA_SEED_PASSWORD` (8 caractères minimum) :
+
+```powershell
+$env:CTSA_SEED_PASSWORD = "<votre mot de passe de démonstration>"
+.\.venv\Scripts\python.exe manage.py seed_ctsa
+```
 
 | Rôle | Identifiant | Accès |
 |---|---|---|
@@ -42,3 +49,40 @@ Extraite directement de `https://www.capterminal.com/css/custom.css` et `theme.c
 | **Superviseur soir** | `superviseur.soir` | Préparation de la liste du lendemain, ajout unitaire/massif, modification de statut |
 | **Superviseur matin** | `superviseur.matin` | Ajout de conteneurs le matin uniquement en statut « En attente » |
 | **Client** | `client.import` | Recherche `/verification/` et suivi favoris `/mes-conteneurs/` |
+
+## Administration (`/admin/`)
+
+| Écran | Rôle |
+|---|---|
+| **Conteneurs du jour** | Préparer une liste : inscrire, confirmer, mettre en attente, déclarer indisponible |
+| **Inspection** | Marquer Vérifié / Non vérifié les conteneurs confirmés d'une séance |
+| **Non vérifiés** | Tout conteneur programmé et pas encore vérifié ; ajout à la liste suivante en un clic, ou rejet |
+| **Historique** | Journal de toutes les opérations |
+| **Statistiques** | Indicateurs par semaine, mois ou plage libre, export CSV |
+| **Registre des vérifications** | Recherche d'un conteneur (à quelle date il a été vérifié), quantités sur un intervalle, export CSV |
+| **Paramètres** | Lignes maritimes, motifs d'indisponibilité, utilisateurs (administrateur) |
+
+Après la mise en place du suivi sur une base existante, sortir les anciennes séances du suivi des non vérifiés :
+
+```powershell
+.\.venv\Scripts\python.exe manage.py clore_non_verifies --avant 2026-11-01 --simulation
+.\.venv\Scripts\python.exe manage.py clore_non_verifies --avant 2026-11-01
+```
+
+## Tests
+
+```powershell
+.\.venv\Scripts\python.exe manage.py test
+```
+
+## Mise en production
+
+Les réglages sensibles sont lus dans l'environnement ; la liste complète est dans [`.env.example`](.env.example).
+
+1. Définir `DJANGO_ENV=production`, `DJANGO_SECRET_KEY` (une clé neuve : celle du dépôt est publique), `DJANGO_ALLOWED_HOSTS` et `DJANGO_CSRF_TRUSTED_ORIGINS`. Sans clé ni hôtes, le démarrage est refusé avec un message explicite.
+2. Appliquer les migrations : `python manage.py migrate`.
+3. Vérifier la configuration : `python manage.py check --deploy`.
+4. Créer le premier administrateur : `python manage.py createsuperuser` (un superutilisateur a tous les droits d'administrateur du portail). `seed_ctsa` est refusée en production.
+5. Sauvegarder la base : avec SQLite, copier `db.sqlite3` serveur arrêté ; sinon `python manage.py dumpdata --natural-foreign --indent 2 > sauvegarde.json`.
+
+Reste à faire avant la mise en ligne : servir les fichiers statiques (WhiteNoise + `collectstatic`), compiler Tailwind en local au lieu du CDN, et héberger le logo dans `static/img/`.
