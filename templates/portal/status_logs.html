@@ -1,8 +1,8 @@
-{% extends 'base.html' %}
+{% extends 'portal/base_portal.html' %}
 
 {% block title %}Historique des Statuts — Cap Terminal S.A.{% endblock %}
 
-{% block content %}
+{% block portal_content %}
 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
 
   <!-- En-tête de page sobre et aligné -->
@@ -59,6 +59,13 @@
               <td>{{ log.container.shipping_line.name|default:"—" }}</td>
               <td>{{ log.container.scheduled_date|date:"d/m/Y" }}</td>
               <td>
+                {% if log.action == 'verified' %}
+                  <span class="status-badge status-verified">Vérifié</span>
+                {% elif log.action == 'not_verified' %}
+                  <span class="status-badge status-not-verified">Non vérifié</span>
+                {% elif log.action != 'status_change' %}
+                  <span class="status-badge status-neutral">{{ log.get_action_display }}</span>
+                {% else %}
                 <span class="text-xs font-semibold text-[#666666]">
                   {% if log.old_status %}{{ log.get_old_status_display }}{% else %}Inscription initiale{% endif %}
                 </span>
@@ -70,8 +77,9 @@
                 {% else %}
                   <span class="status-badge status-unavailable">Indisponible</span>
                 {% endif %}
+                {% endif %}
               </td>
-              <td class="text-xs text-[#b82c1f] font-semibold">{{ log.reason_text|default:"—" }}</td>
+              <td class="text-xs {% if log.action == 'status_change' %}text-[#b82c1f]{% else %}text-[#2c3741]{% endif %} font-semibold">{{ log.reason_text|default:"—" }}</td>
               <td class="text-xs font-mono text-[#666666]">{{ log.changed_at|date:"d/m/Y H:i" }}</td>
               <td class="text-xs font-semibold text-[#2c3741]">
                 {% if log.changed_by %}

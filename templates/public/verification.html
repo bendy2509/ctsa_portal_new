@@ -78,7 +78,8 @@
         <article
           aria-labelledby="slip-container-heading"
           class="bg-white rounded-lg shadow-sm overflow-hidden border border-[#dadada] border-t-4
-            {% if result.timing != 'today' %}border-t-[#687077]
+            {% if result.is_verified and result.timing != 'upcoming' %}border-t-[#008751]
+            {% elif result.timing != 'today' %}border-t-[#687077]
             {% elif result.status == 'confirmed' %}border-t-[#008751]
             {% elif result.status == 'pending' %}border-t-[#3498db]
             {% else %}border-t-[#e74c3c]{% endif %}"
@@ -95,7 +96,9 @@
             </div>
 
             <div class="flex flex-wrap items-center gap-3">
-              {% if result.timing == 'upcoming' %}
+              {% if result.is_verified and result.timing != 'upcoming' %}
+                <span class="status-badge status-verified text-sm px-4 py-1.5">Vérifié</span>
+              {% elif result.timing == 'upcoming' %}
                 <span class="status-badge status-neutral text-sm px-4 py-1.5">Séance du {{ result.scheduled_date|date:"d/m/Y" }}</span>
               {% elif result.timing == 'past' %}
                 <span class="status-badge status-neutral text-sm px-4 py-1.5">Non programmé aujourd'hui</span>
@@ -119,7 +122,16 @@
 
           <div class="p-6 sm:p-8 space-y-6">
             <!-- Bandeau de décision et consigne client -->
-            {% if result.timing == 'upcoming' %}
+            {% if result.is_verified and result.timing != 'upcoming' %}
+              <div class="p-5 rounded-lg bg-[#eef8f3] border border-[#008751] text-[#006b3f]">
+                <div class="text-xs font-heading font-extrabold uppercase tracking-wider text-[#008751] mb-1">
+                  Vérification douanière effectuée
+                </div>
+                <p class="text-sm leading-relaxed mb-0">
+                  Ce conteneur a été vérifié à la RAMPE lors de la séance du <strong>{{ result.scheduled_date|date:"d/m/Y" }}</strong>. Aucune nouvelle présentation à la vérification n'est programmée.
+                </p>
+              </div>
+            {% elif result.timing == 'upcoming' %}
               <div class="p-5 rounded-lg bg-[#f4f4f4] border border-[#687077] text-[#2c3741]">
                 <div class="text-xs font-heading font-extrabold uppercase tracking-wider text-[#2c3741] mb-1">
                   Programmé pour le {{ result.scheduled_date|date:"d/m/Y" }} — Ne pas se déplacer aujourd'hui
@@ -134,7 +146,7 @@
                   Non programmé aujourd'hui — Ne pas se déplacer
                 </div>
                 <p class="text-sm leading-relaxed mb-0">
-                  Ce conteneur ne figure pas sur la programmation d'aujourd'hui (<strong>{{ today|date:"d/m/Y" }}</strong>). Sa dernière séance connue date du <strong>{{ result.scheduled_date|date:"d/m/Y" }}</strong> ; son statut était alors « {{ result.get_status_display }} ». Ce statut n'est plus valable aujourd'hui.
+                  Ce conteneur ne figure pas sur la programmation d'aujourd'hui (<strong>{{ today|date:"d/m/Y" }}</strong>). Sa dernière séance connue date du <strong>{{ result.scheduled_date|date:"d/m/Y" }}</strong> ; son statut était alors « {{ result.get_status_display }} »{% if result.status == 'confirmed' %}, mais il n'a pas été vérifié lors de cette séance{% endif %}. Ce statut n'est plus valable aujourd'hui.
                 </p>
               </div>
             {% elif result.status == 'confirmed' %}

@@ -7,7 +7,9 @@ from django.core.exceptions import ValidationError
 from django.db.models import Count, Q
 from django.http import HttpResponse
 from django.shortcuts import render, redirect, get_object_or_404
+from django.urls import reverse
 from django.utils import timezone
+from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_POST
 
 from .models import (
@@ -55,6 +57,126 @@ def _pick_relevant_schedule(containers, today: datetime.date):
     if chosen is not None:
         chosen.timing = ('today', 'upcoming', 'past')[chosen_rank[0]]
     return chosen
+
+
+def _dashboard_url(date: datetime.date) -> str:
+    return f"{reverse('terminal:dashboard')}?date={date.isoformat()}"
+
+
+def _safe_next(request, fallback: str) -> str:
+    """Retour vers la page d'origine d'une action, si elle appartient bien au portail."""
+    target = request.POST.get('next', '')
+    if target and url_has_allowed_host_and_scheme(
+        target, allowed_hosts={request.get_host()}, require_https=request.is_secure()
+    ):
+        return target
+    return fallback
+
+
+def default_work_date(user) -> datetime.date:
+    """Liste sur laquelle travaille l'utilisateur : demain pour le superviseur soir, aujourd'hui sinon."""
+    today = timezone.localdate()
+    if getattr(user, 'is_evening_supervisor', False):
+        return today + datetime.timedelta(days=1)
+    return today
+
+
+def unverified_backlog(target_date: datetime.date):
+    """Conteneurs programmés mais pas encore vérifiés, à proposer pour la liste `target_date`.
+
+    Tout statut confondu (En attente, Indisponible, Confirmé) : un conteneur reste « à suivre »
+    tant qu'il n'est ni vérifié, ni repris dans une liste ultérieure, ni rejeté. On ne retient que
+    les séances antérieures à la liste préparée et déjà commencées.
+    """
+    limit = min(target_date, timezone.localdate() + datetime.timedelta(days=1))
+    return (
+        Container.objects.filter(scheduled_date__lt=limit, carry_decision='')
+        .exclude(verification_result=Container.Verification.VERIFIED)
+        .select_related('shipping_line', 'unavailability_reason')
+    )
+
+
+def _list_in_preparation():
+    """Date de la liste en cours de préparation : la plus lointaine (aujourd'hui ou après)
+    qui contient déjà au moins un conteneur. None tant qu'aucune liste n'est commencée."""
+    return (
+        Container.objects.filter(scheduled_date__gte=timezone.localdate())
+        .order_by('-scheduled_date')
+        .values_list('scheduled_date', flat=True)
+        .first()
+    )
+
+
+def default_carry_target(user) -> datetime.date:
+    """Liste que la page « Non vérifiés » et le compteur de la sidebar visent par défaut."""
+    if getattr(user, 'is_morning_supervisor', False):
+        # Le superviseur matin n'inscrit que sur la liste du jour.
+        return timezone.localdate()
+    return _list_in_preparation() or default_work_date(user)
+
+
+def _carry_into(old: Container, target_date: datetime.date, user) -> Container:
+    """Reprend un conteneur non vérifié dans la liste `target_date`, sans le ressaisir.
+
+    Chemin unique utilisé par le bouton en un clic, les actions groupées et le garde-fou des
+    formulaires d'inscription : ligne maritime et première programmation sont conservées.
+    """
+    new = Container.objects.filter(
+        container_number=old.container_number, scheduled_date=target_date
+    ).first()
+    first_date = old.first_scheduled_date or old.scheduled_date
+    if new is None:
+        new = Container(
+            container_number=old.container_number,
+            scheduled_date=target_date,
+            status=Container.Status.PENDING,
+            shipping_line=old.shipping_line,
+            prefix_ref=old.prefix_ref,
+            carried_from=old,
+            first_scheduled_date=first_date,
+        )
+        new.save(acting_user=user)
+    else:
+        Container.objects.filter(pk=new.pk).update(carried_from=old, first_scheduled_date=first_date)
+        new.carried_from = old
+        new.first_scheduled_date = first_date
+
+    _close_tracking(
+        old,
+        Container.CarryDecision.CARRIED,
+        user,
+        f"Repris dans la liste du {target_date.strftime('%d/%m/%Y')}",
+    )
+    return new
+
+
+def _close_tracking(old: Container, decision: str, user, reason: str):
+    """Sort un conteneur du suivi des non vérifiés (repris ou rejeté) et trace l'opération."""
+    # update() : on ne touche ni à « Mis à jour le » ni au statut de l'ancienne séance.
+    Container.objects.filter(pk=old.pk).update(
+        carry_decision=decision,
+        carry_decided_by=user,
+        carry_decided_at=timezone.now(),
+    )
+    old.carry_decision = decision
+    ContainerStatusLog.objects.create(
+        container=old,
+        action=decision,
+        old_status=old.status,
+        new_status=old.status,
+        reason_text=reason,
+        changed_by=user,
+    )
+
+
+def _backlog_breakdown(queryset) -> dict:
+    counts = {row['status']: row['n'] for row in queryset.values('status').annotate(n=Count('id'))}
+    return {
+        'total': sum(counts.values()),
+        'confirmed': counts.get(Container.Status.CONFIRMED, 0),
+        'pending': counts.get(Container.Status.PENDING, 0),
+        'unavailable': counts.get(Container.Status.UNAVAILABLE, 0),
+    }
 
 
 def home_view(request):
@@ -188,9 +310,11 @@ def dashboard_view(request):
     status_filter = request.GET.get('status', '').strip()
     line_filter = request.GET.get('line', '').strip()
     search_q = request.GET.get('q', '').strip()
+    verification_filter = request.GET.get('verification', '').strip()
 
     base_qs = Container.objects.filter(scheduled_date=selected_date).select_related(
-        'shipping_line', 'prefix_ref', 'unavailability_reason', 'created_by', 'updated_by'
+        'shipping_line', 'prefix_ref', 'unavailability_reason', 'created_by', 'updated_by',
+        'carried_from', 'verified_by',
     )
 
     stats = {
@@ -198,9 +322,18 @@ def dashboard_view(request):
         'confirmed': base_qs.filter(status=Container.Status.CONFIRMED).count(),
         'pending': base_qs.filter(status=Container.Status.PENDING).count(),
         'unavailable': base_qs.filter(status=Container.Status.UNAVAILABLE).count(),
+        'verified': base_qs.filter(verification_result=Container.Verification.VERIFIED).count(),
+        'not_verified': base_qs.filter(verification_result=Container.Verification.NOT_VERIFIED).count(),
+        'to_verify': base_qs.filter(status=Container.Status.CONFIRMED, verification_result='').count(),
     }
+    # La vérification ne se marque que pour une séance commencée (aujourd'hui ou passée).
+    show_verification = selected_date <= today
 
     containers = base_qs
+    if verification_filter == 'to_verify':
+        containers = containers.filter(status=Container.Status.CONFIRMED, verification_result='')
+    elif verification_filter in Container.Verification.values:
+        containers = containers.filter(verification_result=verification_filter)
     if status_filter in dict(Container.Status.choices):
         containers = containers.filter(status=status_filter)
     if line_filter.isdigit():
@@ -221,7 +354,22 @@ def dashboard_view(request):
         .order_by('-changed_at')[:10]
     )
 
+    # Conteneurs programmés mais pas encore vérifiés : proposés à chaque préparation de liste.
+    backlog = None
+    backlog_rows = []
+    list_started = stats['total'] > 0
+    if selected_date >= today:
+        backlog_qs = unverified_backlog(selected_date)
+        backlog = _backlog_breakdown(backlog_qs)
+        if list_started:
+            backlog_rows = list(backlog_qs.order_by('first_scheduled_date', 'container_number')[:60])
+
     return render(request, 'portal/dashboard.html', {
+        'verification_filter': verification_filter,
+        'show_verification': show_verification,
+        'backlog': backlog,
+        'backlog_rows': backlog_rows,
+        'list_started': list_started,
         'today': today,
         'tomorrow': tomorrow,
         'selected_date': selected_date,
@@ -281,6 +429,30 @@ def container_add_single_view(request):
     existing = Container.objects.filter(
         container_number=normalized, scheduled_date=target_date
     ).first()
+
+    # Garde-fou : un numéro déjà programmé et non vérifié n'est pas ré-enregistré, il est repris.
+    prior = None
+    if not existing:
+        prior = (
+            unverified_backlog(target_date)
+            .filter(container_number=normalized)
+            .order_by('-scheduled_date')
+            .first()
+        )
+    if prior:
+        carried = _carry_into(prior, target_date, request.user)
+        if status != Container.Status.PENDING:
+            carried.status = status
+            carried.unavailability_reason_id = int(reason_id) if (reason_id and reason_id.isdigit()) else None
+            carried.unavailability_note = note
+            carried.save(acting_user=request.user)
+        messages.info(
+            request,
+            f"{normalized} était déjà programmé depuis le "
+            f"{carried.first_scheduled_date.strftime('%d/%m/%Y')} : il a été repris dans la liste, "
+            f"sans nouvelle saisie (ligne maritime conservée)."
+        )
+        return redirect(f"/admin/?date={target_date.isoformat()}")
 
     if existing:
         if request.user.is_morning_supervisor:
@@ -351,6 +523,7 @@ def container_add_bulk_view(request):
     created_count = 0
     skipped_duplicates = []
     invalid_tokens = []
+    carried_numbers = []
 
     for token in tokens:
         normalized = normalize_container_number(token)
@@ -360,6 +533,21 @@ def container_add_bulk_view(request):
 
         if Container.objects.filter(container_number=normalized, scheduled_date=target_date).exists():
             skipped_duplicates.append(normalized)
+            continue
+
+        # Garde-fou : déjà programmé et non vérifié → reprise, pas de nouvelle fiche.
+        prior = (
+            unverified_backlog(target_date)
+            .filter(container_number=normalized)
+            .order_by('-scheduled_date')
+            .first()
+        )
+        if prior:
+            carried = _carry_into(prior, target_date, request.user)
+            if default_status != Container.Status.PENDING:
+                carried.status = default_status
+                carried.save(acting_user=request.user)
+            carried_numbers.append(normalized)
             continue
 
         c = Container(
@@ -375,6 +563,12 @@ def container_add_bulk_view(request):
         messages.success(
             request,
             f"Ajout massif terminé : {created_count} conteneur(s) programmé(s) pour le {target_date.strftime('%d/%m/%Y')}."
+        )
+    if carried_numbers:
+        messages.info(
+            request,
+            f"{len(carried_numbers)} conteneur(s) déjà programmé(s) et non vérifié(s), repris sans "
+            f"nouvelle saisie : {', '.join(carried_numbers[:8])}."
         )
     if skipped_duplicates:
         messages.info(
@@ -442,6 +636,327 @@ def container_delete_view(request, pk):
     container.delete()
     messages.info(request, f"Le conteneur {num} a été supprimé de la liste du {date_iso}.")
     return redirect(f"/admin/?date={date_iso}")
+
+
+@login_required
+@require_POST
+def container_set_verification_view(request, pk):
+    """Marque un conteneur confirmé Vérifié / Non vérifié (ou annule le marquage)."""
+    if not request.user.can_mark_verification:
+        return redirect('terminal:home')
+
+    container = get_object_or_404(Container, pk=pk)
+    result = request.POST.get('result', '').strip()
+    note = request.POST.get('verification_note', '').strip()[:255]
+    try:
+        container.set_verification(result, acting_user=request.user, note=note)
+    except ValidationError as exc:
+        messages.error(request, f"{container.container_number} : {exc.messages[0]}")
+    else:
+        label = container.get_verification_result_display() if result else "marquage annulé"
+        messages.success(request, f"Conteneur {container.container_number} : {label}.")
+    return redirect(_safe_next(request, _dashboard_url(container.scheduled_date)))
+
+
+@login_required
+@require_POST
+def container_verify_bulk_view(request):
+    """Clôture de séance : applique un résultat aux conteneurs cochés ou aux confirmés restants."""
+    if not request.user.can_mark_verification:
+        return redirect('terminal:home')
+
+    today = timezone.localdate()
+    target_date = _parse_date(request.POST.get('date', ''), today)
+    result = request.POST.get('result', '').strip()
+    fallback = _dashboard_url(target_date)
+
+    if result not in Container.Verification.values:
+        messages.error(request, "Résultat de vérification inconnu.")
+        return redirect(_safe_next(request, fallback))
+
+    qs = Container.objects.filter(scheduled_date=target_date, status=Container.Status.CONFIRMED)
+    ids = [i for i in request.POST.getlist('ids') if i.isdigit()]
+    if request.POST.get('scope') == 'remaining':
+        qs = qs.filter(verification_result='')
+    elif ids:
+        qs = qs.filter(pk__in=ids)
+    else:
+        messages.warning(request, "Aucun conteneur sélectionné.")
+        return redirect(_safe_next(request, fallback))
+
+    done = 0
+    for container in qs:
+        try:
+            container.set_verification(result, acting_user=request.user)
+            done += 1
+        except ValidationError:
+            continue
+
+    label = dict(Container.Verification.choices)[result].lower()
+    if done:
+        messages.success(
+            request,
+            f"{done} conteneur(s) marqué(s) « {label} » pour la séance du {target_date.strftime('%d/%m/%Y')}."
+        )
+    else:
+        messages.warning(request, "Aucun conteneur confirmé à marquer pour cette séance.")
+    return redirect(_safe_next(request, fallback))
+
+
+@login_required
+def carryover_view(request):
+    """Suivi de tous les conteneurs programmés mais pas encore vérifiés, et décision de reprise."""
+    if not request.user.is_staff_member:
+        return redirect('terminal:home')
+
+    today = timezone.localdate()
+    target_date = default_carry_target(request.user)
+    if not request.user.is_morning_supervisor:
+        target_date = max(_parse_date(request.GET.get('date', ''), target_date), today)
+    list_started = Container.objects.filter(scheduled_date=target_date).exists()
+
+    status_filter = request.GET.get('status', '').strip()
+    line_filter = request.GET.get('line', '').strip()
+
+    base_qs = unverified_backlog(target_date)
+    breakdown = _backlog_breakdown(base_qs)
+
+    rows = base_qs
+    if status_filter in dict(Container.Status.choices):
+        rows = rows.filter(status=status_filter)
+    if line_filter.isdigit():
+        rows = rows.filter(shipping_line_id=int(line_filter))
+    rows = list(rows.order_by('first_scheduled_date', 'scheduled_date', 'container_number'))
+
+    # Nombre de séances déjà passées pour chaque conteneur (longueur de la chaîne de reprises).
+    session_counts = {
+        row['container_number']: row['n']
+        for row in Container.objects.filter(
+            container_number__in=[c.container_number for c in rows],
+            scheduled_date__lte=today,
+        ).values('container_number').annotate(n=Count('id'))
+    }
+    for c in rows:
+        c.session_count = session_counts.get(c.container_number, 1)
+
+    return render(request, 'portal/carryover.html', {
+        'today': today,
+        'target_date': target_date,
+        'list_started': list_started,
+        'rows': rows,
+        'breakdown': breakdown,
+        'status_filter': status_filter,
+        'line_filter': line_filter,
+        'shipping_lines': ShippingLine.objects.filter(is_active=True),
+        'status_choices': Container.Status.choices,
+        'oldest': rows[0] if rows else None,
+    })
+
+
+@login_required
+@require_POST
+def carryover_decide_view(request):
+    """Reprend (bouton en un clic ou sélection) ou rejette des conteneurs non vérifiés."""
+    if not request.user.is_staff_member:
+        return redirect('terminal:home')
+
+    today = timezone.localdate()
+    decision = request.POST.get('decision', '').strip()
+    target_date = _parse_date(request.POST.get('date', ''), default_work_date(request.user))
+    if request.user.is_morning_supervisor:
+        target_date = today
+    fallback = f"{reverse('terminal:carryover')}?date={target_date.isoformat()}"
+    back = _safe_next(request, fallback)
+
+    ids = [i for i in request.POST.getlist('ids') if i.isdigit()]
+    if not ids:
+        messages.warning(request, "Aucun conteneur sélectionné.")
+        return redirect(back)
+    if decision not in ('carry', 'reject'):
+        messages.error(request, "Décision inconnue.")
+        return redirect(back)
+    if decision == 'carry' and target_date < today:
+        messages.error(request, "Impossible de reprendre un conteneur dans une liste passée.")
+        return redirect(back)
+
+    # On ne décide que pour des conteneurs encore dans le suivi (ni vérifiés, ni déjà traités).
+    candidates = (
+        Container.objects.filter(pk__in=ids, carry_decision='')
+        .exclude(verification_result=Container.Verification.VERIFIED)
+        .select_related('shipping_line', 'prefix_ref')
+    )
+    done = []
+    for old in candidates:
+        if decision == 'carry':
+            if old.scheduled_date >= target_date:
+                continue
+            _carry_into(old, target_date, request.user)
+        else:
+            if old.scheduled_date > today:
+                continue
+            _close_tracking(old, Container.CarryDecision.REJECTED, request.user, "Rejeté du suivi des non vérifiés")
+        done.append(old.container_number)
+
+    if not done:
+        messages.warning(request, "Aucun conteneur à traiter : ils ont peut-être déjà été repris ou rejetés.")
+    elif decision == 'carry':
+        names = done[0] if len(done) == 1 else f"{len(done)} conteneurs"
+        messages.success(
+            request,
+            f"{names} ajouté(s) à la liste du {target_date.strftime('%d/%m/%Y')} (statut « En attente »), sans nouvelle saisie."
+        )
+    else:
+        names = done[0] if len(done) == 1 else f"{len(done)} conteneurs"
+        messages.info(request, f"{names} rejeté(s) : ils ne seront plus proposés.")
+    return redirect(back)
+
+
+def _period_bounds(kind: str, ref: datetime.date):
+    """Bornes (incluses) de la semaine (lundi-dimanche) ou du mois contenant `ref`."""
+    if kind == 'mois':
+        start = ref.replace(day=1)
+        next_month = (start + datetime.timedelta(days=32)).replace(day=1)
+        return start, next_month - datetime.timedelta(days=1)
+    start = ref - datetime.timedelta(days=ref.weekday())
+    return start, start + datetime.timedelta(days=6)
+
+
+def _rate(part: int, whole: int):
+    return round(100 * part / whole) if whole else None
+
+
+_STAT_KEYS = ('scheduled', 'confirmed', 'verified', 'not_verified', 'to_verify', 'carried', 'rejected')
+
+
+def _stat_annotations():
+    V, S, D = Container.Verification, Container.Status, Container.CarryDecision
+    return {
+        'scheduled': Count('id'),
+        'confirmed': Count('id', filter=Q(status=S.CONFIRMED)),
+        'verified': Count('id', filter=Q(verification_result=V.VERIFIED)),
+        'not_verified': Count('id', filter=Q(verification_result=V.NOT_VERIFIED)),
+        'to_verify': Count('id', filter=Q(status=S.CONFIRMED, verification_result='')),
+        'carried': Count('id', filter=Q(carry_decision=D.CARRIED)),
+        'rejected': Count('id', filter=Q(carry_decision=D.REJECTED)),
+    }
+
+
+@login_required
+def statistics_view(request):
+    if not request.user.is_staff_member:
+        return redirect('terminal:home')
+
+    today = timezone.localdate()
+    kind = request.GET.get('periode', 'semaine')
+    if kind not in ('semaine', 'mois', 'perso'):
+        kind = 'semaine'
+    ref = _parse_date(request.GET.get('ref', ''), today)
+
+    if kind == 'perso':
+        start = _parse_date(request.GET.get('du', ''), today - datetime.timedelta(days=6))
+        end = _parse_date(request.GET.get('au', ''), today)
+        if end < start:
+            start, end = end, start
+        if (end - start).days > 366:
+            end = start + datetime.timedelta(days=366)
+        prev_ref = next_ref = None
+    else:
+        start, end = _period_bounds(kind, ref)
+        prev_ref = start - datetime.timedelta(days=1)
+        next_ref = end + datetime.timedelta(days=1)
+
+    qs = Container.objects.filter(scheduled_date__gte=start, scheduled_date__lte=end)
+    totals = qs.aggregate(**_stat_annotations())
+    totals['distinct'] = qs.values('container_number').distinct().count()
+    totals['rate'] = _rate(totals['verified'], totals['confirmed'])
+
+    # Détail par jour, regroupé par semaine dès que la période dépasse deux semaines.
+    per_day = {
+        row['scheduled_date']: row
+        for row in qs.values('scheduled_date').annotate(**_stat_annotations())
+    }
+    by_week = (end - start).days > 13
+    buckets = []
+    cursor = start
+    while cursor <= end:
+        if by_week:
+            bucket_end = min(cursor + datetime.timedelta(days=6 - cursor.weekday()), end)
+            label = f"Du {cursor.strftime('%d/%m')} au {bucket_end.strftime('%d/%m')}"
+        else:
+            bucket_end = cursor
+            label = cursor.strftime('%d/%m/%Y')
+        bucket = {'label': label, 'start': cursor, 'end': bucket_end, **{k: 0 for k in _STAT_KEYS}}
+        day = cursor
+        while day <= bucket_end:
+            for k in _STAT_KEYS:
+                bucket[k] += per_day.get(day, {}).get(k, 0)
+            day += datetime.timedelta(days=1)
+        bucket['rate'] = _rate(bucket['verified'], bucket['confirmed'])
+        buckets.append(bucket)
+        cursor = bucket_end + datetime.timedelta(days=1)
+    max_scheduled = max((b['scheduled'] for b in buckets), default=0)
+    for b in buckets:
+        b['bar_scheduled'] = round(100 * b['scheduled'] / max_scheduled) if max_scheduled else 0
+        b['bar_verified'] = round(100 * b['verified'] / max_scheduled) if max_scheduled else 0
+
+    lines = list(
+        qs.values('shipping_line__name').annotate(**_stat_annotations()).order_by('-scheduled')
+    )
+    for row in lines:
+        row['name'] = row['shipping_line__name'] or 'Non renseignée'
+        row['rate'] = _rate(row['verified'], row['confirmed'])
+
+    # Délai moyen entre la première programmation et la vérification, sur la période.
+    delays = [
+        (timezone.localtime(verified_at).date() - first).days
+        for verified_at, first in qs.filter(
+            verification_result=Container.Verification.VERIFIED,
+            verified_at__isnull=False,
+            first_scheduled_date__isnull=False,
+        ).values_list('verified_at', 'first_scheduled_date')
+    ]
+    avg_delay = round(sum(delays) / len(delays), 1) if delays else None
+
+    # Situation actuelle du suivi (indépendante de la période affichée).
+    backlog_qs = unverified_backlog(today)
+    backlog = _backlog_breakdown(backlog_qs)
+    oldest = backlog_qs.order_by('first_scheduled_date').first()
+
+    if request.GET.get('export') == 'csv':
+        response = HttpResponse(content_type='text/csv; charset=utf-8')
+        response['Content-Disposition'] = (
+            f'attachment; filename="CTSA_RAMPE_statistiques_{start.isoformat()}_{end.isoformat()}.csv"'
+        )
+        response.write('﻿')
+        writer = csv.writer(response, delimiter=';')
+        writer.writerow([
+            'Periode', 'Programmes', 'Confirmes', 'Verifies', 'Non verifies',
+            'Confirmes non marques', 'Repris', 'Rejetes', 'Taux de verification (%)',
+        ])
+        for b in buckets + [{'label': 'TOTAL', **totals}]:
+            writer.writerow([
+                b['label'], b['scheduled'], b['confirmed'], b['verified'], b['not_verified'],
+                b['to_verify'], b['carried'], b['rejected'], '' if b['rate'] is None else b['rate'],
+            ])
+        return response
+
+    return render(request, 'portal/statistics.html', {
+        'today': today,
+        'kind': kind,
+        'ref': ref,
+        'start': start,
+        'end': end,
+        'prev_ref': prev_ref,
+        'next_ref': next_ref,
+        'totals': totals,
+        'buckets': buckets,
+        'by_week': by_week,
+        'lines': lines,
+        'avg_delay': avg_delay,
+        'verified_with_delay': len(delays),
+        'backlog': backlog,
+        'oldest': oldest,
+    })
 
 
 @login_required
@@ -527,25 +1042,30 @@ def container_export_pdf_view(request):
         'Numéro de conteneur',
         'Ligne maritime',
         'Statut',
+        'Vérification',
         'Observation / Motif',
     ]]
 
     for idx, c in enumerate(qs, start=1):
-        obs = c.full_reason_display if c.status == Container.Status.UNAVAILABLE else '-'
+        if c.status == Container.Status.UNAVAILABLE:
+            obs = c.full_reason_display
+        else:
+            obs = c.verification_note or '-'
         table_data.append([
             str(idx),
             c.container_number,
             c.shipping_line.name if c.shipping_line else '-',
             c.get_status_display(),
+            c.get_verification_result_display() or '-',
             Paragraph(obs, cell_style),
         ])
 
     if len(table_data) == 1:
-        table_data.append(['-', 'Aucun conteneur pour cette sélection', '-', '-', '-'])
+        table_data.append(['-', 'Aucun conteneur pour cette sélection', '-', '-', '-', '-'])
 
     pdf_table = Table(
         table_data,
-        colWidths=[12 * mm, 42 * mm, 45 * mm, 32 * mm, 49 * mm],
+        colWidths=[10 * mm, 38 * mm, 40 * mm, 27 * mm, 27 * mm, 38 * mm],
         repeatRows=1,
     )
     pdf_table.setStyle(TableStyle([
@@ -613,6 +1133,8 @@ def container_export_csv_view(request):
         'Date Programmation RAMPE',
         'Statut',
         'Motif Indisponibilite',
+        'Verification',
+        'Premiere Programmation',
         'Derniere Mise a Jour',
         'Modifie Par',
     ])
@@ -625,6 +1147,8 @@ def container_export_csv_view(request):
             c.scheduled_date.strftime('%d/%m/%Y'),
             c.get_status_display(),
             c.full_reason_display,
+            c.get_verification_result_display(),
+            (c.first_scheduled_date or c.scheduled_date).strftime('%d/%m/%Y'),
             timezone.localtime(c.updated_at).strftime('%d/%m/%Y %H:%M'),
             c.updated_by.display_name if c.updated_by else '-',
         ])

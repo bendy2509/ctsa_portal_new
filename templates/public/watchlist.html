@@ -106,7 +106,9 @@
                 {% endif %}
               </td>
               <td>
-                {% if item.container and item.container.timing == 'upcoming' %}
+                {% if item.container and item.container.is_verified and item.container.timing != 'upcoming' %}
+                  <span class="status-badge status-verified">Vérifié</span>
+                {% elif item.container and item.container.timing == 'upcoming' %}
                   <span class="status-badge status-neutral">Séance à venir</span>
                 {% elif item.container and item.container.timing == 'past' %}
                   <span class="status-badge status-neutral">Non programmé aujourd'hui</span>
@@ -126,7 +128,9 @@
                 {% if item.saved.label %}
                   <div class="font-semibold text-[#2c3741]">{{ item.saved.label }}</div>
                 {% endif %}
-                {% if item.container and item.container.timing == 'past' %}
+                {% if item.container and item.container.is_verified and item.container.timing != 'upcoming' %}
+                  <div class="text-xs text-[#006b3f] font-semibold">Vérification douanière effectuée</div>
+                {% elif item.container and item.container.timing == 'past' %}
                   <div class="text-xs text-[#666666]">Dernier statut connu : {{ item.container.get_status_display }}</div>
                 {% elif item.container and item.container.status == 'unavailable' %}
                   <div class="text-xs text-[#b82c1f] font-semibold">{{ item.container.full_reason_display }}</div>

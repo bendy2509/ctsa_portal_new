@@ -63,6 +63,11 @@ class User(AbstractUser):
         return self.is_portal_admin or self.is_evening_supervisor or self.is_morning_supervisor
 
     @property
+    def can_mark_verification(self) -> bool:
+        # Admin et les deux superviseurs peuvent clôturer une séance (Vérifié / Non vérifié).
+        return self.is_staff_member
+
+    @property
     def can_edit_or_delete_containers(self) -> bool:
         return self.is_portal_admin or self.is_evening_supervisor
 

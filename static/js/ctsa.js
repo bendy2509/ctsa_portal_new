@@ -192,6 +192,24 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  // 8 bis. Sidebar de l'administration repliable sur mobile
+  const portalToggle = document.getElementById('portal-nav-toggle');
+  const portalNav = document.getElementById('portal-nav');
+  if (portalToggle && portalNav) {
+    portalToggle.addEventListener('click', () => {
+      const open = portalNav.classList.toggle('is-open');
+      portalToggle.setAttribute('aria-expanded', String(open));
+    });
+  }
+
+  // 8 ter. Cases « tout sélectionner » des tableaux d'exploitation
+  document.querySelectorAll('[data-check-all]').forEach((master) => {
+    const boxes = () => document.querySelectorAll(`input[type="checkbox"][data-check-group="${master.dataset.checkAll}"]`);
+    master.addEventListener('change', () => {
+      boxes().forEach((box) => { box.checked = master.checked; });
+    });
+  });
+
   // 9. Panneau dépliable "Nouvel utilisateur"
   const createUserBtn = document.getElementById('toggle-create-user-btn');
   const createUserPanel = document.getElementById('create-user-panel');

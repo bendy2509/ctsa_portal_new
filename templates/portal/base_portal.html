@@ -1,0 +1,83 @@
+{% extends 'base.html' %}
+
+{% block content %}
+{% with current=request.resolver_match.url_name %}
+<div class="portal-shell">
+
+  <!-- Sidebar de l'administration : remplace l'ancienne sous-barre d'onglets -->
+  <aside class="portal-sidebar">
+    <button type="button"
+            id="portal-nav-toggle"
+            aria-expanded="false"
+            aria-controls="portal-nav"
+            class="portal-nav-toggle">
+      <span>Menu exploitation</span>
+      <span aria-hidden="true" class="portal-nav-toggle-icon">▾</span>
+    </button>
+
+    <nav id="portal-nav" aria-label="Navigation de l'exploitation" class="portal-nav">
+      <div class="portal-nav-role">
+        Espace d'exploitation
+        <strong>{{ user.get_role_display }}</strong>
+      </div>
+
+      <div class="portal-nav-group">
+        <div class="portal-nav-title">Exploitation</div>
+        <a href="{% url 'terminal:dashboard' %}"
+           {% if current == 'dashboard' %}aria-current="page"{% endif %}
+           class="portal-nav-link">
+          Conteneurs du jour
+        </a>
+        <a href="{% url 'terminal:carryover' %}"
+           {% if current == 'carryover' %}aria-current="page"{% endif %}
+           class="portal-nav-link">
+          <span>Non vérifiés</span>
+          {% if portal_unverified_count %}
+            <span class="portal-nav-count" aria-label="{{ portal_unverified_count }} conteneurs à suivre">{{ portal_unverified_count }}</span>
+          {% endif %}
+        </a>
+        <a href="{% url 'terminal:status_logs' %}"
+           {% if current == 'status_logs' %}aria-current="page"{% endif %}
+           class="portal-nav-link">
+          Historique
+        </a>
+      </div>
+
+      <div class="portal-nav-group">
+        <div class="portal-nav-title">Analyse</div>
+        <a href="{% url 'terminal:statistics' %}"
+           {% if current == 'statistics' %}aria-current="page"{% endif %}
+           class="portal-nav-link">
+          Statistiques
+        </a>
+      </div>
+
+      {% if user.is_portal_admin %}
+        <div class="portal-nav-group">
+          <div class="portal-nav-title">Paramètres</div>
+          <a href="{% url 'terminal:shipping_lines' %}"
+             {% if current == 'shipping_lines' %}aria-current="page"{% endif %}
+             class="portal-nav-link">
+            Lignes maritimes
+          </a>
+          <a href="{% url 'terminal:prefixes' %}"
+             {% if current == 'prefixes' or current == 'prefixes_legacy' %}aria-current="page"{% endif %}
+             class="portal-nav-link">
+            Motifs d'indisponibilité
+          </a>
+          <a href="{% url 'accounts:user_list' %}"
+             {% if current == 'user_list' or current == 'user_edit' %}aria-current="page"{% endif %}
+             class="portal-nav-link">
+            Utilisateurs
+          </a>
+        </div>
+      {% endif %}
+    </nav>
+  </aside>
+
+  <div class="portal-main">
+    {% block portal_content %}{% endblock %}
+  </div>
+</div>
+{% endwith %}
+{% endblock %}

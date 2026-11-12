@@ -106,6 +106,14 @@ class Container(models.Model):
         PENDING = 'pending', 'En attente'
         UNAVAILABLE = 'unavailable', 'Indisponible'
 
+    class Verification(models.TextChoices):
+        VERIFIED = 'verified', 'Vérifié'
+        NOT_VERIFIED = 'not_verified', 'Non vérifié'
+
+    class CarryDecision(models.TextChoices):
+        CARRIED = 'carried', 'Repris'
+        REJECTED = 'rejected', 'Rejeté'
+
     container_number = models.CharField(
         max_length=11,
         validators=[validate_container_number],
@@ -153,6 +161,64 @@ class Container(models.Model):
         blank=True,
         verbose_name="Précision sur le motif",
     )
+    # --- Résultat de la séance de vérification douanière ---
+    verification_result = models.CharField(
+        max_length=16,
+        choices=Verification.choices,
+        blank=True,
+        default='',
+        db_index=True,
+        verbose_name="Vérification",
+    )
+    verification_note = models.CharField(
+        max_length=255,
+        blank=True,
+        verbose_name="Précision sur la vérification",
+    )
+    verified_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='verified_containers',
+        verbose_name="Vérification marquée par",
+    )
+    verified_at = models.DateTimeField(null=True, blank=True, verbose_name="Vérification marquée le")
+
+    # --- Suivi d'un conteneur programmé mais pas encore vérifié ---
+    first_scheduled_date = models.DateField(
+        null=True,
+        blank=True,
+        db_index=True,
+        verbose_name="Première programmation",
+        help_text="Date de la toute première inscription ; conservée à chaque reprise.",
+    )
+    carried_from = models.ForeignKey(
+        'self',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='carried_to',
+        verbose_name="Repris de la séance",
+    )
+    carry_decision = models.CharField(
+        max_length=16,
+        choices=CarryDecision.choices,
+        blank=True,
+        default='',
+        db_index=True,
+        verbose_name="Décision de report",
+    )
+    carry_decided_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='carry_decisions',
+        verbose_name="Décision de report par",
+    )
+    carry_decided_at = models.DateTimeField(null=True, blank=True, verbose_name="Décision de report le")
+
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
@@ -202,6 +268,58 @@ class Container(models.Model):
             parts.append(self.unavailability_note)
         return " — ".join(parts) if parts else "Motif non précisé"
 
+    @property
+    def is_verified(self) -> bool:
+        return self.verification_result == self.Verification.VERIFIED
+
+    @property
+    def can_be_verified(self) -> bool:
+        """Seul un conteneur confirmé, dont la séance a commencé, peut être marqué."""
+        return (
+            self.status == self.Status.CONFIRMED
+            and self.scheduled_date <= timezone.localdate()
+        )
+
+    @property
+    def needs_carry_decision(self) -> bool:
+        """Conteneur « à suivre » : programmé, séance passée, ni vérifié, ni repris, ni rejeté."""
+        return (
+            not self.is_verified
+            and not self.carry_decision
+            and self.scheduled_date < timezone.localdate()
+        )
+
+    @property
+    def days_since_first_scheduled(self) -> int:
+        start = self.first_scheduled_date or self.scheduled_date
+        return max((timezone.localdate() - start).days, 0)
+
+    def set_verification(self, result: str, acting_user=None, note: str = ''):
+        """Marque le conteneur Vérifié / Non vérifié ('' pour annuler) et trace l'opération."""
+        if result not in ('', *self.Verification.values):
+            raise ValidationError("Résultat de vérification inconnu.")
+        if result and not self.can_be_verified:
+            raise ValidationError(
+                "Seul un conteneur confirmé, dont la séance a commencé, peut être marqué vérifié ou non vérifié."
+            )
+        note = note if result == self.Verification.NOT_VERIFIED else ''
+        if result == self.verification_result and note == self.verification_note:
+            return
+        user = acting_user if getattr(acting_user, 'is_authenticated', False) else None
+        self.verification_result = result
+        self.verification_note = note
+        self.verified_by = user if result else None
+        self.verified_at = timezone.now() if result else None
+        self.save(acting_user=acting_user)
+        ContainerStatusLog.objects.create(
+            container=self,
+            action=result or ContainerStatusLog.Action.VERIFICATION_CLEARED,
+            old_status=self.status,
+            new_status=self.status,
+            reason_text=note,
+            changed_by=user,
+        )
+
     def save(self, *args, **kwargs):
         acting_user = kwargs.pop('acting_user', None)
         self.container_number = normalize_container_number(self.container_number)
@@ -209,6 +327,16 @@ class Container(models.Model):
         if self.status != self.Status.UNAVAILABLE:
             self.unavailability_reason = None
             self.unavailability_note = ''
+
+        # Une vérification n'a de sens que pour un conteneur confirmé.
+        if self.status != self.Status.CONFIRMED:
+            self.verification_result = ''
+            self.verification_note = ''
+            self.verified_by = None
+            self.verified_at = None
+
+        if not self.first_scheduled_date:
+            self.first_scheduled_date = self.scheduled_date
 
         old_status = ''
         old_reason = ''
@@ -238,6 +366,21 @@ class Container(models.Model):
 
 
 class ContainerStatusLog(models.Model):
+    class Action(models.TextChoices):
+        STATUS_CHANGE = 'status_change', 'Changement de statut'
+        VERIFIED = 'verified', 'Vérifié'
+        NOT_VERIFIED = 'not_verified', 'Non vérifié'
+        VERIFICATION_CLEARED = 'verification_cleared', 'Vérification annulée'
+        CARRIED = 'carried', 'Repris dans une nouvelle liste'
+        REJECTED = 'rejected', 'Rejeté du suivi'
+
+    action = models.CharField(
+        max_length=24,
+        choices=Action.choices,
+        default=Action.STATUS_CHANGE,
+        db_index=True,
+        verbose_name="Opération",
+    )
     container = models.ForeignKey(
         Container,
         on_delete=models.CASCADE,
