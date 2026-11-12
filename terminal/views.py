@@ -9,9 +9,9 @@ from django.http import HttpResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse
 from django.utils import timezone
-from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_POST
 
+from accounts.utils import safe_next_url
 from .models import (
     ShippingLine,
     ContainerPrefix,
@@ -65,12 +65,7 @@ def _dashboard_url(date: datetime.date) -> str:
 
 def _safe_next(request, fallback: str) -> str:
     """Retour vers la page d'origine d'une action, si elle appartient bien au portail."""
-    target = request.POST.get('next', '')
-    if target and url_has_allowed_host_and_scheme(
-        target, allowed_hosts={request.get_host()}, require_https=request.is_secure()
-    ):
-        return target
-    return fallback
+    return safe_next_url(request, request.POST.get('next', ''), fallback)
 
 
 def default_work_date(user) -> datetime.date:
@@ -408,14 +403,14 @@ def container_add_single_view(request):
             request,
             f"Numéro « {raw_number} » invalide : il doit comporter 4 lettres et 7 chiffres (ex. CMAU4052450)."
         )
-        return redirect(f"/admin/?date={target_date.isoformat()}")
+        return redirect(_dashboard_url(target_date))
 
     if not shipping_line_id.isdigit():
         messages.error(
             request,
             "Veuillez sélectionner manuellement la ligne maritime du conteneur."
         )
-        return redirect(f"/admin/?date={target_date.isoformat()}")
+        return redirect(_dashboard_url(target_date))
 
     existing = Container.objects.filter(
         container_number=normalized, scheduled_date=target_date
@@ -443,7 +438,7 @@ def container_add_single_view(request):
             f"{carried.first_scheduled_date.strftime('%d/%m/%Y')} : il a été repris dans la liste, "
             f"sans nouvelle saisie (ligne maritime conservée)."
         )
-        return redirect(f"/admin/?date={target_date.isoformat()}")
+        return redirect(_dashboard_url(target_date))
 
     if existing:
         if request.user.is_morning_supervisor:
@@ -451,7 +446,7 @@ def container_add_single_view(request):
                 request,
                 f"Le conteneur {normalized} est déjà programmé pour le {target_date.strftime('%d/%m/%Y')}."
             )
-            return redirect(f"/admin/?date={target_date.isoformat()}")
+            return redirect(_dashboard_url(target_date))
         existing.status = status
         existing.shipping_line_id = int(shipping_line_id)
         existing.unavailability_reason_id = int(reason_id) if (reason_id and reason_id.isdigit()) else None
@@ -477,7 +472,7 @@ def container_add_single_view(request):
             f"Conteneur {normalized}{line_info} ajouté avec le statut « {container.get_status_display()} »."
         )
 
-    return redirect(f"/admin/?date={target_date.isoformat()}")
+    return redirect(_dashboard_url(target_date))
 
 
 @login_required
@@ -504,12 +499,12 @@ def container_add_bulk_view(request):
 
     if not shipping_line_id.isdigit():
         messages.error(request, "Veuillez sélectionner la ligne maritime pour ce lot de conteneurs.")
-        return redirect(f"/admin/?date={target_date.isoformat()}")
+        return redirect(_dashboard_url(target_date))
 
     tokens = [t.strip() for t in re.split(r'[\r\n,;]+', raw_list) if t.strip()]
     if not tokens:
         messages.warning(request, "Aucun numéro de conteneur fourni dans la zone d'ajout massif.")
-        return redirect(f"/admin/?date={target_date.isoformat()}")
+        return redirect(_dashboard_url(target_date))
 
     created_count = 0
     skipped_duplicates = []
@@ -572,7 +567,7 @@ def container_add_bulk_view(request):
             f"{len(invalid_tokens)} numéro(s) rejeté(s) (format 4 lettres + 7 chiffres requis) : {', '.join(invalid_tokens[:6])}."
         )
 
-    return redirect(f"/admin/?date={target_date.isoformat()}")
+    return redirect(_dashboard_url(target_date))
 
 
 @login_required
@@ -611,7 +606,7 @@ def container_update_status_view(request, pk):
             f"Conteneur {container.container_number} mis à jour ({container.get_status_display()})."
         )
 
-    return redirect(f"/admin/?date={container.scheduled_date.isoformat()}")
+    return redirect(_dashboard_url(container.scheduled_date))
 
 
 @login_required
@@ -622,11 +617,17 @@ def container_delete_view(request, pk):
         return redirect('terminal:dashboard')
 
     container = get_object_or_404(Container, pk=pk)
-    date_iso = container.scheduled_date.isoformat()
+    scheduled = container.scheduled_date
     num = container.container_number
+    # Si ce conteneur avait été repris d'une séance précédente, celle-ci redevient « à suivre » :
+    # sans cela, le conteneur disparaîtrait du suivi des non vérifiés sans avoir été vérifié.
+    if container.carried_from_id:
+        Container.objects.filter(
+            pk=container.carried_from_id, carry_decision=Container.CarryDecision.CARRIED
+        ).update(carry_decision='', carry_decided_by=None, carry_decided_at=None)
     container.delete()
-    messages.info(request, f"Le conteneur {num} a été supprimé de la liste du {date_iso}.")
-    return redirect(f"/admin/?date={date_iso}")
+    messages.info(request, f"Le conteneur {num} a été supprimé de la liste du {scheduled.strftime('%d/%m/%Y')}.")
+    return redirect(_dashboard_url(scheduled))
 
 
 @login_required

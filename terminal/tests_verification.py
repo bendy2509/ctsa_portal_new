@@ -244,6 +244,44 @@ class VerificationTrackingTests(TestCase):
         self.assertContains(dash, 'Ajouter à cette liste')
         self.assertContains(dash, 'Vérification de la séance')
 
+    def test_not_verified_note_is_saved_then_cleared_when_marking_changes(self):
+        self.login('matin')
+        c = self.make('CMAU0000001', self.today)
+        self.client.post(
+            reverse('terminal:container_set_verification', args=[c.pk]),
+            {'result': 'not_verified', 'verification_note': 'Douane absente'},
+        )
+        c.refresh_from_db()
+        self.assertEqual(c.verification_note, 'Douane absente')
+        self.assertContains(self.client.get(reverse('terminal:dashboard')), 'Douane absente')
+        self.mark(c, 'verified')
+        c.refresh_from_db()
+        self.assertEqual(c.verification_result, 'verified')
+        self.assertEqual(c.verification_note, '')
+
+    def test_deleting_a_carried_container_puts_the_original_back_in_the_backlog(self):
+        old = self.make('CMAU0000001', self.yesterday)
+        self.login('adm')
+        self.client.post(reverse('terminal:carryover_decide'), {
+            'decision': 'carry', 'ids': str(old.pk), 'date': self.today.isoformat(),
+        })
+        self.assertEqual(self.backlog_numbers(self.today), [])
+        new = Container.objects.get(container_number='CMAU0000001', scheduled_date=self.today)
+        self.client.post(reverse('terminal:container_delete', args=[new.pk]))
+        self.assertEqual(self.backlog_numbers(self.today), ['CMAU0000001'])
+
+    def test_destructive_buttons_carry_their_own_confirmation_text(self):
+        self.make('CMAU0000001', self.yesterday)
+        self.make('CMAU0000002', self.today)
+        self.login('adm')
+        dash = self.client.get(reverse('terminal:dashboard'))
+        self.assertContains(dash, 'id="confirm-dialog"')
+        self.assertContains(dash, 'data-confirm-title="Supprimer ce conteneur ?"')
+        self.assertContains(dash, 'data-confirm-title="Rejeter ce conteneur ?"')
+        self.assertContains(dash, 'CMAU0000002 sera retiré de la liste du')
+        page = self.client.get(reverse('terminal:carryover'))
+        self.assertContains(page, 'data-confirm-title="Rejeter la sélection ?"')
+
     def test_public_page_shows_verified(self):
         c = self.make('CMAU0000001', self.today)
         c.set_verification('verified', acting_user=self.admin)

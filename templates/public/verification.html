@@ -241,7 +241,7 @@
                 {% else %}
                   <span class="text-xs text-[#666666]">
                     Vous souhaitez suivre ce conteneur ?
-                    <a href="{% url 'accounts:login' %}" class="font-bold text-[#3498db] hover:text-[#217dbb] underline ml-1">
+                    <a href="{% url 'accounts:login' %}?next={{ request.get_full_path|urlencode:'' }}" class="font-bold text-[#3498db] hover:text-[#217dbb] underline ml-1">
                       Connectez-vous à votre espace client
                     </a>
                   </span>

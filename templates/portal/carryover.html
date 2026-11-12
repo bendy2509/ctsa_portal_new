@@ -86,7 +86,14 @@
         <button type="submit" name="decision" value="carry" class="btn-admin btn-admin-primary">
           Reprendre dans la liste du {{ target_date|date:"d/m" }}
         </button>
-        <button type="submit" name="decision" value="reject" class="btn-admin">
+        <button type="submit" name="decision" value="reject"
+                data-confirm-title="Rejeter la sélection ?"
+                data-confirm="Les {n} conteneurs cochés sortiront du suivi des non vérifiés et ne seront plus proposés pour les prochaines listes."
+                data-confirm-one="Le conteneur coché sortira du suivi des non vérifiés et ne sera plus proposé pour les prochaines listes."
+                data-confirm-count="carry"
+                data-confirm-label="Rejeter"
+                data-confirm-tone="danger"
+                class="btn-admin">
           Rejeter
         </button>
       </form>
@@ -188,7 +195,12 @@
                     <input type="hidden" name="ids" value="{{ c.pk }}">
                     <input type="hidden" name="date" value="{{ target_date|date:'Y-m-d' }}">
                     <input type="hidden" name="next" value="{{ request.get_full_path }}">
-                    <button type="submit" class="text-xs font-bold text-[#666666] hover:text-[#b82c1f] underline">
+                    <button type="submit"
+                            data-confirm-title="Rejeter ce conteneur ?"
+                            data-confirm="{{ c.container_number }} sortira du suivi des non vérifiés et ne sera plus proposé pour les prochaines listes."
+                            data-confirm-label="Rejeter"
+                            data-confirm-tone="danger"
+                            class="text-xs font-bold text-[#666666] hover:text-[#b82c1f] underline">
                       Rejeter
                     </button>
                   </form>

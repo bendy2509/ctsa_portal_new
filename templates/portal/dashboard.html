@@ -106,7 +106,12 @@
                   <input type="hidden" name="ids" value="{{ b.pk }}">
                   <input type="hidden" name="date" value="{{ selected_date|date:'Y-m-d' }}">
                   <input type="hidden" name="next" value="{{ request.get_full_path }}">
-                  <button type="submit" class="text-sm font-semibold text-[#666666] hover:text-[#b82c1f] underline">
+                  <button type="submit"
+                          data-confirm-title="Rejeter ce conteneur ?"
+                          data-confirm="{{ b.container_number }} sortira du suivi des non vérifiés et ne sera plus proposé pour les prochaines listes."
+                          data-confirm-label="Rejeter"
+                          data-confirm-tone="danger"
+                          class="text-sm font-semibold text-[#666666] hover:text-[#b82c1f] underline">
                     Rejeter
                   </button>
                 </form>
@@ -399,7 +404,11 @@
             <input type="hidden" name="scope" value="remaining">
             <input type="hidden" name="result" value="verified">
             <input type="hidden" name="next" value="{{ request.get_full_path }}">
-            <button type="submit" class="btn-admin">
+            <button type="submit"
+                    data-confirm-title="Marquer les confirmés restants comme vérifiés ?"
+                    data-confirm="{{ stats.to_verify }} conteneur{{ stats.to_verify|pluralize }} confirmé{{ stats.to_verify|pluralize }} de la séance du {{ selected_date|date:'d/m/Y' }} {{ stats.to_verify|pluralize:'sera,seront' }} marqué{{ stats.to_verify|pluralize }} « Vérifié ». Vous pourrez corriger chaque ligne ensuite."
+                    data-confirm-label="Marquer vérifiés"
+                    class="btn-admin">
               {% if stats.to_verify == 1 %}Marquer le dernier confirmé comme vérifié{% else %}Marquer les {{ stats.to_verify }} restants comme vérifiés{% endif %}
             </button>
           </form>
@@ -590,17 +599,38 @@
                           Vérifié
                         </button>
                       </form>
-                      <form action="{% url 'terminal:container_set_verification' c.pk %}" method="post">
-                        {% csrf_token %}
-                        <input type="hidden" name="result" value="not_verified">
-                        <input type="hidden" name="next" value="{{ request.get_full_path }}">
-                        <button type="submit"
-                                {% if c.verification_result == 'not_verified' %}disabled{% endif %}
-                                class="status-seg-btn {% if c.verification_result == 'not_verified' %}is-not-verified{% endif %}">
-                          Non vérifié
-                        </button>
-                      </form>
+                      <button type="button"
+                              data-toggle-panel="not-verified-panel-{{ c.pk }}"
+                              aria-expanded="false"
+                              aria-controls="not-verified-panel-{{ c.pk }}"
+                              class="status-seg-btn {% if c.verification_result == 'not_verified' %}is-not-verified{% endif %}">
+                        Non vérifié
+                      </button>
                     </div>
+                    {% if c.verification_result == 'not_verified' and c.verification_note %}
+                      <div class="text-xs font-semibold text-[#2c3741] mt-1">Précision : {{ c.verification_note }}</div>
+                    {% endif %}
+                    <!-- Panneau « Non vérifié » : précision facultative -->
+                    <form id="not-verified-panel-{{ c.pk }}"
+                          action="{% url 'terminal:container_set_verification' c.pk %}"
+                          method="post"
+                          hidden
+                          class="mt-2 p-2.5 rounded bg-[#f4f4f4] border border-[#dadada] flex flex-wrap items-center gap-2">
+                      {% csrf_token %}
+                      <input type="hidden" name="result" value="not_verified">
+                      <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                      <label for="verif-note-{{ c.pk }}" class="visually-hidden">Précision pour {{ c.container_number }} (facultatif)</label>
+                      <input type="text"
+                             id="verif-note-{{ c.pk }}"
+                             name="verification_note"
+                             value="{{ c.verification_note }}"
+                             maxlength="255"
+                             placeholder="Précision (facultatif)"
+                             class="text-xs border border-[#dadada] rounded px-2.5 py-1.5 bg-white text-[#2c3741] w-44">
+                      <button type="submit" class="px-3 py-1.5 rounded bg-[#2c3741] text-white text-xs font-bold hover:bg-[#232c34] transition">
+                        Valider
+                      </button>
+                    </form>
                     {% if c.verification_result %}
                       <form action="{% url 'terminal:container_set_verification' c.pk %}" method="post" class="mt-1">
                         {% csrf_token %}
@@ -626,7 +656,12 @@
                 {% if user.can_edit_or_delete_containers %}
                   <form action="{% url 'terminal:container_delete' c.pk %}" method="post" class="inline">
                     {% csrf_token %}
-                    <button type="submit" class="text-xs font-bold text-[#666666] hover:text-[#e74c3c] px-2.5 py-1 rounded hover:bg-[#fdf2f1] transition">
+                    <button type="submit"
+                            data-confirm-title="Supprimer ce conteneur ?"
+                            data-confirm="{{ c.container_number }} sera retiré de la liste du {{ c.scheduled_date|date:'d/m/Y' }}, avec son historique. Cette action est définitive."
+                            data-confirm-label="Supprimer"
+                            data-confirm-tone="danger"
+                            class="text-xs font-bold text-[#666666] hover:text-[#e74c3c] px-2.5 py-1 rounded hover:bg-[#fdf2f1] transition">
                       Supprimer
                     </button>
                   </form>

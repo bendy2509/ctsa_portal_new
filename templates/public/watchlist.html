@@ -150,7 +150,12 @@
                   </a>
                   <form action="{% url 'terminal:client_watchlist_remove' item.saved.pk %}" method="post" class="inline">
                     {% csrf_token %}
-                    <button type="submit" class="text-xs font-bold text-[#e74c3c] hover:underline">
+                    <button type="submit"
+                            data-confirm-title="Retirer ce conteneur de votre liste ?"
+                            data-confirm="{{ item.saved.container_number }} ne sera plus suivi dans « Mes conteneurs ». Vous pourrez l'ajouter à nouveau à tout moment."
+                            data-confirm-label="Retirer"
+                            data-confirm-tone="danger"
+                            class="text-xs font-bold text-[#b82c1f] hover:underline">
                       Retirer
                     </button>
                   </form>

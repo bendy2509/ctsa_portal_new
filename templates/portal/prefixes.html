@@ -71,7 +71,12 @@
                   {% csrf_token %}
                   <input type="hidden" name="action" value="delete_reason">
                   <input type="hidden" name="reason_id" value="{{ r.id }}">
-                  <button type="submit" class="text-xs font-bold text-[#666666] hover:text-[#e74c3c] px-2.5 py-1.5 rounded hover:bg-[#fdf2f1] transition">
+                  <button type="submit"
+                          data-confirm-title="Supprimer ce motif ?"
+                          data-confirm="« {{ r.label }} » ne sera plus proposé. Les conteneurs déjà marqués avec ce motif le perdront."
+                          data-confirm-label="Supprimer"
+                          data-confirm-tone="danger"
+                          class="text-xs font-bold text-[#666666] hover:text-[#e74c3c] px-2.5 py-1.5 rounded hover:bg-[#fdf2f1] transition">
                     Supprimer
                   </button>
                 </form>

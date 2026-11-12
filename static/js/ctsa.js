@@ -144,6 +144,20 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
+  // 5 bis. Panneaux dépliables génériques (ex. précision « Non vérifié »)
+  document.querySelectorAll('[data-toggle-panel]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const panel = document.getElementById(btn.getAttribute('data-toggle-panel'));
+      if (!panel) return;
+      panel.hidden = !panel.hidden;
+      btn.setAttribute('aria-expanded', String(!panel.hidden));
+      if (!panel.hidden) {
+        const field = panel.querySelector('input[type="text"], select, textarea');
+        if (field) field.focus();
+      }
+    });
+  });
+
   // 6. Soumission automatique lors du changement de ligne maritime ou de date sur /admin/
   document.querySelectorAll('[data-auto-submit-select], [data-auto-submit-date]').forEach((el) => {
     el.addEventListener('change', () => {
@@ -209,6 +223,67 @@ document.addEventListener('DOMContentLoaded', () => {
       boxes().forEach((box) => { box.checked = master.checked; });
     });
   });
+
+  // 8 quater. Boîte de confirmation du portail pour les actions destructrices.
+  // Le bouton porte data-confirm (message), data-confirm-title, data-confirm-label et
+  // data-confirm-tone="danger". Sans JavaScript, le formulaire part normalement.
+  const confirmDialog = document.getElementById('confirm-dialog');
+  if (confirmDialog && typeof confirmDialog.showModal === 'function') {
+    const titleEl = confirmDialog.querySelector('#confirm-dialog-title');
+    const messageEl = confirmDialog.querySelector('#confirm-dialog-message');
+    const acceptBtn = confirmDialog.querySelector('[data-confirm-accept]');
+    const cancelBtn = confirmDialog.querySelector('[data-confirm-cancel]');
+    let pendingBtn = null;
+
+    document.addEventListener('click', (e) => {
+      const btn = e.target.closest('button[data-confirm], input[type="submit"][data-confirm]');
+      if (!btn || !btn.form) return;
+      if (btn.dataset.confirmOk === '1') {
+        delete btn.dataset.confirmOk;
+        return;
+      }
+
+      let message = btn.dataset.confirm;
+      if (btn.dataset.confirmCount) {
+        const checked = document.querySelectorAll(
+          `input[type="checkbox"][data-check-group="${btn.dataset.confirmCount}"]:checked`
+        ).length;
+        // Rien de coché : on laisse le serveur répondre « aucun conteneur sélectionné ».
+        if (checked === 0) return;
+        message = checked === 1 && btn.dataset.confirmOne
+          ? btn.dataset.confirmOne
+          : message.replace('{n}', String(checked));
+      }
+
+      e.preventDefault();
+      pendingBtn = btn;
+      titleEl.textContent = btn.dataset.confirmTitle || 'Confirmer cette action ?';
+      messageEl.textContent = message;
+      acceptBtn.textContent = btn.dataset.confirmLabel || 'Confirmer';
+      confirmDialog.dataset.tone = btn.dataset.confirmTone || 'default';
+      confirmDialog.returnValue = 'cancel';
+      confirmDialog.showModal();
+      // « Annuler » reçoit le focus : la touche Entrée ne confirme jamais par accident.
+      cancelBtn.focus();
+    });
+
+    // Un clic sur le voile (en dehors de la carte) annule.
+    confirmDialog.addEventListener('click', (e) => {
+      if (e.target === confirmDialog) confirmDialog.close('cancel');
+    });
+
+    confirmDialog.addEventListener('close', () => {
+      const btn = pendingBtn;
+      pendingBtn = null;
+      if (!btn) return;
+      if (confirmDialog.returnValue === 'confirm') {
+        btn.dataset.confirmOk = '1';
+        btn.form.requestSubmit(btn);
+      } else {
+        btn.focus();
+      }
+    });
+  }
 
   // 9. Panneau dépliable "Nouvel utilisateur"
   const createUserBtn = document.getElementById('toggle-create-user-btn');

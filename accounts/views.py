@@ -14,6 +14,7 @@ from .forms import (
     StaffUserUpdateForm,
 )
 from .models import User
+from .utils import safe_next_url
 
 # Create your views here.
 
@@ -29,7 +30,8 @@ def login_view(request):
         user = form.user_cache
         login(request, user)
         messages.success(request, f"Bienvenue sur CTSA Portal, {user.display_name}.")
-        next_url = request.GET.get('next')
+        # Retour vers la page d'origine (ex. la fiche du conteneur recherché), si elle est interne.
+        next_url = safe_next_url(request, request.GET.get('next', ''), '')
         if next_url:
             return redirect(next_url)
         if user.is_staff_member:

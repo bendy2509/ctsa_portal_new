@@ -169,7 +169,12 @@
                   {% if u.pk != user.pk %}
                     <form action="{% url 'accounts:user_delete' u.pk %}" method="post" class="inline">
                       {% csrf_token %}
-                      <button type="submit" class="text-xs font-bold text-[#666666] hover:text-[#e74c3c] px-2.5 py-1.5 rounded hover:bg-[#fdf2f1] transition">
+                      <button type="submit"
+                              data-confirm-title="Supprimer ce compte ?"
+                              data-confirm="Le compte de {{ u.display_name }} ({{ u.get_role_display }}) sera supprimé et ne pourra plus se connecter. Cette action est définitive."
+                              data-confirm-label="Supprimer le compte"
+                              data-confirm-tone="danger"
+                              class="text-xs font-bold text-[#666666] hover:text-[#e74c3c] px-2.5 py-1.5 rounded hover:bg-[#fdf2f1] transition">
                         Supprimer
                       </button>
                     </form>

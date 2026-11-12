@@ -198,6 +198,25 @@
   </footer>
   {% endblock chrome_bottom %}
 
+  <!-- Boîte de confirmation du portail : remplie par ctsa.js à partir des attributs data-confirm-* du bouton -->
+  <dialog id="confirm-dialog" class="confirm-dialog" aria-labelledby="confirm-dialog-title" aria-describedby="confirm-dialog-message">
+    <form method="dialog" class="confirm-dialog-card">
+      <div class="confirm-dialog-body">
+        <span class="confirm-dialog-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M12 3l9.500 17H2.500z"/><path d="M12 10v4.500M12 17.200h.010"/></svg>
+        </span>
+        <div>
+          <h2 id="confirm-dialog-title" class="confirm-dialog-title">Confirmer cette action ?</h2>
+          <p id="confirm-dialog-message" class="confirm-dialog-message"></p>
+        </div>
+      </div>
+      <div class="confirm-dialog-actions">
+        <button type="submit" value="cancel" class="confirm-dialog-btn" data-confirm-cancel>Annuler</button>
+        <button type="submit" value="confirm" class="confirm-dialog-btn confirm-dialog-accept" data-confirm-accept>Confirmer</button>
+      </div>
+    </form>
+  </dialog>
+
   <script src="{% static 'js/ctsa.js' %}"></script>
 </body>
 </html>

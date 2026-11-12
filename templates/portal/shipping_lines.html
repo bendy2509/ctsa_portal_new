@@ -97,7 +97,12 @@
                     {% csrf_token %}
                     <input type="hidden" name="action" value="delete_line">
                     <input type="hidden" name="line_id" value="{{ line.id }}">
-                    <button type="submit" class="text-xs font-bold text-[#666666] hover:text-[#e74c3c] px-2.5 py-1.5 rounded hover:bg-[#fdf2f1] transition">
+                    <button type="submit"
+                            data-confirm-title="Supprimer cette ligne maritime ?"
+                            data-confirm="« {{ line.name }} » sera supprimée. Les conteneurs qui lui sont rattachés resteront enregistrés, sans ligne maritime."
+                            data-confirm-label="Supprimer"
+                            data-confirm-tone="danger"
+                            class="text-xs font-bold text-[#666666] hover:text-[#e74c3c] px-2.5 py-1.5 rounded hover:bg-[#fdf2f1] transition">
                       Supprimer
                     </button>
                   </form>
