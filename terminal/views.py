@@ -756,6 +756,136 @@ def container_verify_bulk_view(request):
 
 
 @login_required
+def inspection_view(request):
+    """Onglet Inspection : marquer Vérifié / Non vérifié les conteneurs confirmés d'une séance."""
+    if not request.user.is_staff_member:
+        return redirect('terminal:home')
+
+    today = timezone.localdate()
+    # On n'inspecte qu'une séance commencée : aujourd'hui ou une date passée.
+    selected_date = min(_parse_date(request.GET.get('date', ''), today), today)
+    search_q = request.GET.get('q', '').strip()
+    state = request.GET.get('etat', '').strip()
+
+    session_qs = Container.objects.filter(scheduled_date=selected_date)
+    confirmed_qs = session_qs.filter(status=Container.Status.CONFIRMED).select_related(
+        'shipping_line', 'verified_by', 'carried_from'
+    )
+    stats = {
+        'scheduled': session_qs.count(),
+        'confirmed': confirmed_qs.count(),
+        'verified': confirmed_qs.filter(verification_result=Container.Verification.VERIFIED).count(),
+        'not_verified': confirmed_qs.filter(verification_result=Container.Verification.NOT_VERIFIED).count(),
+        'to_verify': confirmed_qs.filter(verification_result='').count(),
+    }
+    stats['not_confirmed'] = stats['scheduled'] - stats['confirmed']
+    stats['rate'] = _rate(stats['verified'], stats['confirmed'])
+
+    rows = confirmed_qs
+    if state == 'to_verify':
+        rows = rows.filter(verification_result='')
+    elif state in Container.Verification.values:
+        rows = rows.filter(verification_result=state)
+    if search_q:
+        rows = rows.filter(container_number__icontains=normalize_container_number(search_q))
+    # Les conteneurs encore à marquer en premier.
+    rows = sorted(rows, key=lambda c: (c.verification_result != '', c.container_number))
+
+    return render(request, 'portal/inspection.html', {
+        'today': today,
+        'selected_date': selected_date,
+        'previous_date': selected_date - datetime.timedelta(days=1),
+        'next_date': selected_date + datetime.timedelta(days=1) if selected_date < today else None,
+        'stats': stats,
+        'rows': rows,
+        'search_q': search_q,
+        'state': state,
+    })
+
+
+@login_required
+def register_view(request):
+    """Registre des vérifications : qui a été vérifié, quand, et les quantités sur un intervalle."""
+    if not request.user.is_staff_member:
+        return redirect('terminal:home')
+
+    today = timezone.localdate()
+    search_q = request.GET.get('q', '').strip()
+    result_filter = request.GET.get('resultat', '').strip()
+    line_filter = request.GET.get('line', '').strip()
+    has_dates = bool(request.GET.get('du') or request.GET.get('au'))
+
+    qs = Container.objects.select_related('shipping_line', 'verified_by', 'unavailability_reason')
+    # Une recherche de numéro sans dates porte sur tout l'historique : on veut savoir à quelle
+    # date le conteneur a été vérifié, quelle qu'elle soit.
+    if search_q and not has_dates:
+        start = end = None
+    else:
+        start = _parse_date(request.GET.get('du', ''), today - datetime.timedelta(days=29))
+        end = _parse_date(request.GET.get('au', ''), today)
+        if end < start:
+            start, end = end, start
+        qs = qs.filter(scheduled_date__gte=start, scheduled_date__lte=end)
+
+    if search_q:
+        qs = qs.filter(container_number__icontains=normalize_container_number(search_q))
+    if line_filter.isdigit():
+        qs = qs.filter(shipping_line_id=int(line_filter))
+
+    # Quantités de l'intervalle, avant le filtre par résultat.
+    totals = qs.aggregate(**_stat_annotations())
+    totals['distinct'] = qs.values('container_number').distinct().count()
+    totals['rate'] = _rate(totals['verified'], totals['confirmed'])
+
+    rows = qs
+    if result_filter == 'to_verify':
+        rows = rows.filter(status=Container.Status.CONFIRMED, verification_result='')
+    elif result_filter in Container.Verification.values:
+        rows = rows.filter(verification_result=result_filter)
+    rows = rows.order_by('-scheduled_date', 'container_number')
+
+    if request.GET.get('export') == 'csv':
+        response = HttpResponse(content_type='text/csv; charset=utf-8')
+        label = f"{start.isoformat()}_{end.isoformat()}" if start else 'recherche'
+        response['Content-Disposition'] = f'attachment; filename="CTSA_RAMPE_registre_{label}.csv"'
+        response.write('\ufeff')
+        writer = csv.writer(response, delimiter=';')
+        writer.writerow([
+            'Numero Conteneur', 'Ligne Maritime', 'Seance', 'Statut', 'Verification',
+            'Verifie Le', 'Marque Par', 'Precision / Motif', 'Premiere Programmation', 'Report',
+        ])
+        for c in rows:
+            writer.writerow([
+                c.container_number,
+                c.shipping_line.name if c.shipping_line else '',
+                c.scheduled_date.strftime('%d/%m/%Y'),
+                c.get_status_display(),
+                c.get_verification_result_display(),
+                timezone.localtime(c.verified_at).strftime('%d/%m/%Y %H:%M') if c.verified_at else '',
+                c.verified_by.display_name if c.verified_by else '',
+                c.verification_note or c.full_reason_display,
+                (c.first_scheduled_date or c.scheduled_date).strftime('%d/%m/%Y'),
+                c.get_carry_decision_display(),
+            ])
+        return response
+
+    page, page_query = _paginate(request, rows)
+    return render(request, 'portal/register.html', {
+        'today': today,
+        'start': start,
+        'end': end,
+        'search_q': search_q,
+        'result_filter': result_filter,
+        'line_filter': line_filter,
+        'totals': totals,
+        'rows': page.object_list,
+        'page': page,
+        'page_query': page_query,
+        'shipping_lines': ShippingLine.objects.filter(is_active=True),
+    })
+
+
+@login_required
 def carryover_view(request):
     """Suivi de tous les conteneurs programmés mais pas encore vérifiés, et décision de reprise."""
     if not request.user.is_staff_member:
@@ -1290,6 +1420,21 @@ def prefixes_view(request):
                     defaults={'label': label, 'description': description, 'is_active': True},
                 )
                 messages.success(request, f"Motif d'indisponibilité « {label} » enregistré.")
+        elif action == 'save_reason':
+            reason = get_object_or_404(UnavailabilityReason, pk=request.POST.get('reason_id'))
+            label = (request.POST.get('label') or '').strip()[:140]
+            description = (request.POST.get('description') or '').strip()[:240]
+            if not label:
+                messages.error(request, "L'intitulé du motif est obligatoire.")
+            elif UnavailabilityReason.objects.filter(label__iexact=label).exclude(pk=reason.pk).exists():
+                messages.warning(request, f"Un autre motif s'appelle déjà « {label} ».")
+            else:
+                # Le code interne ne change pas : les conteneurs déjà marqués gardent leur motif,
+                # avec le nouvel intitulé.
+                reason.label = label
+                reason.description = description
+                reason.save(update_fields=['label', 'description'])
+                messages.success(request, f"Motif modifié : « {label} ».")
         elif action == 'delete_reason':
             pk = request.POST.get('reason_id')
             reason = get_object_or_404(UnavailabilityReason, pk=pk)

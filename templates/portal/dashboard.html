@@ -401,33 +401,17 @@
       </div>
     </div>
 
-    <!-- Niveau A bis : Clôture de la séance (Vérifié / Non vérifié) -->
+    <!-- Niveau A bis : renvoi vers l'onglet Inspection, où se marque la vérification -->
     {% if show_verification and stats.confirmed %}
-      <div class="px-4 sm:px-5 py-3 bg-[#eef8f3] border-b border-[#99d5bc] flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-        <div class="text-sm text-[#2c3741]">
-          <strong class="font-heading uppercase tracking-wider text-xs text-[#006b3f]">Vérification de la séance</strong>
-          <span class="block mt-0.5">
-            <strong>{{ stats.verified }}</strong> vérifié{{ stats.verified|pluralize }} ·
-            <strong>{{ stats.not_verified }}</strong> non vérifié{{ stats.not_verified|pluralize }} ·
-            <a href="{% url 'terminal:dashboard' %}?date={{ selected_date|date:'Y-m-d' }}&verification=to_verify" class="underline font-semibold text-[#2c3741] hover:text-[#3498db]"><strong>{{ stats.to_verify }}</strong> confirmé{{ stats.to_verify|pluralize }} à marquer</a>
-          </span>
-        </div>
-        {% if stats.to_verify and user.can_mark_verification %}
-          <form action="{% url 'terminal:container_verify_bulk' %}" method="post" class="shrink-0">
-            {% csrf_token %}
-            <input type="hidden" name="date" value="{{ selected_date|date:'Y-m-d' }}">
-            <input type="hidden" name="scope" value="remaining">
-            <input type="hidden" name="result" value="verified">
-            <input type="hidden" name="next" value="{{ request.get_full_path }}">
-            <button type="submit"
-                    data-confirm-title="Marquer les confirmés restants comme vérifiés ?"
-                    data-confirm="{{ stats.to_verify }} conteneur{{ stats.to_verify|pluralize }} confirmé{{ stats.to_verify|pluralize }} de la séance du {{ selected_date|date:'d/m/Y' }} {{ stats.to_verify|pluralize:'sera,seront' }} marqué{{ stats.to_verify|pluralize }} « Vérifié ». Vous pourrez corriger chaque ligne ensuite."
-                    data-confirm-label="Marquer vérifiés"
-                    class="btn-admin">
-              {% if stats.to_verify == 1 %}Marquer le dernier confirmé comme vérifié{% else %}Marquer les {{ stats.to_verify }} restants comme vérifiés{% endif %}
-            </button>
-          </form>
-        {% endif %}
+      <div class="px-4 sm:px-5 py-2.5 bg-[#f7f8f9] border-b border-[#e1e5e8] flex flex-wrap items-center justify-between gap-3 text-sm text-[#2c3741]">
+        <span>
+          Vérification : <strong>{{ stats.verified }}</strong> vérifié{{ stats.verified|pluralize }} ·
+          <strong>{{ stats.not_verified }}</strong> non vérifié{{ stats.not_verified|pluralize }} ·
+          <strong>{{ stats.to_verify }}</strong> à marquer
+        </span>
+        <a href="{% url 'terminal:inspection' %}?date={{ selected_date|date:'Y-m-d' }}" class="btn-admin">
+          Ouvrir l'inspection
+        </a>
       </div>
     {% endif %}
 
@@ -467,7 +451,7 @@
 
     <!-- Niveau C : Tableau des conteneurs -->
     <div tabindex="0" role="region" aria-labelledby="rampe-table-caption" class="table-wrapper border-0 rounded-none">
-      <table class="ctsa-table" style="--label-2: 'Ligne maritime'; --label-3: 'Statut actuel'; --label-4: 'Changer le statut'; {% if show_verification %}--label-5: 'Vérification'; --label-6: 'Action';{% else %}--label-5: 'Action';{% endif %}">
+      <table class="ctsa-table" style="--label-2: 'Ligne maritime'; --label-3: 'Statut actuel'; --label-4: 'Changer le statut'; --label-5: 'Action';">
         <caption id="rampe-table-caption" class="visually-hidden">
           Conteneurs programmés le {{ selected_date|date:"d/m/Y" }}
         </caption>
@@ -477,7 +461,6 @@
             <th scope="col">Ligne maritime</th>
             <th scope="col">Statut actuel</th>
             <th scope="col">Modifier le statut</th>
-            {% if show_verification %}<th scope="col">Vérification</th>{% endif %}
             <th scope="col" class="text-right">Action</th>
           </tr>
         </thead>
@@ -525,6 +508,11 @@
               <td>
                 {% if c.status == 'confirmed' %}
                   <span class="status-badge status-confirmed">Confirmé</span>
+                  {% if c.verification_result == 'verified' %}
+                    <span class="status-badge status-verified">Vérifié</span>
+                  {% elif c.verification_result == 'not_verified' %}
+                    <span class="status-badge status-not-verified">Non vérifié</span>
+                  {% endif %}
                 {% elif c.status == 'pending' %}
                   <span class="status-badge status-pending">En attente</span>
                 {% else %}
@@ -597,75 +585,6 @@
                 {% endif %}
               </td>
 
-              <!-- Colonne Vérification : résultat de la séance pour un conteneur confirmé -->
-              {% if show_verification %}
-                <td>
-                  {% if c.status != 'confirmed' %}
-                    <span class="text-xs text-[#666666]">Réservé aux confirmés</span>
-                  {% elif user.can_mark_verification %}
-                    <div class="status-segmented" role="group" aria-label="Vérification de {{ c.container_number }}">
-                      <form action="{% url 'terminal:container_set_verification' c.pk %}" method="post">
-                        {% csrf_token %}
-                        <input type="hidden" name="result" value="verified">
-                        <input type="hidden" name="next" value="{{ request.get_full_path }}">
-                        <button type="submit"
-                                {% if c.verification_result == 'verified' %}disabled{% endif %}
-                                class="status-seg-btn {% if c.verification_result == 'verified' %}is-verified{% endif %}">
-                          Vérifié
-                        </button>
-                      </form>
-                      <button type="button"
-                              data-toggle-panel="not-verified-panel-{{ c.pk }}"
-                              aria-expanded="false"
-                              aria-controls="not-verified-panel-{{ c.pk }}"
-                              class="status-seg-btn {% if c.verification_result == 'not_verified' %}is-not-verified{% endif %}">
-                        Non vérifié
-                      </button>
-                    </div>
-                    {% if c.verification_result == 'not_verified' and c.verification_note %}
-                      <div class="text-xs font-semibold text-[#2c3741] mt-1">Précision : {{ c.verification_note }}</div>
-                    {% endif %}
-                    <!-- Panneau « Non vérifié » : précision facultative -->
-                    <form id="not-verified-panel-{{ c.pk }}"
-                          action="{% url 'terminal:container_set_verification' c.pk %}"
-                          method="post"
-                          hidden
-                          class="mt-2 p-2.5 rounded bg-[#f4f4f4] border border-[#dadada] flex flex-wrap items-center gap-2">
-                      {% csrf_token %}
-                      <input type="hidden" name="result" value="not_verified">
-                      <input type="hidden" name="next" value="{{ request.get_full_path }}">
-                      <label for="verif-note-{{ c.pk }}" class="visually-hidden">Précision pour {{ c.container_number }} (facultatif)</label>
-                      <input type="text"
-                             id="verif-note-{{ c.pk }}"
-                             name="verification_note"
-                             value="{{ c.verification_note }}"
-                             maxlength="255"
-                             placeholder="Précision (facultatif)"
-                             class="text-xs border border-[#dadada] rounded px-2.5 py-1.5 bg-white text-[#2c3741] w-44">
-                      <button type="submit" class="px-3 py-1.5 rounded bg-[#2c3741] text-white text-xs font-bold hover:bg-[#232c34] transition">
-                        Valider
-                      </button>
-                    </form>
-                    {% if c.verification_result %}
-                      <form action="{% url 'terminal:container_set_verification' c.pk %}" method="post" class="mt-1">
-                        {% csrf_token %}
-                        <input type="hidden" name="result" value="">
-                        <input type="hidden" name="next" value="{{ request.get_full_path }}">
-                        <button type="submit" class="text-[11px] font-semibold text-[#666666] hover:text-[#3498db] underline">
-                          Annuler le marquage
-                        </button>
-                      </form>
-                    {% endif %}
-                  {% elif c.verification_result == 'verified' %}
-                    <span class="status-badge status-verified">Vérifié</span>
-                  {% elif c.verification_result == 'not_verified' %}
-                    <span class="status-badge status-not-verified">Non vérifié</span>
-                  {% else %}
-                    <span class="text-xs text-[#666666]">À marquer</span>
-                  {% endif %}
-                </td>
-              {% endif %}
-
               <!-- Colonne 5 : Action Supprimer sobre -->
               <td class="text-right">
                 {% if user.can_edit_or_delete_containers %}
@@ -688,7 +607,7 @@
           {% empty %}
             <tr>
               <th scope="row">—</th>
-              <td colspan="{% if show_verification %}5{% else %}4{% endif %}" class="text-center py-10 text-[#666666]">
+              <td colspan="4" class="text-center py-10 text-[#666666]">
                 Aucun conteneur enregistré pour cette date ou ce filtre. Utilisez le formulaire ci-dessus pour inscrire des conteneurs.
               </td>
             </tr>

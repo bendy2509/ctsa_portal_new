@@ -1042,16 +1042,18 @@ html {
 .metric-strip {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(11.5rem, 1fr));
-  gap: 1px;
   border: 1px solid var(--ctsa-border);
   border-radius: 0.5rem;
-  background-color: var(--portal-line);
+  background-color: #ffffff;
   overflow: hidden;
 }
 
 .stat-tile {
   display: block;
   padding: 0.9rem 1.1rem;
+  /* Filets à droite et en bas de chaque mesure ; ceux du bord sont rognés par la bande.
+     Une dernière rangée incomplète reste donc blanche, sans case grise. */
+  box-shadow: 1px 0 0 var(--portal-line), 0 1px 0 var(--portal-line);
   background-color: #ffffff;
   color: inherit;
   text-decoration: none;

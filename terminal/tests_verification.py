@@ -232,7 +232,7 @@ class VerificationTrackingTests(TestCase):
         self.make('CMAU0000002', self.today)
         for username in ('adm', 'soir', 'matin'):
             self.login(username)
-            for name in ('dashboard', 'carryover', 'statistics', 'status_logs'):
+            for name in ('dashboard', 'inspection', 'carryover', 'statistics', 'register', 'status_logs'):
                 resp = self.client.get(reverse(f'terminal:{name}'))
                 self.assertEqual(resp.status_code, 200, f'{username} {name}')
                 self.assertContains(resp, 'portal-nav')
@@ -242,7 +242,9 @@ class VerificationTrackingTests(TestCase):
             self.assertContains(self.client.get(reverse(name)), 'portal-nav')
         dash = self.client.get(reverse('terminal:dashboard'))
         self.assertContains(dash, 'Ajouter à cette liste')
-        self.assertContains(dash, 'Vérification de la séance')
+        self.assertContains(dash, "Ouvrir l'inspection")
+        # Le tableau de bord ne porte plus les boutons de marquage : ils sont dans Inspection.
+        self.assertNotContains(dash, 'name="result" value="verified"')
 
     def test_not_verified_note_is_saved_then_cleared_when_marking_changes(self):
         self.login('matin')
@@ -253,7 +255,7 @@ class VerificationTrackingTests(TestCase):
         )
         c.refresh_from_db()
         self.assertEqual(c.verification_note, 'Douane absente')
-        self.assertContains(self.client.get(reverse('terminal:dashboard')), 'Douane absente')
+        self.assertContains(self.client.get(reverse('terminal:inspection')), 'Douane absente')
         self.mark(c, 'verified')
         c.refresh_from_db()
         self.assertEqual(c.verification_result, 'verified')
@@ -371,6 +373,106 @@ class VerificationTrackingTests(TestCase):
         self.assertContains(running, '<details class="portal-fold" >')
         tomorrow = self.client.get(reverse('terminal:dashboard'), {'date': self.tomorrow.isoformat()})
         self.assertTrue(tomorrow.context['preparing_list'])
+
+    def test_inspection_lists_confirmed_containers_of_a_started_session(self):
+        confirmed = self.make('CMAU0000001', self.today)
+        self.make('CMAU0000002', self.today, Container.Status.PENDING)
+        old = self.make('CMAU0000003', self.yesterday)
+        self.login('matin')
+
+        page = self.client.get(reverse('terminal:inspection'))
+        self.assertEqual([c.container_number for c in page.context['rows']], ['CMAU0000001'])
+        self.assertEqual(page.context['stats']['to_verify'], 1)
+        self.assertEqual(page.context['stats']['not_confirmed'], 1)
+        self.assertContains(page, 'name="result" value="verified"')
+
+        # Une date future est ramenée à aujourd'hui : on n'inspecte pas une séance à venir.
+        future = self.client.get(reverse('terminal:inspection'), {'date': self.tomorrow.isoformat()})
+        self.assertEqual(future.context['selected_date'], self.today)
+
+        # Marquage groupé de la sélection, sur une séance passée, avec retour sur la page.
+        back = reverse('terminal:inspection') + f'?date={self.yesterday.isoformat()}'
+        resp = self.client.post(reverse('terminal:container_verify_bulk'), {
+            'date': self.yesterday.isoformat(), 'ids': [str(old.pk)], 'result': 'verified', 'next': back,
+        })
+        self.assertRedirects(resp, back, fetch_redirect_response=False)
+        old.refresh_from_db()
+        confirmed.refresh_from_db()
+        self.assertEqual(old.verification_result, 'verified')
+        self.assertEqual(confirmed.verification_result, '')
+
+    def test_register_finds_when_a_container_was_verified(self):
+        import datetime
+        long_ago = self.today - datetime.timedelta(days=90)
+        first = self.make('CMAU0000001', long_ago, Container.Status.UNAVAILABLE)
+        second = self.make('CMAU0000001', self.yesterday)
+        second.set_verification('verified', acting_user=self.admin)
+        self.make('CMAU0000002', self.today)
+        self.login('soir')
+
+        # Sans dates, la recherche d'un numéro couvre tout l'historique.
+        found = self.client.get(reverse('terminal:register'), {'q': 'cmau 0000001'})
+        self.assertEqual({c.pk for c in found.context['rows']}, {first.pk, second.pk})
+        self.assertIsNone(found.context['start'])
+        self.assertContains(found, "tout l'historique")
+        self.assertContains(found, self.yesterday.strftime('%d/%m/%Y'))
+        self.assertEqual(found.context['totals']['verified'], 1)
+
+        # Par défaut : les 30 derniers jours, avec les quantités de l'intervalle.
+        recent = self.client.get(reverse('terminal:register'))
+        self.assertEqual(recent.context['totals']['scheduled'], 2)
+        self.assertEqual(recent.context['totals']['confirmed'], 2)
+        self.assertEqual(recent.context['totals']['verified'], 1)
+        self.assertEqual(recent.context['totals']['to_verify'], 1)
+
+        only_verified = self.client.get(reverse('terminal:register'), {'resultat': 'verified'})
+        self.assertEqual([c.pk for c in only_verified.context['rows']], [second.pk])
+        self.assertEqual(only_verified.context['totals']['scheduled'], 2)
+
+        csv_resp = self.client.get(reverse('terminal:register'), {'q': 'CMAU0000001', 'export': 'csv'})
+        body = csv_resp.content.decode('utf-8')
+        self.assertIn('CMAU0000001', body)
+        self.assertIn('Vérifié', body)
+
+        # Un conteneur confirmé peut être marqué depuis le registre et depuis « Non vérifiés ».
+        self.assertContains(recent, 'name="result" value="verified"')
+        self.make('CMAU0000009', self.yesterday)
+        self.assertContains(self.client.get(reverse('terminal:carryover')), 'name="result" value="verified"')
+
+    def test_unavailability_reason_can_be_renamed_without_losing_its_containers(self):
+        from terminal.models import UnavailabilityReason
+        reason = UnavailabilityReason.objects.create(code='panne', label='Panne', description='')
+        other = UnavailabilityReason.objects.create(code='douane', label='Blocage douane')
+        c = Container.objects.create(
+            container_number='CMAU0000001', scheduled_date=self.today, shipping_line=self.cma,
+            status=Container.Status.UNAVAILABLE, unavailability_reason=reason,
+        )
+        url = reverse('terminal:prefixes')
+
+        self.login('soir')  # réservé aux administrateurs
+        self.client.post(url, {'action': 'save_reason', 'reason_id': reason.pk, 'label': 'Piraté'})
+        reason.refresh_from_db()
+        self.assertEqual(reason.label, 'Panne')
+
+        self.login('adm')
+        self.assertContains(self.client.get(url), f'id="reason-edit-{reason.pk}"')
+        self.client.post(url, {
+            'action': 'save_reason', 'reason_id': reason.pk,
+            'label': 'Panne reach stacker', 'description': 'Engin de manutention arrêté',
+        })
+        reason.refresh_from_db()
+        c.refresh_from_db()
+        self.assertEqual(reason.label, 'Panne reach stacker')
+        self.assertEqual(reason.description, 'Engin de manutention arrêté')
+        self.assertEqual(reason.code, 'panne')
+        self.assertEqual(c.unavailability_reason, reason)
+
+        # Doublon et intitulé vide refusés.
+        self.client.post(url, {'action': 'save_reason', 'reason_id': reason.pk, 'label': 'blocage douane'})
+        self.client.post(url, {'action': 'save_reason', 'reason_id': reason.pk, 'label': '  '})
+        reason.refresh_from_db()
+        self.assertEqual(reason.label, 'Panne reach stacker')
+        self.assertEqual(other.label, 'Blocage douane')
 
     def test_public_page_shows_verified(self):
         c = self.make('CMAU0000001', self.today)
