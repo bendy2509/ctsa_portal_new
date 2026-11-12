@@ -94,6 +94,11 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
+if PRODUCTION:
+    # WhiteNoise sert les fichiers statiques (après collectstatic), sans serveur dédié.
+    # En développement, runserver s'en charge déjà.
+    MIDDLEWARE.insert(1, 'whitenoise.middleware.WhiteNoiseMiddleware')
+
 ROOT_URLCONF = 'config.urls'
 
 TEMPLATES = [
@@ -189,6 +194,19 @@ USE_TZ = True
 STATIC_URL = 'static/'
 STATICFILES_DIRS = [BASE_DIR / 'static']
 STATIC_ROOT = BASE_DIR / 'staticfiles'
+
+# En production, fichiers statiques compressés et nommés par empreinte (cache longue durée).
+# En développement et en test, le stockage par défaut suffit et n'exige pas collectstatic.
+STORAGES = {
+    'default': {'BACKEND': 'django.core.files.storage.FileSystemStorage'},
+    'staticfiles': {
+        'BACKEND': (
+            'whitenoise.storage.CompressedManifestStaticFilesStorage'
+            if PRODUCTION
+            else 'django.contrib.staticfiles.storage.StaticFilesStorage'
+        ),
+    },
+}
 
 AUTH_USER_MODEL = 'accounts.User'
 LOGIN_URL = 'accounts:login'

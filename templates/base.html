@@ -8,33 +8,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&family=Raleway:wght@600;700;800&display=swap" rel="stylesheet">
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            ctsa: {
-              slate: '#2c3741',
-              slatedark: '#232c34',
-              secondary: '#2c3e50',
-              subnav: '#687077',
-              blue: '#3498db',
-              bluehover: '#217dbb',
-              green: '#008751',
-              red: '#e74c3c',
-              bgalt: '#f4f4f4',
-            }
-          },
-          fontFamily: {
-            sans: ['"Open Sans"', '"Helvetica Neue"', 'Arial', 'sans-serif'],
-            heading: ['"Raleway"', '"Open Sans"', 'Arial', 'sans-serif'],
-          }
-        }
-      }
-    }
-  </script>
   <link rel="stylesheet" href="{% static 'css/ctsa.css' %}">
+  <link rel="stylesheet" href="{% static 'css/tailwind.css' %}">
 </head>
 <body class="min-h-screen flex flex-col bg-white text-[#333333] {% block body_class %}{% endblock %}">
 
@@ -86,7 +61,7 @@
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div class="h-16 sm:h-20 flex items-center justify-between gap-6">
         <a href="{% url 'terminal:home' %}" class="flex items-center gap-3.5 shrink-0">
-          <img src="https://www.capterminal.com/img/cap-terminal-logo.png"
+          <img src="{% static 'img/cap-terminal-logo.png' %}"
                alt="Cap Terminal S.A."
                class="h-11 sm:h-12 w-auto object-contain"
                onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
@@ -171,7 +146,7 @@
   <footer class="bg-[#2c3741] text-white mt-16 border-t border-white/10">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 grid grid-cols-1 md:grid-cols-12 gap-10">
       <div class="md:col-span-7">
-        <img src="https://www.capterminal.com/img/cap-terminal-logo.png"
+        <img src="{% static 'img/cap-terminal-logo.png' %}"
              alt="Cap Terminal S.A."
              class="h-12 w-auto mb-5"
              onerror="this.style.display='none'">

@@ -36,6 +36,33 @@ class ProductionSettingsTests(TestCase):
         self.assertEqual(self.run_check().returncode, 0)
 
 
+class LocalAssetsTests(TestCase):
+    """Les pages n'appellent plus le CDN Tailwind ni le logo distant, et le CSS compilé est à jour."""
+
+    def test_pages_use_project_assets_only(self):
+        html = self.client.get(reverse('accounts:login')).content.decode()
+        self.assertNotIn('cdn.tailwindcss.com', html)
+        self.assertNotIn('capterminal.com/img', html)
+        self.assertIn('css/tailwind.css', html)
+        self.assertIn('img/cap-terminal-logo.png', html)
+
+    def test_compiled_tailwind_covers_the_classes_used_by_templates(self):
+        import re
+        from pathlib import Path
+        from django.conf import settings
+
+        css = (settings.BASE_DIR / 'static' / 'css' / 'tailwind.css').read_text(encoding='utf-8')
+        # Classes à valeur arbitraire (ex. bg-[#fff6e0]) : les plus faciles à oublier de recompiler.
+        used = set()
+        for template in (settings.BASE_DIR / 'templates').rglob('*.html'):
+            used.update(re.findall(r'(?<![\w:-])(?:bg|text|border)-\[#[0-9a-fA-F]{6}\]', template.read_text(encoding='utf-8')))
+        missing = sorted(
+            cls for cls in used
+            if '.' + cls.replace('[', '\\[').replace(']', '\\]').replace('#', '\\#') not in css
+        )
+        self.assertEqual(missing, [], "Relancez la compilation Tailwind (voir tailwind.config.js).")
+
+
 class LoginRedirectTests(TestCase):
     """Après connexion, on ne suit `next` que s'il reste sur le portail."""
 

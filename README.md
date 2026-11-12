@@ -85,4 +85,16 @@ Les réglages sensibles sont lus dans l'environnement ; la liste complète est d
 4. Créer le premier administrateur : `python manage.py createsuperuser` (un superutilisateur a tous les droits d'administrateur du portail). `seed_ctsa` est refusée en production.
 5. Sauvegarder la base : avec SQLite, copier `db.sqlite3` serveur arrêté ; sinon `python manage.py dumpdata --natural-foreign --indent 2 > sauvegarde.json`.
 
-Reste à faire avant la mise en ligne : servir les fichiers statiques (WhiteNoise + `collectstatic`), compiler Tailwind en local au lieu du CDN, et héberger le logo dans `static/img/`.
+6. Rassembler les fichiers statiques : `python manage.py collectstatic --noinput`. Ils sont ensuite servis par WhiteNoise, compressés et mis en cache, sans serveur de fichiers séparé.
+
+## Styles (Tailwind compilé en local)
+
+Le portail ne dépend plus du CDN Tailwind : les classes utilisées dans `templates/` et `static/js/` sont compilées dans [`static/css/tailwind.css`](static/css/tailwind.css), qui est commité. Après avoir ajouté ou retiré des classes Tailwind, régénérez ce fichier :
+
+```powershell
+.\tools\tailwind\tailwindcss.exe -c tailwind.config.js -i static/css/tailwind.input.css -o static/css/tailwind.css --minify
+```
+
+L'exécutable autonome (Tailwind v3.4.17, sans Node) n'est pas commité. Téléchargez `tailwindcss-windows-x64.exe` depuis les versions publiées de `tailwindlabs/tailwindcss` sur GitHub et placez-le dans `tools/tailwind/tailwindcss.exe`. Une classe absente de `tailwind.css` n'a aucun effet : en cas de style manquant, relancez la commande.
+
+Les polices (Raleway, Open Sans) restent chargées depuis Google Fonts.
