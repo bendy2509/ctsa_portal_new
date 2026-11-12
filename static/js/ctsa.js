@@ -270,21 +270,33 @@ document.addEventListener('DOMContentLoaded', () => {
       cancelBtn.focus();
     });
 
-    // Un clic sur le voile (en dehors de la carte) annule.
-    confirmDialog.addEventListener('click', (e) => {
-      if (e.target === confirmDialog) confirmDialog.close('cancel');
-    });
-
-    confirmDialog.addEventListener('close', () => {
+    // La décision est traitée dès le clic sur « Annuler » ou « Confirmer » (événement submit du
+    // formulaire de la boîte), sans attendre l'événement close, que le navigateur peut différer.
+    const settle = (confirmed) => {
       const btn = pendingBtn;
       pendingBtn = null;
+      if (confirmDialog.open) confirmDialog.close(confirmed ? 'confirm' : 'cancel');
       if (!btn) return;
-      if (confirmDialog.returnValue === 'confirm') {
+      if (confirmed) {
         btn.dataset.confirmOk = '1';
         btn.form.requestSubmit(btn);
       } else {
         btn.focus();
       }
+    };
+
+    confirmDialog.querySelector('form').addEventListener('submit', (e) => {
+      e.preventDefault();
+      settle(e.submitter === acceptBtn);
+    });
+
+    // Échap annule (événement cancel), tout comme un clic sur le voile, en dehors de la carte.
+    confirmDialog.addEventListener('cancel', (e) => {
+      e.preventDefault();
+      settle(false);
+    });
+    confirmDialog.addEventListener('click', (e) => {
+      if (e.target === confirmDialog) settle(false);
     });
   }
 
