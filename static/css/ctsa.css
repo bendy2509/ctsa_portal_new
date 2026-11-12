@@ -1,33 +1,33 @@
 /* ==========================================================================
    CTSA Portal — Charte Graphique Officielle Cap Terminal S.A. (capterminal.com)
    Palette extraite de https://www.capterminal.com/css/custom.css & theme.css :
-   - Slate Maritime Foncé (Top-bar, Footer, Titres) : #2c3741 / #2c3e50
-   - Bleu Action CTSA (.btn-primary, .bg-secondary-2) : #3498db
-   - Vert Logo CTSA (Confirmé / Identité)             : #009e49
-   - Rouge Corail CTSA (.bg-primary / Indisponible)   : #e74c3c
-   - Orange Ambre (En attente)                        : #d97706
-   - Fond de section alterné                          : #f4f4f4
-   - Texte principal / secondaire                     : #333333 / #777777
-   - Bordures                                         : #dadada
+   - Slate Maritime Foncé (Top-bar, Footer, Titres) : #2c3741
+   - Barre secondaire / sous-navigation             : #687077
+   - Bleu Action CTSA (.btn-primary, .bg-secondary-2): #3498db (hover #217dbb)
+   - Vert Logo CTSA (Confirmé / Identité)            : #008751
+   - Rouge Corail CTSA (.bg-primary / Indisponible)  : #e74c3c
+   - Fond de section alterné                         : #f4f4f4
+   - Texte principal / secondaire                    : #333333 / #777777
+   - Bordures                                        : #dadada
    ========================================================================== */
 
 :root {
   --ctsa-slate: #2c3741;
-  --ctsa-slate-dark: #222b33;
+  --ctsa-slate-dark: #232c34;
   --ctsa-slate-secondary: #2c3e50;
   --ctsa-subnav: #687077;
   --ctsa-blue: #3498db;
   --ctsa-blue-hover: #217dbb;
-  --ctsa-green: #009e49;
-  --ctsa-green-bg: #e6f6ed;
+  --ctsa-green: #008751;
+  --ctsa-green-bg: #eef8f3;
   --ctsa-red: #e74c3c;
-  --ctsa-red-bg: #fceae8;
-  --ctsa-amber: #d97706;
-  --ctsa-amber-bg: #fef3c7;
+  --ctsa-red-bg: #fdf2f1;
+  --ctsa-pending: #3498db;
+  --ctsa-pending-bg: #eef7fd;
   --ctsa-bg-alt: #f4f4f4;
   --ctsa-surface: #ffffff;
   --ctsa-text: #333333;
-  --ctsa-text-muted: #59626a;
+  --ctsa-text-muted: #666666;
   --ctsa-border: #dadada;
 }
 
@@ -39,7 +39,7 @@ body {
   font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   color: var(--ctsa-text);
-  background-color: var(--ctsa-bg-alt);
+  background-color: #ffffff;
   margin: 0;
   line-height: 1.6;
 }
@@ -64,18 +64,18 @@ h1, h2, h3, h4, h5, h6 {
   white-space: nowrap !important;
 }
 
-/* Boutons style Cap Terminal S.A. (border-radius: 25px, Raleway, uppercase) */
+/* Boutons style Cap Terminal S.A. (.btn-primary dans theme.css : border-radius: 25px, Raleway, uppercase) */
 .btn-ctsa {
   border-radius: 25px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  padding: 0.75rem 1.6rem;
-  min-height: 48px;
+  padding: 0.75rem 1.75rem;
+  min-height: 46px;
   font-family: "Raleway", "Open Sans", sans-serif;
   font-weight: 700;
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 1px;
   border: 2px solid var(--ctsa-blue);
@@ -89,6 +89,7 @@ h1, h2, h3, h4, h5, h6 {
 .btn-ctsa:hover {
   background-color: var(--ctsa-blue);
   color: #ffffff;
+  border-color: var(--ctsa-blue);
 }
 
 .btn-ctsa-filled {
@@ -110,8 +111,8 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .btn-ctsa-green:hover {
-  background-color: #007d3a;
-  border-color: #007d3a;
+  background-color: #006b3f;
+  border-color: #006b3f;
   color: #ffffff;
 }
 
@@ -122,7 +123,115 @@ h1, h2, h3, h4, h5, h6 {
 
 .btn-ctsa-outline-white:hover {
   background-color: #ffffff;
+  color: #333333;
+  border-color: #ffffff;
+}
+
+/* Boutons d'administration structurés (rectangulaires sobres pour éviter l'effet désordonné) */
+.btn-admin {
+  border-radius: 0.375rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0.55rem 1rem;
+  min-height: 40px;
+  font-family: "Raleway", "Open Sans", sans-serif;
+  font-weight: 700;
+  font-size: 0.75rem;
+  letter-spacing: 0.03em;
+  border: 1px solid var(--ctsa-border);
+  background-color: #ffffff;
   color: var(--ctsa-slate);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.btn-admin:hover {
+  border-color: var(--ctsa-blue);
+  color: var(--ctsa-blue);
+  background-color: #f9fbfd;
+}
+
+.btn-admin-primary {
+  background-color: var(--ctsa-blue);
+  border-color: var(--ctsa-blue);
+  color: #ffffff;
+}
+
+.btn-admin-primary:hover {
+  background-color: var(--ctsa-blue-hover);
+  border-color: var(--ctsa-blue-hover);
+  color: #ffffff;
+}
+
+.btn-admin-slate {
+  background-color: var(--ctsa-slate);
+  border-color: var(--ctsa-slate);
+  color: #ffffff;
+}
+
+.btn-admin-slate:hover {
+  background-color: var(--ctsa-slate-dark);
+  border-color: var(--ctsa-slate-dark);
+  color: #ffffff;
+}
+
+/* Sélecteur segmenté de statut dans le tableau d'exploitation */
+.status-segmented {
+  display: inline-flex;
+  border: 1px solid var(--ctsa-border);
+  border-radius: 0.375rem;
+  overflow: hidden;
+  background-color: #ffffff;
+}
+
+.status-segmented form {
+  display: inline-flex;
+  margin: 0;
+}
+
+.status-seg-btn {
+  padding: 0.4rem 0.75rem;
+  font-family: "Open Sans", sans-serif;
+  font-size: 0.75rem;
+  font-weight: 700;
+  border: 0;
+  border-inline-end: 1px solid var(--ctsa-border);
+  background-color: #ffffff;
+  color: #555555;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+  white-space: nowrap;
+}
+
+.status-segmented > *:last-child .status-seg-btn,
+.status-segmented > .status-seg-btn:last-child {
+  border-inline-end: 0;
+}
+
+.status-seg-btn:hover:not(:disabled) {
+  background-color: #f4f4f4;
+  color: var(--ctsa-slate);
+}
+
+.status-seg-btn.is-confirmed {
+  background-color: var(--ctsa-green);
+  color: #ffffff;
+  cursor: default;
+}
+
+.status-seg-btn.is-pending {
+  background-color: var(--ctsa-blue);
+  color: #ffffff;
+  cursor: default;
+}
+
+.status-seg-btn.is-unavailable {
+  background-color: var(--ctsa-red);
+  color: #ffffff;
 }
 
 /* Formulaires accessibles (Guide: forms & validate-input-after-interaction) */
@@ -136,7 +245,7 @@ h1, h2, h3, h4, h5, h6 {
 
 .form-field label {
   font-weight: 700;
-  font-size: 0.9rem;
+  font-size: 0.875rem;
   color: var(--ctsa-slate);
 }
 
@@ -151,33 +260,38 @@ h1, h2, h3, h4, h5, h6 {
   font: inherit;
   font-size: max(1rem, 1em);
   padding: 0.65rem 0.9rem;
-  min-height: 48px;
-  border: 1.5px solid #767676;
-  border-radius: 0.5rem;
+  min-height: 46px;
+  border: 1.5px solid #dadada;
+  border-radius: 0.375rem;
   background-color: #ffffff;
   color: var(--ctsa-text);
   width: 100%;
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
+.form-control:hover {
+  border-color: #b5b5b5;
+}
+
 .form-control:focus-visible,
 button:focus-visible,
 a:focus-visible {
-  outline: 3px solid var(--ctsa-blue);
+  outline: 2px solid var(--ctsa-blue);
   outline-offset: 2px;
+  border-color: var(--ctsa-blue);
 }
 
 .error-msg {
   display: none;
-  color: #c62828;
+  color: #e74c3c;
   font-size: 0.85rem;
   font-weight: 600;
   margin-block-start: 0.25rem;
 }
 
 :is(:user-invalid, .user-invalid-fallback) {
-  border-color: #c62828 !important;
-  background-color: #fce8e6 !important;
+  border-color: #e74c3c !important;
+  background-color: #fdf2f1 !important;
 }
 
 :is(:user-invalid, .user-invalid-fallback) + .error-msg {
@@ -188,34 +302,43 @@ input.form-control:user-valid {
   border-color: var(--ctsa-green);
 }
 
-/* Badges de statut */
+/* Badges de statut harmonisés avec la palette Cap Terminal S.A. */
 .status-badge {
   display: inline-flex;
   align-items: center;
   gap: 0.375rem;
   padding: 0.3rem 0.85rem;
-  border-radius: 9999px;
+  border-radius: 25px;
+  font-family: "Raleway", "Open Sans", sans-serif;
   font-weight: 700;
-  font-size: 0.8rem;
-  letter-spacing: 0.03em;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 .status-confirmed {
   background-color: var(--ctsa-green-bg);
-  color: #006b31;
-  border: 1px solid #86efac;
+  color: #006b3f;
+  border: 1px solid #99d5bc;
 }
 
 .status-pending {
-  background-color: var(--ctsa-amber-bg);
-  color: #92400e;
-  border: 1px solid #fcd34d;
+  background-color: var(--ctsa-pending-bg);
+  color: #1d6fa5;
+  border: 1px solid #93c9ed;
 }
 
 .status-unavailable {
   background-color: var(--ctsa-red-bg);
-  color: #991b1b;
-  border: 1px solid #fca5a5;
+  color: #b82c1f;
+  border: 1px solid #f5b7b1;
+}
+
+/* Séance passée ou à venir : le statut n'est pas valable aujourd'hui */
+.status-neutral {
+  background-color: #f4f4f4;
+  color: #4a535b;
+  border: 1px solid #c4c9cd;
 }
 
 /* Responsive Data Table (Guide: responsive-table) */
@@ -225,7 +348,7 @@ input.form-control:user-valid {
   max-block-size: min(680px, 82vh);
   container-type: inline-size;
   background: var(--ctsa-surface);
-  border-radius: 0.75rem;
+  border-radius: 0.5rem;
   border: 1px solid var(--ctsa-border);
 }
 
@@ -235,34 +358,36 @@ input.form-control:user-valid {
   border-spacing: 0;
   text-align: left;
   --label-2: "Ligne maritime";
-  --label-3: "Date RAMPE";
-  --label-4: "Statut";
-  --label-5: "Motif / Détail";
+  --label-3: "Statut";
+  --label-4: "Action rapide";
+  --label-5: "Action";
   --label-6: "Mise à jour";
-  --label-7: "Actions";
+  --label-7: "Opérateur";
 }
 
 .ctsa-table thead {
   position: sticky;
   inset-block-start: 0;
   z-index: 2;
-  background-color: var(--ctsa-slate);
-  color: #ffffff;
+  background-color: #f4f4f4;
+  color: var(--ctsa-slate);
 }
 
 .ctsa-table th,
 .ctsa-table td {
   padding: 0.85rem 1rem;
-  border-block-end: 1px solid #e5e7eb;
+  border-block-end: 1px solid #eaeaea;
   vertical-align: middle;
 }
 
 .ctsa-table thead th {
   font-family: "Raleway", "Open Sans", sans-serif;
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  font-weight: 700;
+  font-weight: 800;
+  color: var(--ctsa-slate);
+  border-block-end: 2px solid #dadada;
   white-space: nowrap;
 }
 
@@ -279,7 +404,7 @@ input.form-control:user-valid {
 
 .ctsa-table tbody tr:hover td,
 .ctsa-table tbody tr:hover th {
-  background-color: #f8fafc;
+  background-color: #f9fbfd;
 }
 
 @container (width < 640px) {
@@ -307,7 +432,7 @@ input.form-control:user-valid {
     position: sticky;
     inset-block-start: 0;
     z-index: 2;
-    background: #eef2f6;
+    background: #f4f4f4;
     border-block-end: 1px solid var(--ctsa-border);
   }
 
@@ -340,5 +465,17 @@ input.form-control:user-valid {
     content: var(--label-7) " : ";
     font-weight: 700;
     color: var(--ctsa-slate);
+  }
+}
+
+@media print {
+  header,
+  footer,
+  search,
+  .no-print {
+    display: none !important;
+  }
+  body {
+    background: #ffffff !important;
   }
 }

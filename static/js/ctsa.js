@@ -122,8 +122,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const active = b === btn;
         b.setAttribute('aria-selected', String(active));
         b.className = active
-          ? 'tab-btn px-4 py-2 rounded text-xs font-heading font-bold uppercase tracking-wider bg-[#3498db] text-white'
-          : 'tab-btn px-4 py-2 rounded text-xs font-heading font-bold uppercase tracking-wider bg-white/10 text-white hover:bg-white/20';
+          ? 'tab-btn px-3.5 py-1.5 rounded text-xs font-heading font-bold uppercase tracking-wider bg-[#3498db] text-white transition'
+          : 'tab-btn px-3.5 py-1.5 rounded text-xs font-heading font-bold uppercase tracking-wider bg-transparent text-[#2c3741] hover:bg-[#f4f4f4] transition';
         const panel = document.getElementById(b.getAttribute('data-tab-target'));
         if (panel) panel.hidden = !active;
       });
@@ -202,4 +202,11 @@ document.addEventListener('DOMContentLoaded', () => {
       createUserBtn.setAttribute('aria-expanded', String(isHidden));
     });
   }
+
+  // 10. Bouton d'impression de la fiche bordereau RAMPE sur /verification/
+  document.querySelectorAll('[data-print-slip]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      window.print();
+    });
+  });
 });

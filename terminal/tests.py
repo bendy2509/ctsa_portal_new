@@ -110,6 +110,63 @@ class CTSAPortalBusinessTests(TestCase):
         self.assertEqual(pdf_resp['Content-Type'], 'application/pdf')
         self.assertTrue(pdf_resp.content.startswith(b'%PDF'))
 
+    def test_past_confirmed_schedule_is_not_shown_as_valid_today(self):
+        import datetime
+        today = timezone.localdate()
+        Container.objects.create(
+            container_number='CMAU4052450',
+            shipping_line=self.cma,
+            scheduled_date=today - datetime.timedelta(days=7),
+            status=Container.Status.CONFIRMED,
+        )
+        response = self.client_http.get(reverse('terminal:verification'), {'q': 'CMAU4052450'})
+        self.assertEqual(response.context['result'].timing, 'past')
+        self.assertContains(response, "Non programmé aujourd'hui")
+        self.assertNotContains(response, 'Déplacement autorisé')
+        self.assertNotContains(response, 'Vous pouvez vous présenter')
+        self.assertNotContains(response, 'status-confirmed')
+
+        # La liste « Mes conteneurs » ne doit pas non plus afficher le badge vert
+        self.client_http.login(username='client_test', password='Password123!')
+        self.client_http.post(
+            reverse('terminal:client_watchlist'), {'container_number': 'CMAU4052450'}
+        )
+        wl = self.client_http.get(reverse('terminal:client_watchlist'))
+        self.assertContains(wl, "Non programmé aujourd'hui")
+        self.assertNotContains(wl, 'status-confirmed')
+
+    def test_schedule_priority_today_then_next_upcoming_then_last_past(self):
+        import datetime
+        today = timezone.localdate()
+        for offset, status in (
+            (-3, Container.Status.CONFIRMED),
+            (1, Container.Status.PENDING),
+            (5, Container.Status.PENDING),
+        ):
+            Container.objects.create(
+                container_number='CMAU4052450',
+                shipping_line=self.cma,
+                scheduled_date=today + datetime.timedelta(days=offset),
+                status=status,
+            )
+        url = reverse('terminal:verification')
+        response = self.client_http.get(url, {'q': 'CMAU4052450'})
+        result = response.context['result']
+        self.assertEqual(result.timing, 'upcoming')
+        self.assertEqual(result.scheduled_date, today + datetime.timedelta(days=1))
+        self.assertContains(response, "Ne pas se déplacer aujourd'hui")
+        self.assertNotContains(response, 'status-pending')
+
+        Container.objects.create(
+            container_number='CMAU4052450',
+            shipping_line=self.cma,
+            scheduled_date=today,
+            status=Container.Status.CONFIRMED,
+        )
+        response = self.client_http.get(url, {'q': 'CMAU4052450'})
+        self.assertEqual(response.context['result'].timing, 'today')
+        self.assertContains(response, 'Déplacement autorisé')
+
     def test_shipping_lines_add_rename_delete_and_dashboard_quick_actions(self):
         self.client_http.login(username='admin_test', password='Password123!')
         # Add shipping line with only name

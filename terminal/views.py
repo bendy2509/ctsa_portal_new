@@ -33,6 +33,30 @@ def _parse_date(date_str: str, default_date: datetime.date) -> datetime.date:
         return default_date
 
 
+def _pick_relevant_schedule(containers, today: datetime.date):
+    """Choisit la programmation à montrer au client pour un même numéro de conteneur.
+
+    Priorité : séance du jour, sinon prochaine séance à venir, sinon dernière séance passée.
+    L'objet retourné porte un attribut `timing` ('today', 'upcoming' ou 'past') : seul un
+    statut de la séance du jour autorise un déplacement.
+    """
+    chosen = None
+    chosen_rank = None
+    for c in containers:
+        delta = (c.scheduled_date - today).days
+        if delta == 0:
+            rank = (0, 0)
+        elif delta > 0:
+            rank = (1, delta)
+        else:
+            rank = (2, -delta)
+        if chosen_rank is None or rank < chosen_rank:
+            chosen, chosen_rank = c, rank
+    if chosen is not None:
+        chosen.timing = ('today', 'upcoming', 'past')[chosen_rank[0]]
+    return chosen
+
+
 def home_view(request):
     today = timezone.localdate()
     shipping_lines = ShippingLine.objects.filter(is_active=True).order_by('name')
@@ -65,13 +89,7 @@ def verification_view(request):
                 .order_by('-scheduled_date', '-updated_at')
             )
 
-            for item in matches:
-                if item.scheduled_date == today:
-                    result_today = item
-                    break
-
-            if result_today is None and matches:
-                result_today = matches[0]
+            result_today = _pick_relevant_schedule(matches, today)
 
             if request.user.is_authenticated:
                 is_saved = SavedContainer.objects.filter(
@@ -119,13 +137,16 @@ def client_watchlist_view(request):
 
     containers_by_num = {}
     if numbers:
+        grouped = {}
         for c in (
             Container.objects.select_related('shipping_line', 'unavailability_reason')
             .filter(container_number__in=numbers)
-            .order_by('container_number', '-scheduled_date')
+            .order_by('container_number', '-scheduled_date', '-updated_at')
         ):
-            if c.container_number not in containers_by_num or c.scheduled_date == today:
-                containers_by_num[c.container_number] = c
+            grouped.setdefault(c.container_number, []).append(c)
+        containers_by_num = {
+            num: _pick_relevant_schedule(items, today) for num, items in grouped.items()
+        }
 
     enriched_watchlist = []
     for item in saved_list:

@@ -3,115 +3,120 @@
 {% block title %}Lignes Maritimes — Cap Terminal S.A.{% endblock %}
 
 {% block content %}
-<div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
-  <div class="bg-white rounded-lg shadow-sm p-5 sm:p-6 border border-gray-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-    <div>
-      <div class="text-xs font-heading uppercase tracking-wider text-[#3498db] font-bold">
-        Référentiel d'exploitation
-      </div>
-      <h1 class="font-heading text-xl sm:text-2xl font-extrabold text-[#2c3741] mt-0.5">
-        Lignes maritimes
-      </h1>
-      <p class="text-sm text-[#59626a] mt-1">
-        Gérez les lignes maritimes sélectionnées lors de l'enregistrement des conteneurs (Accordia, Antillean, CMA CGM, Challenger, SC Line, ZIM).
-      </p>
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+
+  <!-- En-tête de page sobre et aligné -->
+  <div class="pb-5 border-b border-[#dadada]">
+    <div class="text-xs font-heading uppercase tracking-widest text-[#3498db] font-bold">
+      Référentiel d'exploitation RAMPE
     </div>
+    <h1 class="font-heading text-2xl sm:text-3xl font-extrabold text-[#2c3741] mt-1 mb-1">
+      Lignes maritimes
+    </h1>
+    <p class="text-sm text-[#666666] m-0">
+      Gérez la liste des lignes maritimes proposées lors de l'inscription des conteneurs (Accordia, Antillean, CMA CGM, Challenger, SC Line, ZIM).
+    </p>
   </div>
 
-  <!-- Ajout rapide d'une ligne maritime (uniquement le nom) -->
-  <div class="bg-white rounded-lg shadow-sm p-5 sm:p-6 border border-gray-200">
-    <h2 id="line-add-title" class="font-heading text-base font-bold text-[#2c3741] mb-3">
-      Ajouter une ligne maritime
-    </h2>
-    <form action="{% url 'terminal:shipping_lines' %}" method="post" aria-labelledby="line-add-title" class="flex flex-col sm:flex-row sm:items-end gap-4">
-      {% csrf_token %}
-      <input type="hidden" name="action" value="save_line">
-      <div class="form-field mb-0 flex-1">
-        <label for="line-name">Nom de la ligne maritime</label>
-        <input type="text" id="line-name" name="name" required placeholder="Ex. Accordia, Antillean, CMA CGM" class="form-control">
-      </div>
-      <button type="submit" class="btn-ctsa btn-ctsa-filled sm:w-auto w-full">
-        Ajouter la ligne maritime
-      </button>
-    </form>
-  </div>
+  <!-- Cadre unique regroupant l'ajout rapide et le tableau des lignes maritimes -->
+  <section aria-labelledby="line-add-title" class="bg-white rounded-lg border border-[#dadada] border-t-4 border-t-[#3498db] shadow-sm overflow-hidden">
 
-  <!-- Liste des lignes maritimes : Ligne maritime, Conteneurs liés, Modifier / Supprimer -->
-  <div tabindex="0" role="region" aria-labelledby="lines-caption" class="table-wrapper shadow-sm">
-    <table class="ctsa-table" style="--label-2: 'Conteneurs liés'; --label-3: 'Actions';">
-      <caption id="lines-caption" class="p-4 text-left font-heading font-bold text-[#2c3741] bg-gray-50 border-b border-gray-200">
-        Lignes maritimes enregistrées ({{ lines|length }})
-      </caption>
-      <thead>
-        <tr>
-          <th scope="col">Ligne maritime</th>
-          <th scope="col">Conteneurs liés</th>
-          <th scope="col">Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for line in lines %}
+    <!-- Barre d'ajout intégrée en haut du cadre -->
+    <div class="bg-[#f4f4f4] border-b border-[#dadada] p-5">
+      <h2 id="line-add-title" class="font-heading text-xs font-extrabold uppercase tracking-wider text-[#2c3741] mb-3">
+        Ajouter une nouvelle ligne maritime
+      </h2>
+      <form action="{% url 'terminal:shipping_lines' %}" method="post" aria-labelledby="line-add-title" class="flex flex-col sm:flex-row sm:items-end gap-3 max-w-2xl">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="save_line">
+        <div class="form-field mb-0 flex-1">
+          <label for="line-name" class="text-xs">Nom de la ligne maritime</label>
+          <input type="text" id="line-name" name="name" required placeholder="Ex. Accordia, Antillean, CMA CGM" class="form-control">
+        </div>
+        <button type="submit" class="btn-admin btn-admin-primary min-h-[46px] px-6">
+          Ajouter la ligne maritime
+        </button>
+      </form>
+    </div>
+
+    <!-- Tableau épuré à 3 colonnes : Ligne maritime, Conteneurs liés, Actions -->
+    <div tabindex="0" role="region" aria-labelledby="lines-caption" class="table-wrapper border-0 rounded-none">
+      <table class="ctsa-table" style="--label-2: 'Conteneurs liés'; --label-3: 'Actions';">
+        <caption id="lines-caption" class="px-5 py-3 text-left text-xs font-heading font-bold uppercase tracking-wider text-[#666666] bg-white border-b border-[#dadada]">
+          {{ lines|length }} ligne{% if lines|length > 1 %}s{% endif %} maritime{% if lines|length > 1 %}s{% endif %} enregistrée{% if lines|length > 1 %}s{% endif %}
+        </caption>
+        <thead>
           <tr>
-            <th scope="row" class="font-sans font-bold text-base text-[#2c3741]">
-              <div id="line-display-{{ line.id }}">
-                {{ line.name }}
-              </div>
-              <form id="line-edit-form-{{ line.id }}"
-                    action="{% url 'terminal:shipping_lines' %}"
-                    method="post"
-                    hidden
-                    class="flex flex-wrap items-center gap-2 mt-1">
-                {% csrf_token %}
-                <input type="hidden" name="action" value="save_line">
-                <input type="hidden" name="line_id" value="{{ line.id }}">
-                <label for="edit-name-{{ line.id }}" class="visually-hidden">Nouveau nom pour {{ line.name }}</label>
-                <input type="text"
-                       id="edit-name-{{ line.id }}"
-                       name="name"
-                       value="{{ line.name }}"
-                       required
-                       class="border border-[#3498db] rounded px-3 py-1.5 text-sm font-semibold text-[#2c3741] bg-white min-w-[200px]">
-                <button type="submit" class="px-3.5 py-1.5 rounded bg-[#009e49] text-white text-xs font-heading font-bold uppercase hover:bg-[#007d3a] transition">
-                  Enregistrer
-                </button>
-                <button type="button"
-                        data-cancel-edit-line="{{ line.id }}"
-                        class="px-3 py-1.5 rounded border border-gray-300 bg-white text-xs font-heading font-bold uppercase text-[#59626a] hover:bg-gray-100 transition">
-                  Annuler
-                </button>
-              </form>
-            </th>
-            <td>
-              <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-[#f4f4f4] text-[#2c3741] border border-gray-200">
-                {{ line.container_count }} conteneur{% if line.container_count > 1 %}s{% endif %}
-              </span>
-            </td>
-            <td>
-              <div class="flex flex-wrap items-center gap-2">
-                <button type="button"
-                        data-edit-line="{{ line.id }}"
-                        class="px-3.5 py-1.5 rounded border border-gray-300 bg-white text-xs font-heading font-bold uppercase text-[#2c3741] hover:border-[#3498db] hover:text-[#3498db] transition">
-                  Modifier
-                </button>
-                <form action="{% url 'terminal:shipping_lines' %}" method="post" class="inline">
+            <th scope="col">Ligne maritime</th>
+            <th scope="col">Conteneurs liés</th>
+            <th scope="col" class="text-right">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for line in lines %}
+            <tr>
+              <th scope="row" class="font-sans font-bold text-base text-[#2c3741]">
+                <div id="line-display-{{ line.id }}">
+                  {{ line.name }}
+                </div>
+                <form id="line-edit-form-{{ line.id }}"
+                      action="{% url 'terminal:shipping_lines' %}"
+                      method="post"
+                      hidden
+                      class="flex flex-wrap items-center gap-2 mt-1">
                   {% csrf_token %}
-                  <input type="hidden" name="action" value="delete_line">
+                  <input type="hidden" name="action" value="save_line">
                   <input type="hidden" name="line_id" value="{{ line.id }}">
-                  <button type="submit" class="px-3.5 py-1.5 rounded border border-red-200 bg-white text-xs font-heading font-bold uppercase text-[#e74c3c] hover:bg-[#fceae8] transition">
-                    Supprimer
+                  <label for="edit-name-{{ line.id }}" class="visually-hidden">Nouveau nom pour {{ line.name }}</label>
+                  <input type="text"
+                         id="edit-name-{{ line.id }}"
+                         name="name"
+                         value="{{ line.name }}"
+                         required
+                         class="border border-[#3498db] rounded px-3 py-1.5 text-sm font-semibold text-[#2c3741] bg-white min-w-[220px]">
+                  <button type="submit" class="btn-admin btn-admin-primary py-1.5 px-3 min-h-[34px]">
+                    Enregistrer
+                  </button>
+                  <button type="button"
+                          data-cancel-edit-line="{{ line.id }}"
+                          class="btn-admin py-1.5 px-3 min-h-[34px]">
+                    Annuler
                   </button>
                 </form>
-              </div>
-            </td>
-          </tr>
-        {% empty %}
-          <tr>
-            <th scope="row">—</th>
-            <td colspan="2" class="text-center py-8 text-[#59626a]">Aucune ligne maritime enregistrée.</td>
-          </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
+              </th>
+              <td>
+                <span class="inline-flex items-center px-2.5 py-1 rounded text-xs font-bold bg-[#f4f4f4] text-[#2c3741] border border-[#dadada]">
+                  {{ line.container_count }} conteneur{% if line.container_count > 1 %}s{% endif %}
+                </span>
+              </td>
+              <td class="text-right">
+                <div class="inline-flex items-center gap-2">
+                  <button type="button"
+                          data-edit-line="{{ line.id }}"
+                          class="btn-admin py-1.5 px-3 min-h-[34px]">
+                    Modifier
+                  </button>
+                  <form action="{% url 'terminal:shipping_lines' %}" method="post" class="inline">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="delete_line">
+                    <input type="hidden" name="line_id" value="{{ line.id }}">
+                    <button type="submit" class="text-xs font-bold text-[#666666] hover:text-[#e74c3c] px-2.5 py-1.5 rounded hover:bg-[#fdf2f1] transition">
+                      Supprimer
+                    </button>
+                  </form>
+                </div>
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <th scope="row">—</th>
+              <td colspan="2" class="text-center py-8 text-[#666666]">Aucune ligne maritime enregistrée.</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
 </div>
 {% endblock %}

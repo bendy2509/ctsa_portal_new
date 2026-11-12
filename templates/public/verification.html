@@ -3,143 +3,287 @@
 {% block title %}Vérification de Conteneur — Cap Terminal S.A.{% endblock %}
 
 {% block content %}
-<div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-
-  <div class="bg-white rounded-lg shadow-sm p-6 sm:p-8 border border-gray-200 border-t-4 border-t-[#2c3741]">
-    <h1 id="verification-form-title" class="font-heading text-2xl font-extrabold text-[#2c3741] mb-2">
-      Vérification d'un conteneur
-    </h1>
-    <p class="text-sm text-[#59626a] mb-6">
-      Entrez le numéro exact de votre conteneur (4 lettres suivies de 7 chiffres) pour consulter son statut à la RAMPE.
-    </p>
-
-    <search>
-      <form action="{% url 'terminal:verification' %}" method="get" aria-labelledby="verification-form-title" class="grid grid-cols-1 sm:grid-cols-12 gap-4 items-start">
-        <div class="sm:col-span-8 form-field mb-0">
-          <label for="verif-q">Numéro du conteneur</label>
-          <input
-            type="search"
-            id="verif-q"
-            name="q"
-            value="{{ query }}"
-            required
-            pattern="[A-Za-z]{4}[\s\-]?[0-9]{7}"
-            autocorrect="off"
-            autocapitalize="characters"
-            spellcheck="false"
-            enterkeyhint="search"
-            placeholder="4 lettres et 7 chiffres"
-            data-error="verif-q-error"
-            class="form-control font-mono text-lg uppercase tracking-wider"
-          >
-          <div id="verif-q-error" class="error-msg">
-            Veuillez saisir un numéro valide composé de 4 lettres et 7 chiffres.
-          </div>
-        </div>
-        <div class="sm:col-span-4 sm:pt-7">
-          <button type="submit" class="btn-ctsa btn-ctsa-filled w-full">
-            Rechercher
-          </button>
-        </div>
-      </form>
-    </search>
-  </div>
-
-  {% if normalized %}
-    {% if format_warning %}
-      <div class="mt-6 p-4 rounded bg-[#fef3c7] border border-[#d97706] text-[#92400e] text-sm font-semibold">
-        {{ format_warning }}
+<!-- Bandeau supérieur de recherche (fond #f4f4f4) -->
+<section class="bg-[#f4f4f4] border-b border-[#dadada] py-10">
+  <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="mb-5">
+      <div class="text-xs font-heading uppercase tracking-widest text-[#3498db] font-bold mb-1">
+        Port du Cap-Haïtien — Exploitation Douanière RAMPE
       </div>
-    {% elif result %}
-      <div class="mt-8 bg-white rounded-lg shadow-sm overflow-hidden border border-gray-200">
-        <div class="px-6 py-5 bg-[#2c3741] text-white flex flex-wrap items-center justify-between gap-4">
-          <div>
-            <div class="text-xs uppercase tracking-wider text-gray-300 font-heading font-semibold">Conteneur recherché</div>
-            <div class="text-2xl font-mono font-bold tracking-wider mt-0.5">{{ result.container_number }}</div>
-          </div>
-          <div>
-            {% if result.status == 'confirmed' %}
-              <span class="status-badge status-confirmed text-sm px-4 py-1.5">Confirmé</span>
-            {% elif result.status == 'pending' %}
-              <span class="status-badge status-pending text-sm px-4 py-1.5">En attente</span>
-            {% else %}
-              <span class="status-badge status-unavailable text-sm px-4 py-1.5">Indisponible</span>
-            {% endif %}
-          </div>
-        </div>
+      <h1 id="verification-form-title" class="font-heading text-2xl sm:text-3xl font-extrabold text-[#2c3741]">
+        Vérification du statut d'un conteneur
+      </h1>
+    </div>
 
-        <div class="p-6 sm:p-8 space-y-6">
-          {% if result.status == 'confirmed' %}
-            <div class="p-4 rounded bg-[#e6f6ed] border border-[#009e49] text-[#006b31]">
-              <strong class="block font-heading text-sm uppercase tracking-wider">Conteneur confirmé</strong>
-              <span class="text-sm block mt-1">Ce conteneur est disponible à la RAMPE pour la séance du {{ result.scheduled_date|date:"d/m/Y" }}. Vous pouvez vous présenter au terminal.</span>
+    <div class="bg-white rounded-lg p-6 sm:p-7 border border-[#dadada] border-t-4 border-t-[#3498db] shadow-sm">
+      <search>
+        <form action="{% url 'terminal:verification' %}" method="get" aria-labelledby="verification-form-title">
+          <div class="form-field mb-0">
+            <div class="flex flex-wrap items-baseline justify-between gap-2 mb-1.5">
+              <label for="verif-q" class="font-heading text-sm font-extrabold text-[#2c3741]">
+                Numéro du conteneur <span aria-hidden="true" class="text-[#e74c3c]">*</span>
+              </label>
+              <span id="verif-format-hint" class="text-xs text-[#666666] font-semibold">
+                Saisissez les 4 lettres suivies des 7 chiffres du connaissement
+              </span>
             </div>
-          {% elif result.status == 'pending' %}
-            <div class="p-4 rounded bg-[#fef3c7] border border-[#d97706] text-[#92400e]">
-              <strong class="block font-heading text-sm uppercase tracking-wider">En attente de confirmation</strong>
-              <span class="text-sm block mt-1">Ce conteneur est inscrit pour le {{ result.scheduled_date|date:"d/m/Y" }} mais n'est pas encore confirmé à la RAMPE.</span>
-            </div>
-          {% else %}
-            <div class="p-4 rounded bg-[#fceae8] border border-[#e74c3c] text-[#991b1b]">
-              <strong class="block font-heading text-sm uppercase tracking-wider">Conteneur indisponible</strong>
-              <span class="text-sm block mt-1">Motif : {{ result.full_reason_display }}</span>
-            </div>
-          {% endif %}
 
-          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div class="p-4 rounded bg-[#f4f4f4] border border-gray-200">
-              <div class="text-xs uppercase font-heading font-bold text-[#59626a]">Date programmée</div>
-              <div class="text-base font-bold text-[#2c3741] mt-1">
-                {{ result.scheduled_date|date:"d/m/Y" }}
+            <div class="grid grid-cols-1 sm:grid-cols-12 gap-3 items-start">
+              <div class="sm:col-span-8">
+                <input
+                  type="search"
+                  id="verif-q"
+                  name="q"
+                  value="{{ query }}"
+                  required
+                  pattern="[A-Za-z]{4}[\s\-]?[0-9]{7}"
+                  autocorrect="off"
+                  autocapitalize="characters"
+                  spellcheck="false"
+                  enterkeyhint="search"
+                  placeholder="4 lettres et 7 chiffres"
+                  aria-describedby="verif-format-hint"
+                  data-error="verif-q-error"
+                  class="form-control font-mono text-lg uppercase tracking-wider"
+                >
+                <div id="verif-q-error" class="error-msg">
+                  Veuillez saisir un numéro valide composé de 4 lettres et 7 chiffres.
+                </div>
+              </div>
+              <div class="sm:col-span-4">
+                <button type="submit" class="btn-ctsa btn-ctsa-filled w-full">
+                  Rechercher
+                </button>
               </div>
             </div>
+          </div>
+        </form>
+      </search>
+    </div>
+  </div>
+</section>
 
-            <div class="p-4 rounded bg-[#f4f4f4] border border-gray-200">
-              <div class="text-xs uppercase font-heading font-bold text-[#59626a]">Ligne maritime</div>
-              <div class="text-base font-bold text-[#2c3741] mt-1">
-                {% if result.shipping_line %}
-                  {{ result.shipping_line.name }}
+<!-- Zone de résultat (fond blanc #ffffff) -->
+<section class="bg-white py-10 sm:py-12">
+  <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+
+    {% if normalized %}
+      {% if format_warning %}
+        <div class="p-5 rounded-lg bg-[#fdf2f1] border border-[#e74c3c] border-l-4 border-l-[#e74c3c] text-[#b82c1f]" role="alert">
+          <h2 class="font-heading text-base font-extrabold text-[#b82c1f] mb-1">Format de numéro invalide</h2>
+          <p class="text-sm font-semibold">{{ format_warning }}</p>
+        </div>
+      {% elif result %}
+        <!-- Fiche Bordereau Officiel de Statut RAMPE (Direction C) -->
+        <article
+          aria-labelledby="slip-container-heading"
+          class="bg-white rounded-lg shadow-sm overflow-hidden border border-[#dadada] border-t-4
+            {% if result.timing != 'today' %}border-t-[#687077]
+            {% elif result.status == 'confirmed' %}border-t-[#008751]
+            {% elif result.status == 'pending' %}border-t-[#3498db]
+            {% else %}border-t-[#e74c3c]{% endif %}"
+        >
+          <!-- En-tête du bordereau -->
+          <div class="px-6 py-5 bg-[#f4f4f4] border-b border-[#dadada] flex flex-wrap items-center justify-between gap-4">
+            <div>
+              <div class="text-[11px] uppercase tracking-widest text-[#666666] font-heading font-bold">
+                Cap Terminal S.A. · Fiche de Vérification Douanière RAMPE
+              </div>
+              <h2 id="slip-container-heading" class="text-2xl sm:text-3xl font-mono font-extrabold text-[#2c3741] tracking-wider mt-1 mb-0">
+                {{ result.container_number }}
+              </h2>
+            </div>
+
+            <div class="flex flex-wrap items-center gap-3">
+              {% if result.timing == 'upcoming' %}
+                <span class="status-badge status-neutral text-sm px-4 py-1.5">Séance du {{ result.scheduled_date|date:"d/m/Y" }}</span>
+              {% elif result.timing == 'past' %}
+                <span class="status-badge status-neutral text-sm px-4 py-1.5">Non programmé aujourd'hui</span>
+              {% elif result.status == 'confirmed' %}
+                <span class="status-badge status-confirmed text-sm px-4 py-1.5">Confirmé</span>
+              {% elif result.status == 'pending' %}
+                <span class="status-badge status-pending text-sm px-4 py-1.5">En attente</span>
+              {% else %}
+                <span class="status-badge status-unavailable text-sm px-4 py-1.5">Indisponible</span>
+              {% endif %}
+
+              <button
+                type="button"
+                data-print-slip
+                class="no-print px-4 py-1.5 rounded-[25px] border border-[#dadada] bg-white text-[#2c3741] hover:border-[#3498db] hover:text-[#3498db] font-heading text-[11px] font-bold uppercase tracking-wider transition"
+              >
+                Imprimer la fiche
+              </button>
+            </div>
+          </div>
+
+          <div class="p-6 sm:p-8 space-y-6">
+            <!-- Bandeau de décision et consigne client -->
+            {% if result.timing == 'upcoming' %}
+              <div class="p-5 rounded-lg bg-[#f4f4f4] border border-[#687077] text-[#2c3741]">
+                <div class="text-xs font-heading font-extrabold uppercase tracking-wider text-[#2c3741] mb-1">
+                  Programmé pour le {{ result.scheduled_date|date:"d/m/Y" }} — Ne pas se déplacer aujourd'hui
+                </div>
+                <p class="text-sm leading-relaxed mb-0">
+                  Ce conteneur n'est pas programmé pour la séance d'aujourd'hui (<strong>{{ today|date:"d/m/Y" }}</strong>). Il est inscrit pour la séance du <strong>{{ result.scheduled_date|date:"d/m/Y" }}</strong>, avec le statut provisoire « {{ result.get_status_display }} ». Revenez vérifier son statut ce jour-là avant de vous déplacer.
+                </p>
+              </div>
+            {% elif result.timing == 'past' %}
+              <div class="p-5 rounded-lg bg-[#f4f4f4] border border-[#687077] text-[#2c3741]">
+                <div class="text-xs font-heading font-extrabold uppercase tracking-wider text-[#2c3741] mb-1">
+                  Non programmé aujourd'hui — Ne pas se déplacer
+                </div>
+                <p class="text-sm leading-relaxed mb-0">
+                  Ce conteneur ne figure pas sur la programmation d'aujourd'hui (<strong>{{ today|date:"d/m/Y" }}</strong>). Sa dernière séance connue date du <strong>{{ result.scheduled_date|date:"d/m/Y" }}</strong> ; son statut était alors « {{ result.get_status_display }} ». Ce statut n'est plus valable aujourd'hui.
+                </p>
+              </div>
+            {% elif result.status == 'confirmed' %}
+              <div class="p-5 rounded-lg bg-[#eef8f3] border border-[#008751] text-[#006b3f]">
+                <div class="text-xs font-heading font-extrabold uppercase tracking-wider text-[#008751] mb-1">
+                  Déplacement autorisé — Conteneur positionné à la RAMPE
+                </div>
+                <p class="text-sm leading-relaxed mb-0">
+                  Ce conteneur est confirmé et disponible à la RAMPE pour la séance de vérification douanière du <strong>{{ result.scheduled_date|date:"d/m/Y" }}</strong>. Vous pouvez vous présenter au terminal muni de vos documents douaniers.
+                </p>
+              </div>
+            {% elif result.status == 'pending' %}
+              <div class="p-5 rounded-lg bg-[#eef7fd] border border-[#3498db] text-[#1d6fa5]">
+                <div class="text-xs font-heading font-extrabold uppercase tracking-wider text-[#1d6fa5] mb-1">
+                  En attente de confirmation — Ne pas se déplacer dans l'immédiat
+                </div>
+                <p class="text-sm leading-relaxed mb-0">
+                  Ce conteneur est inscrit sur la programmation du <strong>{{ result.scheduled_date|date:"d/m/Y" }}</strong>, mais sa mise à disposition physique à la RAMPE n'est pas encore confirmée par l'exploitation.
+                </p>
+              </div>
+            {% else %}
+              <div class="p-5 rounded-lg bg-[#fdf2f1] border border-[#e74c3c] text-[#b82c1f]">
+                <div class="text-xs font-heading font-extrabold uppercase tracking-wider text-[#b82c1f] mb-1">
+                  Conteneur indisponible pour la séance en cours
+                </div>
+                <p class="text-sm font-semibold leading-relaxed mb-0">
+                  Motif communiqué par l'exploitation : {{ result.full_reason_display }}
+                </p>
+              </div>
+            {% endif %}
+
+            <!-- Grille de métadonnées style bordereau portuaire (<dl>) -->
+            <dl class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 m-0">
+              <div class="p-4 rounded-lg bg-[#f4f4f4] border border-[#dadada]">
+                <dt class="text-[11px] uppercase font-heading font-bold tracking-wider text-[#666666]">
+                  Numéro de conteneur
+                </dt>
+                <dd class="text-base font-mono font-extrabold text-[#2c3741] mt-1 m-0">
+                  {{ result.container_number }}
+                </dd>
+              </div>
+
+              <div class="p-4 rounded-lg bg-[#f4f4f4] border border-[#dadada]">
+                <dt class="text-[11px] uppercase font-heading font-bold tracking-wider text-[#666666]">
+                  Ligne maritime
+                </dt>
+                <dd class="text-base font-bold text-[#2c3741] mt-1 m-0">
+                  {% if result.shipping_line %}
+                    {{ result.shipping_line.name }}
+                  {% else %}
+                    Non spécifiée
+                  {% endif %}
+                </dd>
+              </div>
+
+              <div class="p-4 rounded-lg bg-[#f4f4f4] border border-[#dadada]">
+                <dt class="text-[11px] uppercase font-heading font-bold tracking-wider text-[#666666]">
+                  {% if result.timing == 'past' %}Dernière séance{% else %}Date programmée{% endif %}
+                </dt>
+                <dd class="text-base font-bold text-[#2c3741] mt-1 m-0">
+                  {{ result.scheduled_date|date:"d/m/Y" }}
+                </dd>
+              </div>
+
+              <div class="p-4 rounded-lg bg-[#f4f4f4] border border-[#dadada]">
+                <dt class="text-[11px] uppercase font-heading font-bold tracking-wider text-[#666666]">
+                  Dernière mise à jour
+                </dt>
+                <dd class="text-base font-bold text-[#2c3741] mt-1 m-0">
+                  {{ result.updated_at|date:"d/m/Y à H:i" }}
+                </dd>
+              </div>
+            </dl>
+
+            <!-- Pied du bordereau : suivi espace client & nouvelle recherche -->
+            <div class="no-print pt-5 border-t border-[#dadada] flex flex-wrap items-center justify-between gap-4">
+              <div>
+                {% if user.is_authenticated %}
+                  {% if is_saved %}
+                    <span class="text-xs text-[#008751] font-bold">
+                      Ce conteneur figure déjà dans votre liste « Mes conteneurs suivis ».
+                    </span>
+                  {% else %}
+                    <form action="{% url 'terminal:client_watchlist' %}" method="post" class="inline">
+                      {% csrf_token %}
+                      <input type="hidden" name="container_number" value="{{ result.container_number }}">
+                      <button type="submit" class="btn-ctsa text-xs py-2 px-5">
+                        Enregistrer dans mes conteneurs suivis
+                      </button>
+                    </form>
+                  {% endif %}
                 {% else %}
-                  Non spécifiée
+                  <span class="text-xs text-[#666666]">
+                    Vous souhaitez suivre ce conteneur ?
+                    <a href="{% url 'accounts:login' %}" class="font-bold text-[#3498db] hover:text-[#217dbb] underline ml-1">
+                      Connectez-vous à votre espace client
+                    </a>
+                  </span>
                 {% endif %}
               </div>
-            </div>
 
-            <div class="p-4 rounded bg-[#f4f4f4] border border-gray-200">
-              <div class="text-xs uppercase font-heading font-bold text-[#59626a]">Dernière mise à jour</div>
-              <div class="text-base font-bold text-[#2c3741] mt-1">
-                {{ result.updated_at|date:"d/m/Y à H:i" }}
-              </div>
+              <a href="{% url 'terminal:verification' %}" class="text-xs font-heading font-bold uppercase tracking-wider text-[#2c3741] hover:text-[#3498db] underline">
+                Effacer la recherche
+              </a>
             </div>
           </div>
-
-          {% if user.is_authenticated %}
-            <div class="pt-4 border-t border-gray-200">
-              {% if is_saved %}
-                <span class="text-xs text-[#009e49] font-semibold">Ce conteneur est enregistré dans votre liste de suivi.</span>
-              {% else %}
-                <form action="{% url 'terminal:client_watchlist' %}" method="post" class="inline">
-                  {% csrf_token %}
-                  <input type="hidden" name="container_number" value="{{ result.container_number }}">
-                  <button type="submit" class="btn-ctsa text-xs py-2 px-4">
-                    Enregistrer dans mes conteneurs suivis
-                  </button>
-                </form>
-              {% endif %}
-            </div>
-          {% endif %}
+        </article>
+      {% else %}
+        <!-- État vide structuré lorsque le conteneur n'est pas programmé -->
+        <div class="bg-[#f4f4f4] rounded-lg p-6 sm:p-8 border border-[#dadada] border-t-4 border-t-[#687077]">
+          <h2 class="font-heading text-lg font-extrabold text-[#2c3741] mb-2">
+            Aucune programmation trouvée pour « {{ normalized }} »
+          </h2>
+          <p class="text-sm text-[#666666] leading-relaxed mb-4">
+            Ce conteneur ne figure pas encore sur la liste de vérification douanière RAMPE enregistrée par l'exploitation à la date du <strong>{{ today|date:"d/m/Y" }}</strong>.
+          </p>
+          <div class="bg-white rounded p-4 border border-[#dadada] text-xs text-[#333333] space-y-1.5">
+            <div class="font-heading font-bold uppercase tracking-wider text-[#2c3741]">Vérifications recommandées :</div>
+            <ul class="list-disc pl-5 space-y-1 text-[#666666]">
+              <li>Vérifiez que les 4 lettres et les 7 chiffres correspondent exactement à votre connaissement (Bill of Lading).</li>
+              <li>La programmation quotidienne est publiée et actualisée par les superviseurs de Cap Terminal S.A. au fur et à mesure des opérations.</li>
+            </ul>
+          </div>
+        </div>
+      {% endif %}
+    {% else %}
+      <!-- Rappel des 3 statuts lorsqu'aucune recherche n'a encore été soumise -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="bg-[#f4f4f4] rounded-lg p-5 border border-[#dadada] border-t-4 border-t-[#008751]">
+          <span class="status-badge status-confirmed mb-2">Confirmé</span>
+          <p class="text-xs text-[#666666] leading-relaxed mb-0">
+            Conteneur disponible à la RAMPE. Déplacement au terminal autorisé.
+          </p>
+        </div>
+        <div class="bg-[#f4f4f4] rounded-lg p-5 border border-[#dadada] border-t-4 border-t-[#3498db]">
+          <span class="status-badge status-pending mb-2">En attente</span>
+          <p class="text-xs text-[#666666] leading-relaxed mb-0">
+            Conteneur programmé mais en attente de positionnement à la RAMPE.
+          </p>
+        </div>
+        <div class="bg-[#f4f4f4] rounded-lg p-5 border border-[#dadada] border-t-4 border-t-[#e74c3c]">
+          <span class="status-badge status-unavailable mb-2">Indisponible</span>
+          <p class="text-xs text-[#666666] leading-relaxed mb-0">
+            Non présentable ce jour. Le motif communiqué est indiqué sur la fiche.
+          </p>
         </div>
       </div>
-    {% else %}
-      <div class="mt-8 bg-white rounded-lg shadow-sm p-6 border border-gray-200 border-l-4 border-l-[#2c3741]">
-        <h2 class="font-heading text-lg font-bold text-[#2c3741]">
-          Aucune programmation trouvée pour « {{ normalized }} »
-        </h2>
-        <p class="text-sm text-[#59626a] mt-1">
-          Ce conteneur ne figure pas sur la liste de vérification douanière du jour ({{ today|date:"d/m/Y" }}).
-        </p>
-      </div>
     {% endif %}
-  {% endif %}
-</div>
+
+  </div>
+</section>
 {% endblock %}

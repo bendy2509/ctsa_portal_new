@@ -4,51 +4,53 @@
 
 {% block content %}
 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
-  <div class="bg-white rounded-lg shadow-sm p-5 sm:p-6 border border-gray-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+
+  <!-- En-tête de page sobre avec bouton d'ouverture du formulaire de création -->
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-5 border-b border-[#dadada]">
     <div>
-      <div class="text-xs font-heading uppercase tracking-wider text-[#3498db] font-bold">
+      <div class="text-xs font-heading uppercase tracking-widest text-[#3498db] font-bold">
         Administration des accès
       </div>
-      <h1 class="font-heading text-xl sm:text-2xl font-extrabold text-[#2c3741] mt-0.5">
+      <h1 class="font-heading text-2xl sm:text-3xl font-extrabold text-[#2c3741] mt-1 mb-1">
         Utilisateurs et rôles
       </h1>
-      <p class="text-xs text-[#59626a] mt-1">
-        Gérez les accès des administrateurs, des superviseurs du soir et du matin, ainsi que des clients.
+      <p class="text-sm text-[#666666] m-0">
+        Gérez les comptes des administrateurs, des superviseurs du soir et du matin, ainsi que des clients.
       </p>
     </div>
 
     <button type="button"
             id="toggle-create-user-btn"
-            aria-expanded="false"
+            aria-expanded="{% if create_form.errors %}true{% else %}false{% endif %}"
             aria-controls="create-user-panel"
-            class="btn-ctsa btn-ctsa-filled text-xs py-2.5 px-5">
-      Nouvel utilisateur
+            class="btn-admin btn-admin-primary px-5 min-h-[42px]">
+      Créer un compte utilisateur
     </button>
   </div>
 
-  <!-- Panneau de création d'utilisateur (dépliable pour garder la page épurée) -->
-  <div id="create-user-panel" {% if not create_form.errors %}hidden{% endif %} class="bg-white rounded-lg shadow-sm p-6 border border-gray-200 border-t-4 border-t-[#3498db]">
-    <h2 id="user-create-title" class="font-heading text-base font-bold text-[#2c3741] mb-4">
-      Créer un nouveau compte utilisateur
+  <!-- Panneau dépliable de création d'utilisateur -->
+  <section id="create-user-panel" {% if not create_form.errors %}hidden{% endif %} aria-labelledby="user-create-title" class="bg-white rounded-lg p-6 border border-[#dadada] border-t-4 border-t-[#3498db] shadow-sm">
+    <h2 id="user-create-title" class="font-heading text-sm font-extrabold uppercase tracking-wider text-[#2c3741] mb-4">
+      Nouveau compte utilisateur
     </h2>
     <form action="{% url 'accounts:user_list' %}" method="post" aria-labelledby="user-create-title">
       {% csrf_token %}
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div class="form-field mb-0">
-          <label for="u-username">Identifiant de connexion</label>
+          <label for="u-username">1. Identifiant de connexion</label>
           <input type="text" id="u-username" name="username" required autocorrect="off" autocapitalize="none" spellcheck="false" placeholder="Ex. jdupont" class="form-control">
           {% if create_form.username.errors %}
-            <p class="text-xs text-[#c62828] font-bold">{{ create_form.username.errors.0 }}</p>
+            <p class="text-xs text-[#e74c3c] font-bold">{{ create_form.username.errors.0 }}</p>
           {% endif %}
         </div>
 
         <div class="form-field mb-0">
-          <label for="u-fullname">Nom complet</label>
+          <label for="u-fullname">2. Nom complet</label>
           <input type="text" id="u-fullname" name="full_name" required placeholder="Nom et prénom" class="form-control">
         </div>
 
         <div class="form-field mb-0">
-          <label for="u-role">Rôle attribué</label>
+          <label for="u-role">3. Rôle attribué</label>
           <select id="u-role" name="role" required class="form-control">
             {% for val, label in role_choices %}
               <option value="{{ val }}">{{ label }}</option>
@@ -57,7 +59,7 @@
         </div>
 
         <div class="form-field mb-0">
-          <label for="u-password">Mot de passe initial (min. 8 caractères)</label>
+          <label for="u-password">4. Mot de passe initial (min. 8 car.)</label>
           <input type="password" id="u-password" name="password" required minlength="8" autocomplete="new-password" class="form-control">
         </div>
 
@@ -76,110 +78,118 @@
           <input type="tel" id="u-phone" name="phone" placeholder="+509 ..." class="form-control">
         </div>
 
-        <div class="flex items-end gap-3">
+        <div class="flex items-end">
           <input type="hidden" name="is_active" value="on">
-          <button type="submit" class="btn-ctsa btn-ctsa-filled w-full">
+          <button type="submit" class="btn-admin btn-admin-primary w-full min-h-[46px]">
             Enregistrer le compte
           </button>
         </div>
       </div>
     </form>
-  </div>
+  </section>
 
-  <!-- Filtres rapides par rôle et recherche -->
-  <div class="bg-white rounded-lg shadow-sm p-4 sm:p-5 border border-gray-200 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-    <div class="flex flex-wrap items-center gap-2">
-      <a href="{% url 'accounts:user_list' %}"
-         class="px-3.5 py-2 rounded text-xs font-heading font-bold uppercase tracking-wider transition {% if not role_filter %}bg-[#2c3741] text-white{% else %}bg-[#f4f4f4] text-[#2c3741] hover:bg-gray-200{% endif %}">
-        Tous les rôles
-      </a>
-      {% for val, label in role_choices %}
-        <a href="{% url 'accounts:user_list' %}?role={{ val }}"
-           class="px-3.5 py-2 rounded text-xs font-heading font-bold uppercase tracking-wider transition {% if role_filter == val %}bg-[#3498db] text-white{% else %}bg-[#f4f4f4] text-[#2c3741] hover:bg-gray-200{% endif %}">
-          {{ label }}
+  <!-- Cadre principal unifié : Onglets de rôle + Recherche + Tableau des utilisateurs -->
+  <section aria-labelledby="users-table-caption" class="bg-white rounded-lg border border-[#dadada] shadow-sm overflow-hidden">
+
+    <!-- Barre d'onglets par rôle et recherche -->
+    <div class="bg-[#f4f4f4] border-b border-[#dadada] px-4 sm:px-5 pt-3 flex flex-col xl:flex-row xl:items-end xl:justify-between gap-3">
+      <nav aria-label="Filtrer par rôle" class="flex flex-wrap items-center gap-1 -mb-px">
+        <a href="{% url 'accounts:user_list' %}"
+           class="px-3.5 py-2.5 rounded-t-md border text-xs font-heading font-bold uppercase tracking-wider transition
+             {% if not role_filter %}bg-white border-[#dadada] border-b-white text-[#2c3741]{% else %}bg-transparent border-transparent text-[#666666] hover:text-[#2c3741]{% endif %}">
+          Tous les rôles
         </a>
-      {% endfor %}
+        {% for val, label in role_choices %}
+          <a href="{% url 'accounts:user_list' %}?role={{ val }}"
+             class="px-3.5 py-2.5 rounded-t-md border text-xs font-heading font-bold uppercase tracking-wider transition
+               {% if role_filter == val %}bg-white border-[#dadada] border-b-white text-[#3498db]{% else %}bg-transparent border-transparent text-[#666666] hover:text-[#2c3741]{% endif %}">
+            {{ label }}
+          </a>
+        {% endfor %}
+      </nav>
+
+      <div class="pb-2.5">
+        <search>
+          <form action="{% url 'accounts:user_list' %}" method="get" class="flex items-center gap-2">
+            {% if role_filter %}<input type="hidden" name="role" value="{{ role_filter }}">{% endif %}
+            <label for="user-q" class="visually-hidden">Rechercher un utilisateur</label>
+            <input type="search" id="user-q" name="q" value="{{ q }}" placeholder="Nom, identifiant, entreprise..." class="border border-[#dadada] rounded-md px-3 py-1.5 min-h-[36px] text-xs bg-white min-w-[210px]">
+            <button type="submit" class="btn-admin btn-admin-primary py-1.5 px-3.5 min-h-[36px]">
+              Filtrer
+            </button>
+          </form>
+        </search>
+      </div>
     </div>
 
-    <search>
-      <form action="{% url 'accounts:user_list' %}" method="get" class="flex items-center gap-2">
-        {% if role_filter %}<input type="hidden" name="role" value="{{ role_filter }}">{% endif %}
-        <label for="user-q" class="visually-hidden">Rechercher un utilisateur</label>
-        <input type="search" id="user-q" name="q" value="{{ q }}" placeholder="Nom, identifiant, entreprise..." class="border border-gray-300 rounded px-3 py-2 text-xs bg-white min-w-[220px]">
-        <button type="submit" class="px-4 py-2 rounded bg-[#2c3741] text-white text-xs font-heading font-bold uppercase hover:bg-[#222b33] transition">
-          Filtrer
-        </button>
-      </form>
-    </search>
-  </div>
-
-  <!-- Tableau des utilisateurs -->
-  <div tabindex="0" role="region" aria-labelledby="users-table-caption" class="table-wrapper shadow-sm">
-    <table class="ctsa-table" style="--label-2: 'Nom complet'; --label-3: 'Rôle'; --label-4: 'Service / Entreprise'; --label-5: 'Coordonnées'; --label-6: 'État'; --label-7: 'Actions';">
-      <caption id="users-table-caption" class="visually-hidden">
-        Comptes utilisateurs enregistrés ({{ users|length }})
-      </caption>
-      <thead>
-        <tr>
-          <th scope="col">Identifiant</th>
-          <th scope="col">Nom complet</th>
-          <th scope="col">Rôle</th>
-          <th scope="col">Service / Entreprise</th>
-          <th scope="col">Coordonnées</th>
-          <th scope="col">État</th>
-          <th scope="col">Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for u in users %}
+    <!-- Tableau des utilisateurs -->
+    <div tabindex="0" role="region" aria-labelledby="users-table-caption" class="table-wrapper border-0 rounded-none">
+      <table class="ctsa-table" style="--label-2: 'Nom complet'; --label-3: 'Rôle'; --label-4: 'Service / Entreprise'; --label-5: 'Coordonnées'; --label-6: 'État'; --label-7: 'Actions';">
+        <caption id="users-table-caption" class="visually-hidden">
+          Comptes utilisateurs enregistrés ({{ users|length }})
+        </caption>
+        <thead>
           <tr>
-            <th scope="row">{{ u.username }}</th>
-            <td class="font-semibold text-[#2c3741]">{{ u.display_name }}</td>
-            <td>
-              <span class="px-2.5 py-1 rounded text-xs font-bold
-                {% if u.role == 'admin' %}bg-[#2c3741] text-white
-                {% elif u.role == 'evening_supervisor' %}bg-blue-100 text-[#1e3a8a]
-                {% elif u.role == 'morning_supervisor' %}bg-amber-100 text-[#92400e]
-                {% else %}bg-gray-100 text-gray-700{% endif %}">
-                {{ u.get_role_display }}
-              </span>
-            </td>
-            <td class="text-sm text-[#59626a]">{{ u.company_name|default:"—" }}</td>
-            <td class="text-xs text-[#59626a]">
-              <div>{{ u.email|default:"—" }}</div>
-              {% if u.phone %}<div>{{ u.phone }}</div>{% endif %}
-            </td>
-            <td>
-              {% if u.is_active %}
-                <span class="text-xs font-bold text-[#009e49]">Actif</span>
-              {% else %}
-                <span class="text-xs font-bold text-[#e74c3c]">Désactivé</span>
-              {% endif %}
-            </td>
-            <td>
-              <div class="flex items-center gap-3">
-                <a href="{% url 'accounts:user_edit' u.pk %}" class="px-3 py-1 rounded border border-gray-300 text-xs font-bold text-[#2c3741] hover:border-[#3498db] hover:text-[#3498db] transition">
-                  Modifier
-                </a>
-                {% if u.pk != user.pk %}
-                  <form action="{% url 'accounts:user_delete' u.pk %}" method="post" class="inline">
-                    {% csrf_token %}
-                    <button type="submit" class="px-2.5 py-1 rounded text-xs font-bold text-[#e74c3c] hover:bg-red-50 transition">
-                      Supprimer
-                    </button>
-                  </form>
+            <th scope="col">Identifiant</th>
+            <th scope="col">Nom complet</th>
+            <th scope="col">Rôle</th>
+            <th scope="col">Service / Entreprise</th>
+            <th scope="col">Coordonnées</th>
+            <th scope="col">État</th>
+            <th scope="col" class="text-right">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for u in users %}
+            <tr>
+              <th scope="row">{{ u.username }}</th>
+              <td class="font-semibold text-[#2c3741]">{{ u.display_name }}</td>
+              <td>
+                <span class="inline-flex items-center px-2.5 py-1 rounded text-xs font-heading font-bold uppercase tracking-wider
+                  {% if u.role == 'admin' %}bg-[#2c3741] text-white
+                  {% elif u.role == 'evening_supervisor' or u.role == 'morning_supervisor' %}bg-[#eef7fd] text-[#1d6fa5] border border-[#93c9ed]
+                  {% else %}bg-[#f4f4f4] text-[#333333] border border-[#dadada]{% endif %}">
+                  {{ u.get_role_display }}
+                </span>
+              </td>
+              <td class="text-sm text-[#666666]">{{ u.company_name|default:"—" }}</td>
+              <td class="text-xs text-[#666666]">
+                <div>{{ u.email|default:"—" }}</div>
+                {% if u.phone %}<div>{{ u.phone }}</div>{% endif %}
+              </td>
+              <td>
+                {% if u.is_active %}
+                  <span class="text-xs font-bold text-[#008751]">Actif</span>
+                {% else %}
+                  <span class="text-xs font-bold text-[#e74c3c]">Désactivé</span>
                 {% endif %}
-              </div>
-            </td>
-          </tr>
-        {% empty %}
-          <tr>
-            <th scope="row">—</th>
-            <td colspan="6" class="text-center py-8 text-[#59626a]">Aucun utilisateur trouvé.</td>
-          </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
+              </td>
+              <td class="text-right">
+                <div class="inline-flex items-center gap-2">
+                  <a href="{% url 'accounts:user_edit' u.pk %}" class="btn-admin py-1.5 px-3 min-h-[34px]">
+                    Modifier
+                  </a>
+                  {% if u.pk != user.pk %}
+                    <form action="{% url 'accounts:user_delete' u.pk %}" method="post" class="inline">
+                      {% csrf_token %}
+                      <button type="submit" class="text-xs font-bold text-[#666666] hover:text-[#e74c3c] px-2.5 py-1.5 rounded hover:bg-[#fdf2f1] transition">
+                        Supprimer
+                      </button>
+                    </form>
+                  {% endif %}
+                </div>
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <th scope="row">—</th>
+              <td colspan="6" class="text-center py-8 text-[#666666]">Aucun utilisateur trouvé.</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
 </div>
 {% endblock %}
