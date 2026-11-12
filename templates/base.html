@@ -44,12 +44,12 @@
     <!-- Barre utilitaire supérieure (.utility-menu de capterminal.com) -->
     <div class="border-b border-white/10">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2.5 flex flex-wrap items-center justify-between gap-3">
-        <div class="flex flex-wrap items-center gap-4 font-heading tracking-wider uppercase text-[11px] font-bold text-white/90">
-          <span>Port of Cap Haitien</span>
+        <div class="flex flex-wrap items-center gap-4 font-heading tracking-wider uppercase text-xs font-bold text-white/90">
+          <span class="hidden sm:inline">Port du Cap-Haïtien</span>
           <span class="hidden sm:inline text-white/30">·</span>
-          <span class="hidden sm:inline">info@capterminal.com</span>
+          <a href="mailto:info@capterminal.com" class="hidden sm:inline normal-case hover:text-white underline-offset-2 hover:underline">info@capterminal.com</a>
           <span class="hidden md:inline text-white/30">·</span>
-          <span class="hidden md:inline">305-635-0938</span>
+          <a href="tel:+13056350938" class="hidden md:inline hover:text-white underline-offset-2 hover:underline">305-635-0938</a>
         </div>
 
         <div class="flex flex-wrap items-center justify-end gap-2.5 ml-auto min-w-0">
@@ -58,23 +58,23 @@
               {{ user.display_name }} <span class="text-[#3498db] font-semibold">({{ user.get_role_display }})</span>
             </span>
             <a href="{% url 'accounts:profile' %}"
-               class="px-4 py-1.5 rounded-[25px] border-2 border-[#3498db] text-[#3498db] hover:bg-[#3498db] hover:text-white transition font-heading uppercase text-[10px] font-bold tracking-wider">
+               class="px-4 py-1.5 rounded-[25px] border-2 border-[#3498db] text-[#3498db] hover:bg-[#3498db] hover:text-white transition font-heading uppercase text-xs font-bold tracking-wider">
               Mon profil
             </a>
             <form action="{% url 'accounts:logout' %}" method="post" class="inline">
               {% csrf_token %}
               <button type="submit"
-                      class="px-4 py-1.5 rounded-[25px] bg-[#3498db] border-2 border-[#3498db] text-white hover:bg-[#217dbb] hover:border-[#217dbb] transition font-heading uppercase text-[10px] font-bold tracking-wider">
+                      class="px-4 py-1.5 rounded-[25px] bg-[#3498db] border-2 border-[#3498db] text-white hover:bg-[#217dbb] hover:border-[#217dbb] transition font-heading uppercase text-xs font-bold tracking-wider">
                 Déconnexion
               </button>
             </form>
           {% else %}
             <a href="{% url 'accounts:login' %}"
-               class="px-4 py-1.5 rounded-[25px] border-2 border-[#3498db] text-[#3498db] hover:bg-[#3498db] hover:text-white transition font-heading uppercase text-[10px] font-bold tracking-wider">
+               class="px-4 py-1.5 rounded-[25px] border-2 border-[#3498db] text-[#3498db] hover:bg-[#3498db] hover:text-white transition font-heading uppercase text-xs font-bold tracking-wider">
               Connexion
             </a>
             <a href="{% url 'accounts:register' %}"
-               class="px-4 py-1.5 rounded-[25px] bg-[#3498db] border-2 border-[#3498db] text-white hover:bg-[#217dbb] hover:border-[#217dbb] transition font-heading uppercase text-[10px] font-bold tracking-wider">
+               class="px-4 py-1.5 rounded-[25px] bg-[#3498db] border-2 border-[#3498db] text-white hover:bg-[#217dbb] hover:border-[#217dbb] transition font-heading uppercase text-xs font-bold tracking-wider">
               Inscription
             </a>
           {% endif %}
@@ -96,7 +96,7 @@
           </div>
           <div class="hidden sm:block border-l border-white/15 pl-3.5">
             <div class="font-heading font-bold text-xs uppercase tracking-widest text-white">Portail RAMPE</div>
-            <div class="text-[11px] text-white/70">Vérification douanière des conteneurs</div>
+            <div class="text-xs text-white/70">Vérification douanière des conteneurs</div>
           </div>
         </a>
 
@@ -105,7 +105,7 @@
                 id="mobile-menu-toggle"
                 aria-expanded="false"
                 aria-controls="primary-nav-links"
-                class="md:hidden inline-flex items-center justify-center px-4 py-2 rounded-[25px] border-2 border-[#3498db] text-[11px] font-heading font-bold uppercase tracking-wider text-white hover:bg-[#3498db]">
+                class="md:hidden inline-flex items-center justify-center px-4 py-2 rounded-[25px] border-2 border-[#3498db] text-xs font-heading font-bold uppercase tracking-wider text-white hover:bg-[#3498db]">
           Menu
         </button>
 
@@ -113,25 +113,25 @@
         <nav aria-label="Navigation principale" class="hidden md:flex items-center gap-6">
           <a href="{% url 'terminal:home' %}"
              {% if request.resolver_match.url_name == 'home' %}aria-current="page"{% endif %}
-             class="py-2 font-heading text-[11px] font-bold uppercase tracking-widest transition border-b-2 {% if request.resolver_match.url_name == 'home' %}border-[#3498db] text-white{% else %}border-transparent text-white/85 hover:text-white{% endif %}">
+             class="py-2 font-heading text-[13px] font-bold uppercase tracking-wider transition border-b-2 {% if request.resolver_match.url_name == 'home' %}border-[#3498db] text-white{% else %}border-transparent text-white/85 hover:text-white{% endif %}">
             Accueil
           </a>
           <a href="{% url 'terminal:verification' %}"
              {% if request.resolver_match.url_name == 'verification' %}aria-current="page"{% endif %}
-             class="py-2 font-heading text-[11px] font-bold uppercase tracking-widest transition border-b-2 {% if request.resolver_match.url_name == 'verification' %}border-[#3498db] text-white{% else %}border-transparent text-white/85 hover:text-white{% endif %}">
+             class="py-2 font-heading text-[13px] font-bold uppercase tracking-wider transition border-b-2 {% if request.resolver_match.url_name == 'verification' %}border-[#3498db] text-white{% else %}border-transparent text-white/85 hover:text-white{% endif %}">
             Vérifier un conteneur
           </a>
           {% if user.is_authenticated %}
             <a href="{% url 'terminal:client_watchlist' %}"
                {% if request.resolver_match.url_name == 'client_watchlist' %}aria-current="page"{% endif %}
-               class="py-2 font-heading text-[11px] font-bold uppercase tracking-widest transition border-b-2 {% if request.resolver_match.url_name == 'client_watchlist' %}border-[#3498db] text-white{% else %}border-transparent text-white/85 hover:text-white{% endif %}">
+               class="py-2 font-heading text-[13px] font-bold uppercase tracking-wider transition border-b-2 {% if request.resolver_match.url_name == 'client_watchlist' %}border-[#3498db] text-white{% else %}border-transparent text-white/85 hover:text-white{% endif %}">
               Mes conteneurs
             </a>
           {% endif %}
           {% if user.is_authenticated and user.is_staff_member %}
             <a href="{% url 'terminal:dashboard' %}"
                {% if request.resolver_match.url_name == 'dashboard' %}aria-current="page"{% endif %}
-               class="px-5 py-2 rounded-[25px] bg-[#3498db] text-white font-heading text-[11px] font-bold uppercase tracking-wider hover:bg-[#217dbb] transition">
+               class="px-5 py-2 rounded-[25px] bg-[#3498db] text-white font-heading text-xs font-bold uppercase tracking-wider hover:bg-[#217dbb] transition">
               Exploitation RAMPE
             </a>
           {% endif %}
@@ -183,10 +183,10 @@
         <h2 class="font-heading text-white text-base font-bold mb-3">Contact</h2>
         <p class="text-white/90 text-sm leading-relaxed">
           Cap Terminal S.A.<br>
-          Port of Cap Haitien — Cap-Haïtien, Département du Nord, Haïti<br>
-          Phone : 305-635-0938 xt 3003<br>
-          USA Phone : 305-365-0938 xt 3001<br>
-          info@capterminal.com
+          Port du Cap-Haïtien, Département du Nord, Haïti<br>
+          Téléphone : <a href="tel:+13056350938" class="underline underline-offset-2 hover:text-white">305-635-0938</a>, poste 3003<br>
+          Téléphone États-Unis : <a href="tel:+13053650938" class="underline underline-offset-2 hover:text-white">305-365-0938</a>, poste 3001<br>
+          <a href="mailto:info@capterminal.com" class="underline underline-offset-2 hover:text-white">info@capterminal.com</a>
         </p>
       </div>
     </div>

@@ -285,6 +285,58 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  // 8 quinquies. Actualisation automatique des pages de suivi (fiche publique, « Mes conteneurs »).
+  // La zone porte data-refresh-url et data-refresh-signature : on interroge l'empreinte toutes
+  // les minutes et on recharge la page seulement si elle a changé.
+  document.querySelectorAll('[data-refresh-url]').forEach((zone) => {
+    const REFRESH_EVERY_MS = 60 * 1000;
+    const STOP_AFTER_MS = 2 * 60 * 60 * 1000;
+    const url = zone.dataset.refreshUrl;
+    const knownSignature = zone.dataset.refreshSignature;
+    const stamp = zone.querySelector('[data-refresh-time]');
+    const status = zone.querySelector('[data-refresh-status]');
+    const startedAt = Date.now();
+    let timer = null;
+    let busy = false;
+
+    const userIsTyping = () => {
+      const el = document.activeElement;
+      return !!el && el.matches('input, textarea, select') && !!el.value;
+    };
+
+    const check = async () => {
+      if (busy || document.hidden) return;
+      if (Date.now() - startedAt > STOP_AFTER_MS) {
+        clearInterval(timer);
+        if (status) status.textContent = 'Actualisation automatique en pause : rechargez la page pour la relancer.';
+        return;
+      }
+      busy = true;
+      try {
+        const response = await fetch(url, { headers: { Accept: 'application/json' }, credentials: 'same-origin' });
+        if (!response.ok) return;
+        const data = await response.json();
+        if (data.signature && data.signature !== knownSignature) {
+          // On ne recharge pas sous les doigts de quelqu'un qui saisit un numéro.
+          if (!userIsTyping() && !document.querySelector('dialog[open]')) window.location.reload();
+          return;
+        }
+        if (stamp) {
+          stamp.textContent = new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+        }
+      } catch (err) {
+        // Réseau indisponible : on réessaiera au prochain passage.
+      } finally {
+        busy = false;
+      }
+    };
+
+    timer = setInterval(check, REFRESH_EVERY_MS);
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden) check();
+    });
+  });
+
   // 9. Panneau dépliable "Nouvel utilisateur"
   const createUserBtn = document.getElementById('toggle-create-user-btn');
   const createUserPanel = document.getElementById('create-user-panel');

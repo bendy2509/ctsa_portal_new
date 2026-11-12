@@ -10,7 +10,7 @@
     <!-- En-tête centré -->
     <div class="text-center max-w-3xl mx-auto mb-8">
       <div class="text-xs font-heading uppercase tracking-widest text-[#3498db] font-bold mb-2">
-        Port du Cap-Haïtien — Exploitation Douanière RAMPE
+        Port du Cap-Haïtien — Vérification douanière RAMPE
       </div>
       <h1 class="font-heading text-3xl sm:text-4xl font-extrabold text-[#2c3741] leading-tight mb-3">
         Vérifiez la disponibilité de votre conteneur à la RAMPE
@@ -30,7 +30,7 @@
                 Numéro du conteneur <span aria-hidden="true" class="text-[#e74c3c]">*</span>
               </label>
               <span id="home-format-hint" class="text-xs text-[#666666] font-semibold">
-                Format connaissement : 4 lettres suivies de 7 chiffres
+                4 lettres suivies de 7 chiffres, comme sur votre connaissement
               </span>
             </div>
 
@@ -46,7 +46,7 @@
                   autocapitalize="characters"
                   spellcheck="false"
                   enterkeyhint="search"
-                  placeholder="4 lettres et 7 chiffres"
+                  placeholder="ex. CMAU4052450"
                   aria-describedby="home-format-hint"
                   data-error="home-q-error"
                   class="form-control font-mono text-lg uppercase tracking-wider"
@@ -66,13 +66,13 @@
       </search>
 
       <div class="mt-5 pt-4 border-t border-[#dadada] flex flex-wrap items-center justify-between gap-3 text-xs text-[#666666]">
-        <span>Mise à jour quotidienne par l'exploitation de Cap Terminal S.A.</span>
+        <span>Liste mise à jour chaque jour par Cap Terminal S.A.</span>
         {% if user.is_authenticated %}
           <a href="{% url 'terminal:client_watchlist' %}" class="font-heading font-bold uppercase tracking-wider text-[#3498db] hover:text-[#217dbb] underline">
             Accéder à mes conteneurs suivis
           </a>
         {% else %}
-          <a href="{% url 'accounts:login' %}" class="font-heading font-bold uppercase tracking-wider text-[#3498db] hover:text-[#217dbb] underline">
+          <a href="{% url 'accounts:login' %}?next={% url 'terminal:client_watchlist' %}" class="font-heading font-bold uppercase tracking-wider text-[#3498db] hover:text-[#217dbb] underline">
             Espace client : suivre plusieurs conteneurs
           </a>
         {% endif %}
@@ -87,7 +87,7 @@
         </span>
         <div>
           <h2 class="font-heading text-sm font-extrabold text-[#2c3741] mb-1">Saisir le numéro</h2>
-          <p class="text-xs text-[#666666] leading-relaxed">
+          <p class="text-sm text-[#666666] leading-relaxed">
             Reportez les 4 lettres et 7 chiffres inscrits sur votre connaissement maritime (Bill of Lading).
           </p>
         </div>
@@ -98,8 +98,8 @@
           02
         </span>
         <div>
-          <h2 class="font-heading text-sm font-extrabold text-[#2c3741] mb-1">Consulter le bordereau</h2>
-          <p class="text-xs text-[#666666] leading-relaxed">
+          <h2 class="font-heading text-sm font-extrabold text-[#2c3741] mb-1">Consulter la fiche</h2>
+          <p class="text-sm text-[#666666] leading-relaxed">
             Visualisez instantanément le statut du jour, la ligne maritime associée et l'heure de mise à jour.
           </p>
         </div>
@@ -111,7 +111,7 @@
         </span>
         <div>
           <h2 class="font-heading text-sm font-extrabold text-[#2c3741] mb-1">Se présenter à la RAMPE</h2>
-          <p class="text-xs text-[#666666] leading-relaxed">
+          <p class="text-sm text-[#666666] leading-relaxed">
             Déplacez-vous au terminal uniquement lorsque votre conteneur affiche le statut Confirmé.
           </p>
         </div>
@@ -142,7 +142,7 @@
         <div>
           <div class="flex items-center justify-between gap-2 mb-4">
             <span class="status-badge status-confirmed">Confirmé</span>
-            <span class="text-[11px] font-heading font-bold uppercase tracking-wider text-[#008751]">
+            <span class="text-xs font-heading font-bold uppercase tracking-wider text-[#008751]">
               Déplacement autorisé
             </span>
           </div>
@@ -150,21 +150,21 @@
             Conteneur positionné à la RAMPE
           </h3>
           <p class="text-sm text-[#666666] leading-relaxed mb-4">
-            Le conteneur est physiquement disponible et validé par l'exploitation pour la séance de vérification douanière du jour.
+            Le conteneur est physiquement disponible et validé par le terminal pour la séance de vérification douanière du jour.
           </p>
         </div>
-        <div class="bg-white rounded p-3.5 border border-[#dadada] text-xs text-[#333333]">
+        <div class="bg-white rounded p-3.5 border border-[#dadada] text-sm text-[#333333]">
           <strong class="block font-heading uppercase tracking-wider text-[#2c3741] mb-0.5">Consigne client :</strong>
           Le client ou son commissionnaire en douane peut se présenter au terminal muni de ses documents.
         </div>
       </article>
 
       <!-- Carte 2 : En attente (#3498db) -->
-      <article class="bg-[#f4f4f4] rounded-lg p-6 border border-[#dadada] border-t-4 border-t-[#3498db] flex flex-col justify-between">
+      <article class="bg-[#f4f4f4] rounded-lg p-6 border border-[#dadada] border-t-4 border-t-[#b26a00] flex flex-col justify-between">
         <div>
           <div class="flex items-center justify-between gap-2 mb-4">
             <span class="status-badge status-pending">En attente</span>
-            <span class="text-[11px] font-heading font-bold uppercase tracking-wider text-[#3498db]">
+            <span class="text-xs font-heading font-bold uppercase tracking-wider text-[#8a5300]">
               Mise en place en cours
             </span>
           </div>
@@ -175,9 +175,9 @@
             Le conteneur figure sur la programmation quotidienne, mais son positionnement final à la RAMPE n'est pas encore confirmé.
           </p>
         </div>
-        <div class="bg-white rounded p-3.5 border border-[#dadada] text-xs text-[#333333]">
+        <div class="bg-white rounded p-3.5 border border-[#dadada] text-sm text-[#333333]">
           <strong class="block font-heading uppercase tracking-wider text-[#2c3741] mb-0.5">Consigne client :</strong>
-          Patientez avant de vous déplacer et vérifiez à nouveau le statut sur ce portail.
+          Patientez avant de vous déplacer : la fiche de votre conteneur se met à jour toute seule.
         </div>
       </article>
 
@@ -186,7 +186,7 @@
         <div>
           <div class="flex items-center justify-between gap-2 mb-4">
             <span class="status-badge status-unavailable">Indisponible</span>
-            <span class="text-[11px] font-heading font-bold uppercase tracking-wider text-[#e74c3c]">
+            <span class="text-xs font-heading font-bold uppercase tracking-wider text-[#e74c3c]">
               Ne pas se déplacer
             </span>
           </div>
@@ -197,7 +197,7 @@
             Le conteneur ne peut pas être présenté à la vérification douanière pour la séance en cours. Le motif exact est précisé sur sa fiche.
           </p>
         </div>
-        <div class="bg-white rounded p-3.5 border border-[#dadada] text-xs text-[#333333]">
+        <div class="bg-white rounded p-3.5 border border-[#dadada] text-sm text-[#333333]">
           <strong class="block font-heading uppercase tracking-wider text-[#2c3741] mb-0.5">Consigne client :</strong>
           Consultez le motif affiché lors de la recherche et rapprochez-vous de votre transitaire.
         </div>

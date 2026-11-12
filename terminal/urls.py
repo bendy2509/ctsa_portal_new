@@ -7,7 +7,9 @@ urlpatterns = [
     # Partie publique
     path('', views.home_view, name='home'),
     path('verification/', views.verification_view, name='verification'),
+    path('verification/etat/', views.verification_state_view, name='verification_state'),
     path('mes-conteneurs/', views.client_watchlist_view, name='client_watchlist'),
+    path('mes-conteneurs/etat/', views.client_watchlist_state_view, name='client_watchlist_state'),
     path('mes-conteneurs/<int:pk>/retirer/', views.client_watchlist_remove_view, name='client_watchlist_remove'),
 
     # Partie interne (/admin)

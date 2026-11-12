@@ -282,6 +282,43 @@ class VerificationTrackingTests(TestCase):
         page = self.client.get(reverse('terminal:carryover'))
         self.assertContains(page, 'data-confirm-title="Rejeter la sélection ?"')
 
+    def test_state_signature_changes_with_status_and_reveals_nothing(self):
+        url = reverse('terminal:verification_state')
+        unknown = self.client.get(url, {'q': 'ZZZU9999999'}).json()['signature']
+        self.assertEqual(len(unknown), 20)
+        self.assertEqual(self.client.get(url, {'q': 'pas-un-numero'}).json()['signature'], '')
+
+        c = self.make('CMAU0000001', self.today, Container.Status.PENDING)
+        first = self.client.get(url, {'q': 'cmau-0000001'}).json()['signature']
+        self.assertEqual(len(first), 20)
+        self.assertNotIn('CMAU', first)
+        self.assertEqual(first, self.client.get(url, {'q': 'CMAU0000001'}).json()['signature'])
+
+        page = self.client.get(reverse('terminal:verification'), {'q': 'CMAU0000001'})
+        self.assertContains(page, f'data-refresh-signature="{first}"')
+
+        c.status = Container.Status.CONFIRMED
+        c.save(acting_user=self.admin)
+        second = self.client.get(url, {'q': 'CMAU0000001'}).json()['signature']
+        self.assertNotEqual(first, second)
+
+        # Une fois vérifié, la fiche ne change plus : plus d'actualisation automatique.
+        c.set_verification('verified', acting_user=self.admin)
+        page = self.client.get(reverse('terminal:verification'), {'q': 'CMAU0000001'})
+        self.assertNotContains(page, 'data-refresh-url')
+
+    def test_watchlist_state_is_private_and_follows_saved_containers(self):
+        url = reverse('terminal:client_watchlist_state')
+        self.assertEqual(self.client.get(url).status_code, 302)
+        self.login('cli')
+        self.client.post(reverse('terminal:client_watchlist'), {'container_number': 'CMAU0000001'})
+        before = self.client.get(url).json()['signature']
+        self.assertContains(
+            self.client.get(reverse('terminal:client_watchlist')), f'data-refresh-signature="{before}"'
+        )
+        self.make('CMAU0000001', self.today)
+        self.assertNotEqual(before, self.client.get(url).json()['signature'])
+
     def test_public_page_shows_verified(self):
         c = self.make('CMAU0000001', self.today)
         c.set_verification('verified', acting_user=self.admin)

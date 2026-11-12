@@ -22,8 +22,12 @@
   --ctsa-green-bg: #eef8f3;
   --ctsa-red: #e74c3c;
   --ctsa-red-bg: #fdf2f1;
-  --ctsa-pending: #3498db;
-  --ctsa-pending-bg: #eef7fd;
+  /* « En attente » : ambre, pour ne pas le confondre avec le bleu des boutons et des liens */
+  --ctsa-pending: #b26a00;
+  --ctsa-pending-text: #8a5300;
+  --ctsa-pending-bg: #fff6e0;
+  --ctsa-pending-border: #f0c36d;
+  --ctsa-info-bg: #eef7fd;
   --ctsa-bg-alt: #f4f4f4;
   --ctsa-surface: #ffffff;
   --ctsa-text: #333333;
@@ -224,7 +228,7 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .status-seg-btn.is-pending {
-  background-color: var(--ctsa-blue);
+  background-color: var(--ctsa-pending);
   color: #ffffff;
   cursor: default;
 }
@@ -324,8 +328,8 @@ input.form-control:user-valid {
 
 .status-pending {
   background-color: var(--ctsa-pending-bg);
-  color: #1d6fa5;
-  border: 1px solid #93c9ed;
+  color: var(--ctsa-pending-text);
+  border: 1px solid var(--ctsa-pending-border);
 }
 
 .status-unavailable {
@@ -527,7 +531,7 @@ input.form-control:user-valid {
   inline-size: 2.5rem;
   block-size: 2.5rem;
   border-radius: 999px;
-  background-color: var(--ctsa-pending-bg);
+  background-color: var(--ctsa-info-bg);
   color: var(--ctsa-blue-hover);
 }
 

@@ -34,7 +34,7 @@
             autocorrect="off"
             autocapitalize="characters"
             spellcheck="false"
-            placeholder="4 lettres et 7 chiffres"
+            placeholder="ex. CMAU4052450"
             data-error="wl-num-error"
             class="form-control font-mono uppercase"
           >
@@ -67,6 +67,16 @@
 
 <section class="bg-white py-10">
   <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+    {% if watchlist %}
+      <!-- Actualisation automatique : ctsa.js recharge la liste dès qu'un statut change -->
+      <p class="mt-0 mb-4 text-sm text-[#4a535b]"
+         data-refresh-url="{% url 'terminal:client_watchlist_state' %}"
+         data-refresh-signature="{{ refresh_signature }}"
+         aria-live="polite">
+        Cette liste se met à jour toute seule.
+        <span data-refresh-status>Dernière actualisation à <time data-refresh-time>{% now "H:i" %}</time>.</span>
+      </p>
+    {% endif %}
     <div tabindex="0" role="region" aria-labelledby="watchlist-table-caption" class="table-wrapper">
       <table class="ctsa-table" style="--label-2: 'Ligne maritime'; --label-3: 'Séance'; --label-4: 'Statut'; --label-5: 'Référence / Motif'; --label-6: 'Mise à jour'; --label-7: 'Action';">
         <caption id="watchlist-table-caption" class="p-4 text-left font-heading font-bold text-[#2c3741] bg-[#f4f4f4] border-b border-[#dadada]">

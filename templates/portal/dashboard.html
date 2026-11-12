@@ -340,9 +340,9 @@
 
         <a href="{% url 'terminal:dashboard' %}?date={{ selected_date|date:'Y-m-d' }}&status=pending{% if line_filter %}&line={{ line_filter }}{% endif %}"
            class="px-4 py-2.5 rounded-t-md border text-xs font-heading font-bold uppercase tracking-wider transition flex items-center gap-2
-             {% if status_filter == 'pending' %}bg-white border-[#dadada] border-b-white text-[#1d6fa5]{% else %}bg-transparent border-transparent text-[#666666] hover:text-[#3498db]{% endif %}">
+             {% if status_filter == 'pending' %}bg-white border-[#dadada] border-b-white text-[#8a5300]{% else %}bg-transparent border-transparent text-[#666666] hover:text-[#8a5300]{% endif %}">
           <span>En attente</span>
-          <span class="px-2 py-0.5 rounded bg-[#eef7fd] text-[#1d6fa5] border border-[#93c9ed] text-[11px]">{{ stats.pending }}</span>
+          <span class="px-2 py-0.5 rounded bg-[#fff6e0] text-[#8a5300] border border-[#f0c36d] text-[11px]">{{ stats.pending }}</span>
         </a>
 
         <a href="{% url 'terminal:dashboard' %}?date={{ selected_date|date:'Y-m-d' }}&status=unavailable{% if line_filter %}&line={{ line_filter }}{% endif %}"

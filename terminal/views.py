@@ -1,11 +1,12 @@
 import csv
 import datetime
+import hashlib
 import re
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
 from django.db.models import Count, Q
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse
 from django.utils import timezone
@@ -174,6 +175,34 @@ def home_view(request):
     })
 
 
+def _relevant_schedules(numbers, today: datetime.date) -> dict:
+    """Pour chaque numéro, la programmation à montrer au client (voir _pick_relevant_schedule)."""
+    grouped = {}
+    for c in (
+        Container.objects.select_related('shipping_line', 'unavailability_reason')
+        .filter(container_number__in=list(numbers))
+        .order_by('container_number', '-scheduled_date', '-updated_at')
+    ):
+        grouped.setdefault(c.container_number, []).append(c)
+    return {num: _pick_relevant_schedule(items, today) for num, items in grouped.items()}
+
+
+def _state_signature(numbers, schedules: dict, today: datetime.date) -> str:
+    """Empreinte de ce que voit le client : elle change dès qu'un statut, une vérification ou une
+    programmation change. Elle ne contient aucune donnée lisible : un numéro inconnu et un numéro
+    connu donnent tous deux une chaîne opaque."""
+    parts = [today.isoformat()]
+    for number in sorted(numbers):
+        c = schedules.get(number)
+        if c is None:
+            parts.append(f'{number}:-')
+        else:
+            parts.append(
+                f'{number}:{c.pk}:{c.status}:{c.verification_result}:{c.updated_at.isoformat()}'
+            )
+    return hashlib.sha256('|'.join(parts).encode()).hexdigest()[:20]
+
+
 def verification_view(request):
     raw_query = request.GET.get('q', '').strip()
     normalized = normalize_container_number(raw_query)
@@ -182,6 +211,8 @@ def verification_view(request):
     result_today = None
     format_warning = None
     is_saved = False
+    auto_refresh = False
+    refresh_signature = ''
 
     if normalized:
         if not CONTAINER_NUMBER_REGEX.match(normalized):
@@ -189,15 +220,12 @@ def verification_view(request):
                 "Le numéro de conteneur doit comporter exactement 4 lettres suivies de 7 chiffres (exemple : CMAU4052450)."
             )
         else:
-            matches = list(
-                Container.objects.select_related(
-                    'shipping_line', 'unavailability_reason'
-                )
-                .filter(container_number=normalized)
-                .order_by('-scheduled_date', '-updated_at')
-            )
-
-            result_today = _pick_relevant_schedule(matches, today)
+            schedules = _relevant_schedules([normalized], today)
+            result_today = schedules.get(normalized)
+            # Tant que le conteneur n'est pas vérifié, la fiche peut encore changer : elle se
+            # met à jour toute seule (voir verification_state_view et ctsa.js).
+            auto_refresh = not (result_today and result_today.is_verified)
+            refresh_signature = _state_signature([normalized], schedules, today)
 
             if request.user.is_authenticated:
                 is_saved = SavedContainer.objects.filter(
@@ -211,7 +239,21 @@ def verification_view(request):
         'result': result_today,
         'format_warning': format_warning,
         'is_saved': is_saved,
+        'auto_refresh': auto_refresh,
+        'refresh_signature': refresh_signature,
     })
+
+
+def verification_state_view(request):
+    """Empreinte de l'état d'un conteneur, interrogée par la fiche publique pour s'actualiser."""
+    normalized = normalize_container_number(request.GET.get('q', ''))
+    if not CONTAINER_NUMBER_REGEX.match(normalized):
+        return JsonResponse({'signature': ''})
+    today = timezone.localdate()
+    schedules = _relevant_schedules([normalized], today)
+    response = JsonResponse({'signature': _state_signature([normalized], schedules, today)})
+    response['Cache-Control'] = 'no-store'
+    return response
 
 
 @login_required
@@ -220,7 +262,6 @@ def client_watchlist_view(request):
     if request.method == 'POST':
         raw_num = request.POST.get('container_number', '')
         label = request.POST.get('label', '').strip()
-        notify_whatsapp = request.POST.get('notify_whatsapp') == 'on'
         normalized = normalize_container_number(raw_num)
 
         if not CONTAINER_NUMBER_REGEX.match(normalized):
@@ -232,7 +273,8 @@ def client_watchlist_view(request):
             obj, created = SavedContainer.objects.update_or_create(
                 user=request.user,
                 container_number=normalized,
-                defaults={'label': label, 'notify_whatsapp': notify_whatsapp},
+                # notify_whatsapp n'est pas touché : aucun écran ne propose encore d'alertes.
+                defaults={'label': label},
             )
             if created:
                 messages.success(request, f"Le conteneur {normalized} a été ajouté à votre suivi.")
@@ -243,18 +285,7 @@ def client_watchlist_view(request):
     saved_list = list(SavedContainer.objects.filter(user=request.user))
     numbers = [s.container_number for s in saved_list]
 
-    containers_by_num = {}
-    if numbers:
-        grouped = {}
-        for c in (
-            Container.objects.select_related('shipping_line', 'unavailability_reason')
-            .filter(container_number__in=numbers)
-            .order_by('container_number', '-scheduled_date', '-updated_at')
-        ):
-            grouped.setdefault(c.container_number, []).append(c)
-        containers_by_num = {
-            num: _pick_relevant_schedule(items, today) for num, items in grouped.items()
-        }
+    containers_by_num = _relevant_schedules(numbers, today) if numbers else {}
 
     enriched_watchlist = []
     for item in saved_list:
@@ -270,7 +301,21 @@ def client_watchlist_view(request):
     return render(request, 'public/watchlist.html', {
         'watchlist': enriched_watchlist,
         'today': today,
+        'refresh_signature': _state_signature(numbers, containers_by_num, today),
     })
+
+
+@login_required
+def client_watchlist_state_view(request):
+    """Empreinte de l'état des conteneurs suivis par le client connecté."""
+    today = timezone.localdate()
+    numbers = list(
+        SavedContainer.objects.filter(user=request.user).values_list('container_number', flat=True)
+    )
+    schedules = _relevant_schedules(numbers, today) if numbers else {}
+    response = JsonResponse({'signature': _state_signature(numbers, schedules, today)})
+    response['Cache-Control'] = 'no-store'
+    return response
 
 
 @login_required
