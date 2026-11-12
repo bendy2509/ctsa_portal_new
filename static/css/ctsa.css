@@ -918,6 +918,52 @@ html {
   }
 }
 
+/* --- Blocs repliables du tableau de bord (encart des non vérifiés, formulaire d'inscription) --- */
+.portal-fold-summary {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-block-size: 40px;
+  padding: 0.5rem 1.25rem;
+  border-block-start: 1px solid var(--portal-line);
+  background-color: #f7f8f9;
+  color: var(--ctsa-slate);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  list-style: none;
+}
+
+.portal-fold-summary::-webkit-details-marker {
+  display: none;
+}
+
+.portal-fold-summary:hover {
+  background-color: #eef0f1;
+}
+
+.portal-fold-summary:focus-visible {
+  outline: 2px solid var(--ctsa-blue);
+  outline-offset: -2px;
+}
+
+.portal-fold-chevron {
+  transition: transform 0.15s ease;
+}
+
+.portal-fold[open] > .portal-fold-summary .portal-fold-chevron {
+  transform: rotate(90deg);
+}
+
+.portal-fold-opened,
+.portal-fold[open] > .portal-fold-summary .portal-fold-closed {
+  display: none;
+}
+
+.portal-fold[open] > .portal-fold-summary .portal-fold-opened {
+  display: inline;
+}
+
 /* --- Typographie d'exploitation : sobre, lisible, sans capitales décoratives --- */
 .portal-main h1 {
   margin-block: 0 0.25rem;

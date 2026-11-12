@@ -127,6 +127,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const panel = document.getElementById(b.getAttribute('data-tab-target'));
         if (panel) panel.hidden = !active;
       });
+      // Choisir un mode d'enregistrement déplie le formulaire s'il était replié.
+      const fold = document.getElementById(btn.getAttribute('data-tab-target'))?.closest('details');
+      if (fold) fold.open = true;
     });
   });
 

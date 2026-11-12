@@ -5,6 +5,7 @@ import re
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
+from django.core.paginator import Paginator
 from django.db.models import Count, Q
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
@@ -58,6 +59,17 @@ def _pick_relevant_schedule(containers, today: datetime.date):
     if chosen is not None:
         chosen.timing = ('today', 'upcoming', 'past')[chosen_rank[0]]
     return chosen
+
+
+PAGE_SIZE = 50
+
+
+def _paginate(request, queryset):
+    """Découpe un queryset en pages et renvoie (page, filtres actifs encodés sans `page`)."""
+    page = Paginator(queryset, PAGE_SIZE).get_page(request.GET.get('page'))
+    params = request.GET.copy()
+    params.pop('page', None)
+    return page, params.urlencode()
 
 
 def _dashboard_url(date: datetime.date) -> str:
@@ -396,6 +408,9 @@ def dashboard_view(request):
             backlog_rows = list(backlog_qs.order_by('first_scheduled_date', 'container_number')[:60])
 
     return render(request, 'portal/dashboard.html', {
+        # Blocs de préparation dépliés tant qu'on constitue une liste ; repliés pendant une
+        # séance en cours, pour que le tableau du jour reste en haut de l'écran.
+        'preparing_list': selected_date > today or not list_started,
         'verification_filter': verification_filter,
         'show_verification': show_verification,
         'backlog': backlog,
@@ -763,7 +778,10 @@ def carryover_view(request):
         rows = rows.filter(status=status_filter)
     if line_filter.isdigit():
         rows = rows.filter(shipping_line_id=int(line_filter))
-    rows = list(rows.order_by('first_scheduled_date', 'scheduled_date', 'container_number'))
+    rows = rows.order_by('first_scheduled_date', 'scheduled_date', 'container_number')
+    oldest = rows.first()
+    page, page_query = _paginate(request, rows)
+    rows = list(page.object_list)
 
     # Nombre de séances déjà passées pour chaque conteneur (longueur de la chaîne de reprises).
     session_counts = {
@@ -786,7 +804,9 @@ def carryover_view(request):
         'line_filter': line_filter,
         'shipping_lines': ShippingLine.objects.filter(is_active=True),
         'status_choices': Container.Status.choices,
-        'oldest': rows[0] if rows else None,
+        'oldest': oldest,
+        'page': page,
+        'page_query': page_query,
     })
 
 
@@ -1212,8 +1232,11 @@ def status_logs_view(request):
             | Q(changed_by__full_name__icontains=q)
         )
 
+    page, page_query = _paginate(request, logs)
     return render(request, 'portal/status_logs.html', {
-        'logs': logs[:150],
+        'logs': page.object_list,
+        'page': page,
+        'page_query': page_query,
         'q': q,
     })
 

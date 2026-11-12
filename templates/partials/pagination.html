@@ -1,0 +1,21 @@
+{# Pagination d'un tableau. Attend `page` (Page Django) et `page_query` (filtres actifs, déjà encodés). #}
+{% if page.paginator.num_pages > 1 %}
+  <nav aria-label="Pagination" class="px-4 sm:px-5 py-3 border-t border-[#e1e5e8] bg-white flex flex-wrap items-center justify-between gap-3">
+    <p class="m-0 text-sm text-[#5b656d]">
+      Lignes {{ page.start_index }} à {{ page.end_index }} sur {{ page.paginator.count }}
+    </p>
+    <div class="flex items-center gap-2">
+      {% if page.has_previous %}
+        <a href="?{% if page_query %}{{ page_query }}&amp;{% endif %}page={{ page.previous_page_number }}" class="btn-admin" rel="prev">
+          <svg class="portal-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>Précédente
+        </a>
+      {% endif %}
+      <span class="text-sm font-semibold text-[#2c3741]" aria-current="page">Page {{ page.number }} sur {{ page.paginator.num_pages }}</span>
+      {% if page.has_next %}
+        <a href="?{% if page_query %}{{ page_query }}&amp;{% endif %}page={{ page.next_page_number }}" class="btn-admin" rel="next">
+          Suivante<svg class="portal-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
+        </a>
+      {% endif %}
+    </div>
+  </nav>
+{% endif %}

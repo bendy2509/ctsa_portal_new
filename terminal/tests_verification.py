@@ -319,6 +319,59 @@ class VerificationTrackingTests(TestCase):
         self.make('CMAU0000001', self.today)
         self.assertNotEqual(before, self.client.get(url).json()['signature'])
 
+    def test_history_and_backlog_are_paginated_and_keep_filters(self):
+        for i in range(55):
+            self.make(f'CMAU{i:07d}', self.yesterday, Container.Status.PENDING)
+        self.login('adm')
+
+        first = self.client.get(reverse('terminal:carryover'), {'status': 'pending'})
+        self.assertEqual(len(first.context['rows']), 50)
+        self.assertContains(first, 'Lignes 1 à 50 sur 55')
+        self.assertContains(first, 'status=pending&amp;page=2')
+        second = self.client.get(reverse('terminal:carryover'), {'status': 'pending', 'page': 2})
+        self.assertEqual(len(second.context['rows']), 5)
+        self.assertEqual(second.context['breakdown']['total'], 55)
+
+        logs = self.client.get(reverse('terminal:status_logs'), {'q': 'CMAU'})
+        self.assertEqual(len(logs.context['logs']), 50)
+        self.assertContains(logs, '55 opérations enregistrées')
+        self.assertContains(logs, 'q=CMAU&amp;page=2')
+
+    def test_close_backlog_command_simulation_then_real_run(self):
+        from io import StringIO
+        from django.core.management import call_command
+
+        old = self.make('CMAU0000001', self.yesterday)
+        verified = self.make('CMAU0000002', self.yesterday)
+        verified.set_verification('verified', acting_user=self.admin)
+        current = self.make('CMAU0000003', self.today)
+
+        out = StringIO()
+        call_command('clore_non_verifies', avant=self.today.isoformat(), simulation=True, stdout=out)
+        self.assertIn('Simulation : 1 conteneur', out.getvalue())
+        old.refresh_from_db()
+        self.assertEqual(old.carry_decision, '')
+
+        call_command('clore_non_verifies', avant=self.today.isoformat(), stdout=StringIO())
+        for c in (old, verified, current):
+            c.refresh_from_db()
+        self.assertEqual(old.carry_decision, 'rejected')
+        self.assertEqual(verified.carry_decision, '')
+        self.assertEqual(current.carry_decision, '')
+        self.assertTrue(ContainerStatusLog.objects.filter(container=old, action='rejected').exists())
+
+    def test_dashboard_blocks_fold_during_a_running_session(self):
+        self.make('CMAU0000001', self.yesterday)
+        self.login('adm')
+        empty_today = self.client.get(reverse('terminal:dashboard'))
+        self.assertTrue(empty_today.context['preparing_list'])
+        self.make('CMAU0000002', self.today)
+        running = self.client.get(reverse('terminal:dashboard'))
+        self.assertFalse(running.context['preparing_list'])
+        self.assertContains(running, '<details class="portal-fold" >')
+        tomorrow = self.client.get(reverse('terminal:dashboard'), {'date': self.tomorrow.isoformat()})
+        self.assertTrue(tomorrow.context['preparing_list'])
+
     def test_public_page_shows_verified(self):
         c = self.make('CMAU0000001', self.today)
         c.set_verification('verified', acting_user=self.admin)

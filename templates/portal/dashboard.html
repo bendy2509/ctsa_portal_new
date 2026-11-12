@@ -71,6 +71,12 @@
         </a>
       </div>
 
+      <details class="portal-fold" {% if preparing_list %}open{% endif %}>
+        <summary class="portal-fold-summary">
+          <svg class="portal-icon portal-fold-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
+          <span class="portal-fold-closed">Afficher les conteneurs à reprendre</span>
+          <span class="portal-fold-opened">Masquer la liste</span>
+        </summary>
       {% if list_started and selected_date == today or list_started and not user.is_morning_supervisor %}
         <ul class="list-none m-0 p-0 border-t border-[#dadada] max-h-80 overflow-y-auto">
           {% for b in backlog_rows %}
@@ -129,6 +135,7 @@
           L'ajout en un clic s'active dès que le premier conteneur de la liste du {{ selected_date|date:"d/m/Y" }} est inscrit.
         </p>
       {% endif %}
+      </details>
     </section>
   {% endif %}
 
@@ -161,6 +168,13 @@
         </button>
       </div>
     </div>
+
+    <details class="portal-fold" {% if preparing_list %}open{% endif %}>
+        <summary class="portal-fold-summary">
+          <svg class="portal-icon portal-fold-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
+          <span class="portal-fold-closed">Ouvrir le formulaire d'inscription</span>
+          <span class="portal-fold-opened">Masquer le formulaire</span>
+        </summary>
 
     <!-- Onglet 1 : Saisie d'un conteneur -->
     <div id="panel-single-add" class="p-5">
@@ -316,6 +330,7 @@
         </div>
       </form>
     </div>
+    </details>
   </section>
 
   <!-- 3. Cadre principal unifié : Onglets de statut + Exports PDF + Filtres + Tableau des conteneurs -->
