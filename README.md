@@ -54,7 +54,8 @@ $env:CTSA_SEED_PASSWORD = "<votre mot de passe de démonstration>"
 
 | Écran | Rôle |
 |---|---|
-| **Conteneurs du jour** | La liste d'une séance : confirmer, mettre en attente, déclarer indisponible, modifier ou supprimer une ligne |
+| **Tableau de bord** (`/admin/`) | Résumé d'une séance : indicateurs cliquables, répartition par ligne maritime, sept derniers jours, points à traiter et dernières opérations |
+| **Conteneurs du jour** (`/admin/conteneurs/`) | La liste d'une séance : confirmer, mettre en attente, déclarer indisponible, modifier ou supprimer une ligne |
 | **Préparer une liste** | Inscrire un conteneur ou coller une liste, reprendre en un clic les non vérifiés |
 | **Inspection** | Marquer Vérifié / Non vérifié les conteneurs confirmés d'une séance |
 | **Non vérifiés** | Tout conteneur programmé et pas encore vérifié ; ajout à la liste suivante en un clic, ou rejet |

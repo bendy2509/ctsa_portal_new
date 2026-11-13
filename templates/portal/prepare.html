@@ -12,7 +12,7 @@
       <p class="text-sm text-[#64748b] mt-1 mb-0">
         {{ selected_date|date:"l j F Y"|capfirst }} ·
         {% if registered_count %}
-          <a href="{% url 'terminal:dashboard' %}?date={{ selected_date|date:'Y-m-d' }}" class="font-semibold text-[#217dbb] underline underline-offset-2 tabular-nums">{{ registered_count }} conteneur{{ registered_count|pluralize }} inscrit{{ registered_count|pluralize }}</a>
+          <a href="{% url 'terminal:containers' %}?date={{ selected_date|date:'Y-m-d' }}" class="font-semibold text-[#217dbb] underline underline-offset-2 tabular-nums">{{ registered_count }} conteneur{{ registered_count|pluralize }} inscrit{{ registered_count|pluralize }}</a>
         {% else %}
           aucun conteneur inscrit
         {% endif %}
@@ -213,7 +213,7 @@
     <section aria-labelledby="prepare-recent-title" class="bg-white rounded-xl border border-slate-200/80 shadow-xs overflow-hidden">
       <div class="px-4 sm:px-6 py-3.5 flex flex-wrap items-center justify-between gap-3 border-b border-slate-200/80">
         <h2 id="prepare-recent-title" class="text-base font-heading font-extrabold text-[#2c3741] m-0">Derniers inscrits</h2>
-        <a href="{% url 'terminal:dashboard' %}?date={{ selected_date|date:'Y-m-d' }}" class="text-sm font-semibold text-[#217dbb] hover:underline tabular-nums">
+        <a href="{% url 'terminal:containers' %}?date={{ selected_date|date:'Y-m-d' }}" class="text-sm font-semibold text-[#217dbb] hover:underline tabular-nums">
           Voir les {{ registered_count }}
         </a>
       </div>

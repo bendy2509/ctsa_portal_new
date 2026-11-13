@@ -135,7 +135,7 @@
                 {% if by_week %}
                   {{ b.label }}
                 {% else %}
-                  <a href="{% url 'terminal:dashboard' %}?date={{ b.start|date:'Y-m-d' }}" class="underline hover:text-[#3498db]">{{ b.start|date:"D d/m" }}</a>
+                  <a href="{% url 'terminal:containers' %}?date={{ b.start|date:'Y-m-d' }}" class="underline hover:text-[#3498db]">{{ b.start|date:"D d/m" }}</a>
                 {% endif %}
               </th>
               <td>

@@ -226,7 +226,7 @@ class VerificationTrackingTests(TestCase):
         self.make('CMAU0000002', self.today)
         for username in ('adm', 'sup'):
             self.login(username)
-            for name in ('dashboard', 'prepare', 'inspection', 'carryover', 'statistics', 'register', 'status_logs'):
+            for name in ('dashboard', 'containers', 'prepare', 'inspection', 'carryover', 'statistics', 'register', 'status_logs'):
                 resp = self.client.get(reverse(f'terminal:{name}'))
                 self.assertEqual(resp.status_code, 200, f'{username} {name}')
                 self.assertContains(resp, 'portal-nav')
@@ -274,7 +274,7 @@ class VerificationTrackingTests(TestCase):
         self.make('CMAU0000001', self.yesterday)
         self.make('CMAU0000002', self.today)
         self.login('adm')
-        dash = self.client.get(reverse('terminal:dashboard'))
+        dash = self.client.get(reverse('terminal:containers'))
         self.assertContains(dash, 'id="confirm-dialog"')
         self.assertContains(dash, 'data-confirm-title="Supprimer ce conteneur ?"')
         self.assertContains(dash, 'CMAU0000002 sera retiré de la liste du')
@@ -366,7 +366,7 @@ class VerificationTrackingTests(TestCase):
         pending = self.make('CMAU0000002', self.today, Container.Status.PENDING)
         self.login('sup')
 
-        dash = self.client.get(reverse('terminal:dashboard'), {'date': self.today.isoformat()})
+        dash = self.client.get(reverse('terminal:containers'), {'date': self.today.isoformat()})
         # Plus de formulaire d'inscription ni de bloc de reprise sur la liste du jour.
         self.assertNotContains(dash, 'name="container_list"')
         self.assertNotContains(dash, 'id="add-single-number"')
@@ -505,7 +505,7 @@ class VerificationTrackingTests(TestCase):
         self.assertEqual(fresh.status, Container.Status.PENDING)
 
         # La liste du tableau de bord affiche bien le sélecteur rapide 1 clic (Confirmé / En attente / Indisponible)
-        dash = self.client.get(reverse('terminal:dashboard'), {'date': self.tomorrow.isoformat()})
+        dash = self.client.get(reverse('terminal:containers'), {'date': self.tomorrow.isoformat()})
         self.assertContains(dash, f'data-toggle-unavailable="{fresh.pk}"')
         self.assertContains(dash, 'status-segmented')
 
@@ -514,10 +514,10 @@ class VerificationTrackingTests(TestCase):
             self.make(f'CMAU{i:07d}', self.today, Container.Status.CONFIRMED)
         self.login('adm')
 
-        dash_p1 = self.client.get(reverse('terminal:dashboard'), {'date': self.today.isoformat()})
+        dash_p1 = self.client.get(reverse('terminal:containers'), {'date': self.today.isoformat()})
         self.assertEqual(len(dash_p1.context['containers']), PAGE_SIZE)
         self.assertContains(dash_p1, 'Page 1 sur 3')
-        dash_p2 = self.client.get(reverse('terminal:dashboard'), {'date': self.today.isoformat(), 'page': 2})
+        dash_p2 = self.client.get(reverse('terminal:containers'), {'date': self.today.isoformat(), 'page': 2})
         self.assertEqual(len(dash_p2.context['containers']), PAGE_SIZE)
 
         insp_p1 = self.client.get(reverse('terminal:inspection'), {'date': self.today.isoformat()})
@@ -525,6 +525,28 @@ class VerificationTrackingTests(TestCase):
         self.assertContains(insp_p1, 'Page 1 sur 3')
         insp_p2 = self.client.get(reverse('terminal:inspection'), {'date': self.today.isoformat(), 'page': 2})
         self.assertEqual(len(insp_p2.context['rows']), PAGE_SIZE)
+
+    def test_dashboard_summarises_the_day_and_links_to_the_list(self):
+        self.make('CMAU0000001', self.today, Container.Status.CONFIRMED)
+        self.make('CMAU0000002', self.today, Container.Status.PENDING)
+        self.make('CMAU0000003', self.yesterday, Container.Status.PENDING)
+        self.login('adm')
+
+        resp = self.client.get(reverse('terminal:dashboard'))
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.context['stats']['total'], 2)
+        self.assertEqual(resp.context['stats']['pending'], 1)
+        self.assertEqual(len(resp.context['week']), 7)
+        self.assertEqual(resp.context['by_line'][0]['total'], 2)
+        self.assertEqual(resp.context['backlog']['total'], 1)
+        # Le tableau de bord ne contient pas la liste : il renvoie vers elle, filtrée.
+        self.assertNotContains(resp, 'ctsa-table')
+        self.assertContains(resp, reverse('terminal:containers'))
+        self.assertContains(resp, 'status=pending')
+
+        self.client.logout()
+        self.login('cli')
+        self.assertEqual(self.client.get(reverse('terminal:dashboard')).status_code, 302)
 
     def test_single_add_allows_missing_shipping_line(self):
         self.login('sup')

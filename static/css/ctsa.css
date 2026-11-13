@@ -1689,8 +1689,10 @@ button.list-tab[aria-selected="true"] {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
-.kpi-grid-5 > :nth-child(5):last-child {
-  grid-column: 1 / -1;
+@media (max-width: 639px) {
+  .kpi-grid-5 > :nth-child(5):last-child {
+    grid-column: 1 / -1;
+  }
 }
 
 @media (min-width: 640px) {

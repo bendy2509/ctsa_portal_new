@@ -35,6 +35,14 @@
            class="portal-nav-link">
           <!-- Lucide: layout-dashboard -->
           <svg class="portal-icon" viewBox="0 0 24 24" aria-hidden="true"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>
+          <span>Tableau de bord</span>
+        </a>
+
+        <a href="{% url 'terminal:containers' %}"
+           {% if current == 'containers' %}aria-current="page"{% endif %}
+           class="portal-nav-link">
+          <!-- Lucide: list -->
+          <svg class="portal-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 6h13"/><path d="M8 12h13"/><path d="M8 18h13"/><path d="M3 6h.01"/><path d="M3 12h.01"/><path d="M3 18h.01"/></svg>
           <span>Conteneurs du jour</span>
         </a>
 

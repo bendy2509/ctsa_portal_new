@@ -158,7 +158,7 @@
                   Aucun conteneur confirmé ne correspond à ce filtre.
                 {% elif stats.scheduled %}
                   Aucun conteneur confirmé pour cette séance : {{ stats.not_confirmed }} conteneur{{ stats.not_confirmed|pluralize }} reste{{ stats.not_confirmed|pluralize:"nt" }} à confirmer dans
-                  <a href="{% url 'terminal:dashboard' %}?date={{ selected_date|date:'Y-m-d' }}" class="font-semibold text-[#217dbb] underline">Conteneurs du jour</a>.
+                  <a href="{% url 'terminal:containers' %}?date={{ selected_date|date:'Y-m-d' }}" class="font-semibold text-[#217dbb] underline">Conteneurs du jour</a>.
                 {% else %}
                   Aucun conteneur programmé pour cette séance.
                 {% endif %}
