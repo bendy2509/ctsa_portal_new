@@ -161,17 +161,12 @@
               <td>{{ c.session_count }}</td>
               <td>{{ c.scheduled_date|date:"d/m/Y" }}</td>
               <td>
+                {% include 'partials/status_actions.html' %}
                 {% if c.status == 'confirmed' %}
-                  <span class="status-badge status-confirmed">Confirmé</span>
-                  <div class="text-xs font-semibold text-[#2c3741] mt-1">
+                  <div class="text-xs font-semibold text-[#2c3741] mt-2">
                     {% if c.verification_result == 'not_verified' %}Marqué non vérifié{% if c.verification_note %} : {{ c.verification_note }}{% endif %}{% else %}Vérification non marquée{% endif %}
                   </div>
                   <div class="mt-2">{% include 'partials/verification_actions.html' %}</div>
-                {% elif c.status == 'pending' %}
-                  <span class="status-badge status-pending">En attente</span>
-                {% else %}
-                  <span class="status-badge status-unavailable">Indisponible</span>
-                  <div class="text-xs font-semibold text-[#b82c1f] mt-1">{{ c.full_reason_display }}</div>
                 {% endif %}
               </td>
               <td class="text-right">

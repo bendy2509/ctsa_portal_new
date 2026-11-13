@@ -210,4 +210,49 @@ class CTSAPortalBusinessTests(TestCase):
         self.assertEqual(c.status, Container.Status.CONFIRMED)
         self.assertEqual(c.shipping_line, accordia)
 
+    def test_bulk_status_update_and_confirm_all_pending(self):
+        self.client_http.login(username='evening_test', password='Password123!')
+        today = timezone.localdate()
+        c1 = Container.objects.create(
+            container_number='CMAU1111111',
+            shipping_line=self.cma,
+            scheduled_date=today,
+            status=Container.Status.PENDING,
+        )
+        c2 = Container.objects.create(
+            container_number='CMAU2222222',
+            shipping_line=self.cma,
+            scheduled_date=today,
+            status=Container.Status.PENDING,
+        )
+        # 1. Confirm all pending of the day in one click
+        resp_all = self.client_http.post(
+            reverse('terminal:container_status_bulk'),
+            {'date': today.isoformat(), 'scope': 'all_pending', 'status': Container.Status.CONFIRMED},
+        )
+        self.assertEqual(resp_all.status_code, 302)
+        c1.refresh_from_db()
+        c2.refresh_from_db()
+        self.assertEqual(c1.status, Container.Status.CONFIRMED)
+        self.assertEqual(c2.status, Container.Status.CONFIRMED)
+
+        # 2. Mark selected container as unavailable with reason
+        resp_unavail = self.client_http.post(
+            reverse('terminal:container_status_bulk'),
+            {
+                'date': today.isoformat(),
+                'ids': [str(c1.pk)],
+                'status': Container.Status.UNAVAILABLE,
+                'unavailability_reason': str(self.reason_stacker.id),
+                'unavailability_note': 'En maintenance',
+            },
+        )
+        self.assertEqual(resp_unavail.status_code, 302)
+        c1.refresh_from_db()
+        c2.refresh_from_db()
+        self.assertEqual(c1.status, Container.Status.UNAVAILABLE)
+        self.assertEqual(c1.unavailability_reason, self.reason_stacker)
+        self.assertEqual(c2.status, Container.Status.CONFIRMED)
+
+
 

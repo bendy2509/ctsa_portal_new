@@ -103,7 +103,7 @@
           {% if state %}<input type="hidden" name="etat" value="{{ state }}">{% endif %}
           <label for="inspection-q" class="visually-hidden">Rechercher un numéro de conteneur</label>
           <input type="search" id="inspection-q" name="q" value="{{ search_q }}" placeholder="Rechercher un numéro…" autocorrect="off" spellcheck="false"
-                 class="border border-[#dadada] rounded-md px-3 py-1.5 min-h-[38px] text-sm font-mono uppercase bg-white min-w-[200px]">
+                 class="border border-[#dadada] rounded-md px-3 py-1.5 min-h-[38px] text-sm font-mono uppercase bg-white w-full sm:w-auto sm:min-w-[200px]">
           <button type="submit" class="btn-admin min-h-[38px]">Rechercher</button>
           {% if search_q or state %}
             <a href="{% url 'terminal:inspection' %}?date={{ selected_date|date:'Y-m-d' }}" class="text-sm text-[#217dbb] hover:underline font-semibold">Tout afficher</a>
@@ -176,11 +176,52 @@
       </table>
     </div>
 
-    {% if stats.not_confirmed and rows %}
-      <p class="px-4 sm:px-5 py-3 border-t border-[#e1e5e8] m-0 text-sm text-[#5b656d]">
-        {{ stats.not_confirmed }} conteneur{{ stats.not_confirmed|pluralize }} de cette séance n'{{ stats.not_confirmed|pluralize:"est,sont" }} pas confirmé{{ stats.not_confirmed|pluralize }} et n'apparaî{{ stats.not_confirmed|pluralize:"t,ssent" }} donc pas ici.
-        <a href="{% url 'terminal:dashboard' %}?date={{ selected_date|date:'Y-m-d' }}" class="font-semibold text-[#217dbb] underline">Voir la liste complète</a>
-      </p>
+    {% if not_confirmed_rows %}
+      <div class="border-t border-[#dadada]">
+        <div class="px-4 sm:px-5 py-3 bg-[#f7f8f9] border-b border-[#e1e5e8] flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 class="text-sm font-bold text-[#2c3741] m-0">
+              Conteneurs de cette séance en attente ou indisponibles ({{ stats.not_confirmed }})
+            </h2>
+            <p class="text-xs text-[#5b656d] mt-0.5 mb-0">
+              Confirmez un conteneur ci-dessous pour l'afficher dans la liste d'inspection de la séance.
+            </p>
+          </div>
+          <a href="{% url 'terminal:dashboard' %}?date={{ selected_date|date:'Y-m-d' }}" class="text-xs font-semibold text-[#217dbb] underline">
+            Voir la liste complète
+          </a>
+        </div>
+        <div tabindex="0" role="region" aria-label="Conteneurs non confirmés de la séance" class="table-wrapper border-0 rounded-none">
+          <table class="ctsa-table" style="--label-2: 'Ligne maritime'; --label-3: 'Statut actuel'; --label-4: 'Changer le statut';">
+            <thead>
+              <tr>
+                <th scope="col">Conteneur</th>
+                <th scope="col">Ligne maritime</th>
+                <th scope="col">Statut actuel</th>
+                <th scope="col">Changer le statut (Confirmé · En attente · Indisponible)</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for c in not_confirmed_rows %}
+                <tr>
+                  <th scope="row">
+                    <span class="text-base font-bold text-[#2c3741]">{{ c.container_number }}</span>
+                  </th>
+                  <td>{{ c.shipping_line.name|default:"Non renseignée" }}</td>
+                  <td>
+                    {% if c.status == 'pending' %}
+                      <span class="status-badge status-pending">En attente</span>
+                    {% else %}
+                      <span class="status-badge status-unavailable">Indisponible</span>
+                    {% endif %}
+                  </td>
+                  <td>{% include 'partials/status_actions.html' %}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
     {% endif %}
   </section>
 </div>

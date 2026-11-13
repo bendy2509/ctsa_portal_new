@@ -43,7 +43,7 @@ class LocalAssetsTests(TestCase):
         html = self.client.get(reverse('accounts:login')).content.decode()
         self.assertNotIn('cdn.tailwindcss.com', html)
         self.assertNotIn('capterminal.com/img', html)
-        self.assertIn('css/tailwind.css', html)
+        self.assertIn('css/output.css', html)
         self.assertIn('img/cap-terminal-logo.png', html)
 
     def test_compiled_tailwind_covers_the_classes_used_by_templates(self):
@@ -51,7 +51,7 @@ class LocalAssetsTests(TestCase):
         from pathlib import Path
         from django.conf import settings
 
-        css = (settings.BASE_DIR / 'static' / 'css' / 'tailwind.css').read_text(encoding='utf-8')
+        css = (settings.BASE_DIR / 'static' / 'css' / 'output.css').read_text(encoding='utf-8')
         # Classes à valeur arbitraire (ex. bg-[#fff6e0]) : les plus faciles à oublier de recompiler.
         used = set()
         for template in (settings.BASE_DIR / 'templates').rglob('*.html'):

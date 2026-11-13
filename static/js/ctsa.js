@@ -209,13 +209,34 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // 8 bis. Sidebar de l'administration repliable sur mobile
+  // 8 bis. Sidebar de l'administration repliable sur mobile (tiroir + fond sombre)
   const portalToggle = document.getElementById('portal-nav-toggle');
   const portalNav = document.getElementById('portal-nav');
+  const portalClose = document.getElementById('portal-nav-close');
+  const portalBackdrop = document.getElementById('portal-nav-backdrop');
   if (portalToggle && portalNav) {
-    portalToggle.addEventListener('click', () => {
-      const open = portalNav.classList.toggle('is-open');
+    const setPortalNav = (open) => {
+      portalNav.classList.toggle('is-open', open);
       portalToggle.setAttribute('aria-expanded', String(open));
+      if (portalBackdrop) portalBackdrop.hidden = !open;
+    };
+    portalToggle.addEventListener('click', () => {
+      setPortalNav(!portalNav.classList.contains('is-open'));
+    });
+    if (portalClose) {
+      portalClose.addEventListener('click', () => {
+        setPortalNav(false);
+        portalToggle.focus();
+      });
+    }
+    if (portalBackdrop) {
+      portalBackdrop.addEventListener('click', () => setPortalNav(false));
+    }
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && portalNav.classList.contains('is-open')) {
+        setPortalNav(false);
+        portalToggle.focus();
+      }
     });
   }
 
@@ -225,6 +246,28 @@ document.addEventListener('DOMContentLoaded', () => {
     master.addEventListener('change', () => {
       boxes().forEach((box) => { box.checked = master.checked; });
     });
+  });
+
+  // 8 ter (suite). Barre de sélection : visible seulement quand au moins une case est cochée.
+  document.querySelectorAll('[data-selection-bar]').forEach((bar) => {
+    const group = bar.dataset.selectionBar;
+    const counter = bar.querySelector('[data-selection-count]');
+    const master = document.querySelector(`[data-check-all="${group}"]`);
+    const boxes = () => [...document.querySelectorAll(`input[type="checkbox"][data-check-group="${group}"]`)];
+    const refresh = () => {
+      const all = boxes();
+      const checked = all.filter((box) => box.checked).length;
+      bar.hidden = checked === 0;
+      if (counter) counter.textContent = String(checked);
+      if (master) {
+        master.checked = checked > 0 && checked === all.length;
+        master.indeterminate = checked > 0 && checked < all.length;
+      }
+    };
+    document.addEventListener('change', (e) => {
+      if (e.target.matches(`[data-check-group="${group}"], [data-check-all="${group}"]`)) refresh();
+    });
+    refresh();
   });
 
   // 8 quater. Boîte de confirmation du portail pour les actions destructrices.

@@ -131,14 +131,7 @@
               </td>
               <td>{{ c.shipping_line.name|default:"Non renseignée" }}</td>
               <td>
-                {% if c.status == 'confirmed' %}
-                  <span class="status-badge status-confirmed">Confirmé</span>
-                {% elif c.status == 'pending' %}
-                  <span class="status-badge status-pending">En attente</span>
-                {% else %}
-                  <span class="status-badge status-unavailable">Indisponible</span>
-                  <div class="text-xs font-semibold text-[#b82c1f] mt-1">{{ c.full_reason_display }}</div>
-                {% endif %}
+                {% include 'partials/status_actions.html' %}
                 {% if c.carry_decision %}
                   <div class="text-xs text-[#5b656d] mt-1">{{ c.get_carry_decision_display }}</div>
                 {% endif %}

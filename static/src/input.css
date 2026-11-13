@@ -1,0 +1,17 @@
+@import "tailwindcss";
+@source "../../templates";
+@source "../js";
+
+@theme {
+  --font-sans: "Open Sans", "Helvetica Neue", Arial, sans-serif;
+  --font-heading: "Raleway", "Open Sans", Arial, sans-serif;
+  --color-ctsa-slate: #2c3741;
+  --color-ctsa-slatedark: #232c34;
+  --color-ctsa-secondary: #2c3e50;
+  --color-ctsa-subnav: #687077;
+  --color-ctsa-blue: #3498db;
+  --color-ctsa-bluehover: #217dbb;
+  --color-ctsa-green: #008751;
+  --color-ctsa-red: #e74c3c;
+  --color-ctsa-bgalt: #f4f4f4;
+}

@@ -232,7 +232,7 @@ class VerificationTrackingTests(TestCase):
         self.make('CMAU0000002', self.today)
         for username in ('adm', 'soir', 'matin'):
             self.login(username)
-            for name in ('dashboard', 'inspection', 'carryover', 'statistics', 'register', 'status_logs'):
+            for name in ('dashboard', 'prepare', 'inspection', 'carryover', 'statistics', 'register', 'status_logs'):
                 resp = self.client.get(reverse(f'terminal:{name}'))
                 self.assertEqual(resp.status_code, 200, f'{username} {name}')
                 self.assertContains(resp, 'portal-nav')
@@ -241,8 +241,10 @@ class VerificationTrackingTests(TestCase):
         for name in ('terminal:shipping_lines', 'terminal:prefixes', 'accounts:user_list'):
             self.assertContains(self.client.get(reverse(name)), 'portal-nav')
         dash = self.client.get(reverse('terminal:dashboard'))
-        self.assertContains(dash, 'Ajouter à cette liste')
-        self.assertContains(dash, "Ouvrir l'inspection")
+        self.assertContains(dash, reverse('terminal:inspection'))
+        # La reprise des non vérifiés se fait sur « Préparer une liste », plus sur le tableau de bord.
+        self.assertNotContains(dash, 'Ajouter à cette liste')
+        self.assertContains(self.client.get(reverse('terminal:prepare')), 'Ajouter à cette liste')
         # Le tableau de bord ne porte plus les boutons de marquage : ils sont dans Inspection.
         self.assertNotContains(dash, 'name="result" value="verified"')
 
@@ -279,8 +281,9 @@ class VerificationTrackingTests(TestCase):
         dash = self.client.get(reverse('terminal:dashboard'))
         self.assertContains(dash, 'id="confirm-dialog"')
         self.assertContains(dash, 'data-confirm-title="Supprimer ce conteneur ?"')
-        self.assertContains(dash, 'data-confirm-title="Rejeter ce conteneur ?"')
         self.assertContains(dash, 'CMAU0000002 sera retiré de la liste du')
+        prepare = self.client.get(reverse('terminal:prepare'))
+        self.assertContains(prepare, 'data-confirm-title="Rejeter ce conteneur ?"')
         page = self.client.get(reverse('terminal:carryover'))
         self.assertContains(page, 'data-confirm-title="Rejeter la sélection ?"')
 
@@ -362,17 +365,52 @@ class VerificationTrackingTests(TestCase):
         self.assertEqual(current.carry_decision, '')
         self.assertTrue(ContainerStatusLog.objects.filter(container=old, action='rejected').exists())
 
-    def test_dashboard_blocks_fold_during_a_running_session(self):
+    def test_dashboard_shows_only_the_list_and_prepare_page_holds_the_forms(self):
         self.make('CMAU0000001', self.yesterday)
-        self.login('adm')
-        empty_today = self.client.get(reverse('terminal:dashboard'))
-        self.assertTrue(empty_today.context['preparing_list'])
-        self.make('CMAU0000002', self.today)
-        running = self.client.get(reverse('terminal:dashboard'))
-        self.assertFalse(running.context['preparing_list'])
-        self.assertContains(running, '<details class="portal-fold" >')
-        tomorrow = self.client.get(reverse('terminal:dashboard'), {'date': self.tomorrow.isoformat()})
-        self.assertTrue(tomorrow.context['preparing_list'])
+        pending = self.make('CMAU0000002', self.today, Container.Status.PENDING)
+        self.login('soir')
+
+        dash = self.client.get(reverse('terminal:dashboard'), {'date': self.today.isoformat()})
+        # Plus de formulaire d'inscription ni de bloc de reprise sur la liste du jour.
+        self.assertNotContains(dash, 'name="container_list"')
+        self.assertNotContains(dash, 'id="add-single-number"')
+        self.assertContains(dash, reverse('terminal:prepare') + f'?date={self.today.isoformat()}')
+        # Une ligne : un bouton d'action rapide, le reste derrière « Modifier ».
+        self.assertContains(dash, f'data-toggle-panel="row-edit-{pending.pk}"')
+        self.assertContains(dash, f'<tr id="row-edit-{pending.pk}" hidden')
+        self.assertContains(dash, 'data-selection-bar="dashboard" hidden')
+
+        # Le superviseur matin ne modifie pas les statuts : aucune commande d'édition.
+        self.login('matin')
+        readonly = self.client.get(reverse('terminal:dashboard'))
+        self.assertNotContains(readonly, 'data-toggle-panel="row-edit-')
+        self.assertNotContains(readonly, 'data-selection-bar')
+
+    def test_prepare_page_registers_and_comes_back_to_itself(self):
+        self.make('CMAU0000001', self.yesterday)
+        self.login('soir')
+        url = reverse('terminal:prepare') + f'?date={self.tomorrow.isoformat()}'
+        page = self.client.get(url)
+        self.assertEqual(page.context['selected_date'], self.tomorrow)
+        self.assertEqual(page.context['registered_count'], 0)
+        self.assertContains(page, 'id="add-single-number"')
+        self.assertContains(page, 'name="container_list"')
+
+        resp = self.client.post(reverse('terminal:container_add_single'), {
+            'container_number': 'CMAU0000005', 'shipping_line': str(self.cma.id), 'status': 'pending',
+            'scheduled_date': self.tomorrow.isoformat(), 'next': url,
+        })
+        self.assertRedirects(resp, url, fetch_redirect_response=False)
+        after = self.client.get(url)
+        self.assertEqual(after.context['registered_count'], 1)
+        self.assertEqual([c.container_number for c in after.context['recent']], ['CMAU0000005'])
+
+        # Une date passée est ramenée à aujourd'hui ; le superviseur matin reste sur la liste du jour.
+        past = self.client.get(reverse('terminal:prepare'), {'date': self.yesterday.isoformat()})
+        self.assertEqual(past.context['selected_date'], self.today)
+        self.login('matin')
+        forced = self.client.get(reverse('terminal:prepare'), {'date': self.tomorrow.isoformat()})
+        self.assertEqual(forced.context['selected_date'], self.today)
 
     def test_inspection_lists_confirmed_containers_of_a_started_session(self):
         confirmed = self.make('CMAU0000001', self.today)

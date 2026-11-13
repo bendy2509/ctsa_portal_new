@@ -341,6 +341,40 @@ def client_watchlist_remove_view(request, pk):
 
 
 @login_required
+def prepare_view(request):
+    """Préparer une liste : inscrire des conteneurs et reprendre les non vérifiés, à l'écart du
+    tableau de bord, qui ne montre plus que la liste elle-même."""
+    if not request.user.is_staff_member:
+        return redirect('terminal:home')
+
+    today = timezone.localdate()
+    tomorrow = today + datetime.timedelta(days=1)
+    if request.user.is_morning_supervisor:
+        # Le superviseur matin n'inscrit que sur la liste du jour.
+        selected_date = today
+    else:
+        selected_date = max(_parse_date(request.GET.get('date', ''), default_work_date(request.user)), today)
+
+    session_qs = Container.objects.filter(scheduled_date=selected_date).select_related('shipping_line')
+    registered_count = session_qs.count()
+    backlog_qs = unverified_backlog(selected_date)
+
+    return render(request, 'portal/prepare.html', {
+        'today': today,
+        'tomorrow': tomorrow,
+        'selected_date': selected_date,
+        'registered_count': registered_count,
+        # Les derniers inscrits, pour voir le résultat de ce qu'on vient d'ajouter.
+        'recent': list(session_qs.order_by('-created_at', '-pk')[:8]),
+        'backlog': _backlog_breakdown(backlog_qs),
+        'backlog_rows': list(backlog_qs.order_by('first_scheduled_date', 'container_number')[:40]),
+        'shipping_lines': ShippingLine.objects.filter(is_active=True),
+        'reasons': UnavailabilityReason.objects.filter(is_active=True),
+        'status_choices': Container.Status.choices,
+    })
+
+
+@login_required
 def dashboard_view(request):
     if not request.user.is_staff_member:
         return redirect('terminal:client_watchlist')
@@ -397,25 +431,10 @@ def dashboard_view(request):
         .order_by('-changed_at')[:10]
     )
 
-    # Conteneurs programmés mais pas encore vérifiés : proposés à chaque préparation de liste.
-    backlog = None
-    backlog_rows = []
-    list_started = stats['total'] > 0
-    if selected_date >= today:
-        backlog_qs = unverified_backlog(selected_date)
-        backlog = _backlog_breakdown(backlog_qs)
-        if list_started:
-            backlog_rows = list(backlog_qs.order_by('first_scheduled_date', 'container_number')[:60])
-
     return render(request, 'portal/dashboard.html', {
-        # Blocs de préparation dépliés tant qu'on constitue une liste ; repliés pendant une
-        # séance en cours, pour que le tableau du jour reste en haut de l'écran.
-        'preparing_list': selected_date > today or not list_started,
         'verification_filter': verification_filter,
         'show_verification': show_verification,
-        'backlog': backlog,
-        'backlog_rows': backlog_rows,
-        'list_started': list_started,
+        'filtered': bool(status_filter or line_filter or search_q or verification_filter),
         'today': today,
         'tomorrow': tomorrow,
         'selected_date': selected_date,
@@ -463,14 +482,14 @@ def container_add_single_view(request):
             request,
             f"Numéro « {raw_number} » invalide : il doit comporter 4 lettres et 7 chiffres (ex. CMAU4052450)."
         )
-        return redirect(_dashboard_url(target_date))
+        return redirect(_safe_next(request, _dashboard_url(target_date)))
 
     if not shipping_line_id.isdigit():
         messages.error(
             request,
             "Veuillez sélectionner manuellement la ligne maritime du conteneur."
         )
-        return redirect(_dashboard_url(target_date))
+        return redirect(_safe_next(request, _dashboard_url(target_date)))
 
     existing = Container.objects.filter(
         container_number=normalized, scheduled_date=target_date
@@ -498,7 +517,7 @@ def container_add_single_view(request):
             f"{carried.first_scheduled_date.strftime('%d/%m/%Y')} : il a été repris dans la liste, "
             f"sans nouvelle saisie (ligne maritime conservée)."
         )
-        return redirect(_dashboard_url(target_date))
+        return redirect(_safe_next(request, _dashboard_url(target_date)))
 
     if existing:
         if request.user.is_morning_supervisor:
@@ -506,7 +525,7 @@ def container_add_single_view(request):
                 request,
                 f"Le conteneur {normalized} est déjà programmé pour le {target_date.strftime('%d/%m/%Y')}."
             )
-            return redirect(_dashboard_url(target_date))
+            return redirect(_safe_next(request, _dashboard_url(target_date)))
         existing.status = status
         existing.shipping_line_id = int(shipping_line_id)
         existing.unavailability_reason_id = int(reason_id) if (reason_id and reason_id.isdigit()) else None
@@ -532,7 +551,7 @@ def container_add_single_view(request):
             f"Conteneur {normalized}{line_info} ajouté avec le statut « {container.get_status_display()} »."
         )
 
-    return redirect(_dashboard_url(target_date))
+    return redirect(_safe_next(request, _dashboard_url(target_date)))
 
 
 @login_required
@@ -559,12 +578,12 @@ def container_add_bulk_view(request):
 
     if not shipping_line_id.isdigit():
         messages.error(request, "Veuillez sélectionner la ligne maritime pour ce lot de conteneurs.")
-        return redirect(_dashboard_url(target_date))
+        return redirect(_safe_next(request, _dashboard_url(target_date)))
 
     tokens = [t.strip() for t in re.split(r'[\r\n,;]+', raw_list) if t.strip()]
     if not tokens:
         messages.warning(request, "Aucun numéro de conteneur fourni dans la zone d'ajout massif.")
-        return redirect(_dashboard_url(target_date))
+        return redirect(_safe_next(request, _dashboard_url(target_date)))
 
     created_count = 0
     skipped_duplicates = []
@@ -627,7 +646,7 @@ def container_add_bulk_view(request):
             f"{len(invalid_tokens)} numéro(s) rejeté(s) (format 4 lettres + 7 chiffres requis) : {', '.join(invalid_tokens[:6])}."
         )
 
-    return redirect(_dashboard_url(target_date))
+    return redirect(_safe_next(request, _dashboard_url(target_date)))
 
 
 @login_required
@@ -663,10 +682,65 @@ def container_update_status_view(request, pk):
         container.save(acting_user=request.user)
         messages.success(
             request,
-            f"Conteneur {container.container_number} mis à jour ({container.get_status_display()})."
+            f"Conteneur {container.container_number} mis à jour ({container.get_status_display()}).",
         )
 
-    return redirect(_dashboard_url(container.scheduled_date))
+    return redirect(_safe_next(request, _dashboard_url(container.scheduled_date)))
+
+
+@login_required
+@require_POST
+def container_status_bulk_view(request):
+    """Change le statut (Confirmé, En attente, Indisponible) des conteneurs cochés ou de tous les conteneurs en attente."""
+    if not request.user.can_edit_or_delete_containers:
+        messages.error(
+            request,
+            "Le rôle Superviseur matin permet uniquement d'ajouter des conteneurs en statut « En attente ».",
+        )
+        return redirect('terminal:dashboard')
+
+    today = timezone.localdate()
+    target_date = _parse_date(request.POST.get('date', ''), today)
+    new_status = request.POST.get('status', '').strip()
+    reason_id = request.POST.get('unavailability_reason') or None
+    note = request.POST.get('unavailability_note', '').strip()
+    fallback = _dashboard_url(target_date)
+
+    if new_status not in dict(Container.Status.choices):
+        messages.error(request, "Statut inconnu.")
+        return redirect(_safe_next(request, fallback))
+
+    qs = Container.objects.filter(scheduled_date=target_date)
+    ids = [i for i in request.POST.getlist('ids') if i.isdigit()]
+    if request.POST.get('scope') == 'all_pending':
+        qs = qs.filter(status=Container.Status.PENDING)
+    elif ids:
+        qs = qs.filter(pk__in=ids)
+    else:
+        messages.warning(request, "Veuillez cocher au moins un conteneur dans la liste.")
+        return redirect(_safe_next(request, fallback))
+
+    updated_count = 0
+    for container in qs:
+        container.status = new_status
+        if new_status == Container.Status.UNAVAILABLE:
+            container.unavailability_reason_id = int(reason_id) if (reason_id and reason_id.isdigit()) else None
+            container.unavailability_note = note
+        else:
+            container.unavailability_reason = None
+            container.unavailability_note = ''
+        container.save(acting_user=request.user)
+        updated_count += 1
+
+    label = dict(Container.Status.choices)[new_status]
+    if updated_count:
+        messages.success(
+            request,
+            f"{updated_count} conteneur(s) passé(s) au statut « {label} » pour la séance du {target_date.strftime('%d/%m/Y').replace('/Y', '/' + target_date.strftime('%Y'))}.",
+        )
+    else:
+        messages.warning(request, "Aucun conteneur à modifier pour cette sélection.")
+    return redirect(_safe_next(request, fallback))
 
 
 @login_required
@@ -790,6 +864,11 @@ def inspection_view(request):
         rows = rows.filter(container_number__icontains=normalize_container_number(search_q))
     # Les conteneurs encore à marquer en premier.
     rows = sorted(rows, key=lambda c: (c.verification_result != '', c.container_number))
+    not_confirmed_rows = list(
+        session_qs.exclude(status=Container.Status.CONFIRMED)
+        .select_related('shipping_line', 'unavailability_reason')
+        .order_by('status', 'container_number')
+    )
 
     return render(request, 'portal/inspection.html', {
         'today': today,
@@ -798,6 +877,8 @@ def inspection_view(request):
         'next_date': selected_date + datetime.timedelta(days=1) if selected_date < today else None,
         'stats': stats,
         'rows': rows,
+        'not_confirmed_rows': not_confirmed_rows,
+        'reasons': UnavailabilityReason.objects.filter(is_active=True),
         'search_q': search_q,
         'state': state,
     })
@@ -882,6 +963,7 @@ def register_view(request):
         'page': page,
         'page_query': page_query,
         'shipping_lines': ShippingLine.objects.filter(is_active=True),
+        'reasons': UnavailabilityReason.objects.filter(is_active=True),
     })
 
 
@@ -933,6 +1015,7 @@ def carryover_view(request):
         'status_filter': status_filter,
         'line_filter': line_filter,
         'shipping_lines': ShippingLine.objects.filter(is_active=True),
+        'reasons': UnavailabilityReason.objects.filter(is_active=True),
         'status_choices': Container.Status.choices,
         'oldest': oldest,
         'page': page,

@@ -30,3 +30,4 @@ Thumbs.db
 
 # Executable Tailwind telecharge (voir tailwind.config.js)
 tools/
+node_modules/
