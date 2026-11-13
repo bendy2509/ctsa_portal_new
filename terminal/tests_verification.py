@@ -6,7 +6,7 @@ from django.utils import timezone
 
 from accounts.models import User
 from terminal.models import Container, ContainerStatusLog, ShippingLine
-from terminal.views import unverified_backlog
+from terminal.views import PAGE_SIZE, unverified_backlog
 
 
 class VerificationTrackingTests(TestCase):
@@ -230,9 +230,11 @@ class VerificationTrackingTests(TestCase):
                 resp = self.client.get(reverse(f'terminal:{name}'))
                 self.assertEqual(resp.status_code, 200, f'{username} {name}')
                 self.assertContains(resp, 'portal-nav')
-                self.assertContains(resp, 'Non vérifiés')
+                self.assertContains(resp, reverse('terminal:inspection'))
         self.login('adm')
-        for name in ('terminal:shipping_lines', 'terminal:prefixes', 'accounts:user_list'):
+        for name in ('inspection', 'carryover'):
+            self.assertContains(self.client.get(reverse(f'terminal:{name}')), reverse('terminal:carryover'))
+        for name in ('terminal:shipping_lines', 'accounts:user_list'):
             self.assertContains(self.client.get(reverse(name)), 'portal-nav')
         dash = self.client.get(reverse('terminal:dashboard'))
         self.assertContains(dash, reverse('terminal:inspection'))
@@ -324,15 +326,15 @@ class VerificationTrackingTests(TestCase):
         self.login('adm')
 
         first = self.client.get(reverse('terminal:carryover'), {'status': 'pending'})
-        self.assertEqual(len(first.context['rows']), 50)
-        self.assertContains(first, 'Lignes 1 à 50 sur 55')
+        self.assertEqual(len(first.context['rows']), PAGE_SIZE)
+        self.assertContains(first, f'Lignes 1 à {PAGE_SIZE} sur 55')
         self.assertContains(first, 'status=pending&amp;page=2')
         second = self.client.get(reverse('terminal:carryover'), {'status': 'pending', 'page': 2})
-        self.assertEqual(len(second.context['rows']), 5)
+        self.assertEqual(len(second.context['rows']), PAGE_SIZE)
         self.assertEqual(second.context['breakdown']['total'], 55)
 
         logs = self.client.get(reverse('terminal:status_logs'), {'q': 'CMAU'})
-        self.assertEqual(len(logs.context['logs']), 50)
+        self.assertEqual(len(logs.context['logs']), PAGE_SIZE)
         self.assertContains(logs, '55 opérations enregistrées')
         self.assertContains(logs, 'q=CMAU&amp;page=2')
 
@@ -464,41 +466,6 @@ class VerificationTrackingTests(TestCase):
         self.make('CMAU0000009', self.yesterday)
         self.assertContains(self.client.get(reverse('terminal:carryover')), 'name="result" value="verified"')
 
-    def test_unavailability_reason_can_be_renamed_without_losing_its_containers(self):
-        from terminal.models import UnavailabilityReason
-        reason = UnavailabilityReason.objects.create(code='panne', label='Panne', description='')
-        other = UnavailabilityReason.objects.create(code='douane', label='Blocage douane')
-        c = Container.objects.create(
-            container_number='CMAU0000001', scheduled_date=self.today, shipping_line=self.cma,
-            status=Container.Status.UNAVAILABLE, unavailability_reason=reason,
-        )
-        url = reverse('terminal:prefixes')
-
-        self.login('sup')  # réservé aux administrateurs
-        self.client.post(url, {'action': 'save_reason', 'reason_id': reason.pk, 'label': 'Piraté'})
-        reason.refresh_from_db()
-        self.assertEqual(reason.label, 'Panne')
-
-        self.login('adm')
-        self.assertContains(self.client.get(url), f'id="reason-edit-{reason.pk}"')
-        self.client.post(url, {
-            'action': 'save_reason', 'reason_id': reason.pk,
-            'label': 'Panne reach stacker', 'description': 'Engin de manutention arrêté',
-        })
-        reason.refresh_from_db()
-        c.refresh_from_db()
-        self.assertEqual(reason.label, 'Panne reach stacker')
-        self.assertEqual(reason.description, 'Engin de manutention arrêté')
-        self.assertEqual(reason.code, 'panne')
-        self.assertEqual(c.unavailability_reason, reason)
-
-        # Doublon et intitulé vide refusés.
-        self.client.post(url, {'action': 'save_reason', 'reason_id': reason.pk, 'label': 'blocage douane'})
-        self.client.post(url, {'action': 'save_reason', 'reason_id': reason.pk, 'label': '  '})
-        reason.refresh_from_db()
-        self.assertEqual(reason.label, 'Panne reach stacker')
-        self.assertEqual(other.label, 'Blocage douane')
-
     def test_public_page_shows_verified(self):
         c = self.make('CMAU0000001', self.today)
         c.set_verification('verified', acting_user=self.admin)
@@ -548,16 +515,27 @@ class VerificationTrackingTests(TestCase):
         self.login('adm')
 
         dash_p1 = self.client.get(reverse('terminal:dashboard'), {'date': self.today.isoformat()})
-        self.assertEqual(len(dash_p1.context['containers']), 50)
-        self.assertContains(dash_p1, 'Page 1 sur 2')
+        self.assertEqual(len(dash_p1.context['containers']), PAGE_SIZE)
+        self.assertContains(dash_p1, 'Page 1 sur 3')
         dash_p2 = self.client.get(reverse('terminal:dashboard'), {'date': self.today.isoformat(), 'page': 2})
-        self.assertEqual(len(dash_p2.context['containers']), 5)
+        self.assertEqual(len(dash_p2.context['containers']), PAGE_SIZE)
 
         insp_p1 = self.client.get(reverse('terminal:inspection'), {'date': self.today.isoformat()})
-        self.assertEqual(len(insp_p1.context['rows']), 50)
-        self.assertContains(insp_p1, 'Page 1 sur 2')
+        self.assertEqual(len(insp_p1.context['rows']), PAGE_SIZE)
+        self.assertContains(insp_p1, 'Page 1 sur 3')
         insp_p2 = self.client.get(reverse('terminal:inspection'), {'date': self.today.isoformat(), 'page': 2})
-        self.assertEqual(len(insp_p2.context['rows']), 5)
+        self.assertEqual(len(insp_p2.context['rows']), PAGE_SIZE)
+
+    def test_single_add_allows_missing_shipping_line(self):
+        self.login('sup')
+        self.client.post(reverse('terminal:container_add_single'), {
+            'container_number': 'CMAU0000020',
+            'shipping_line': '',
+            'scheduled_date': self.tomorrow.isoformat(),
+        })
+        c = Container.objects.get(container_number='CMAU0000020', scheduled_date=self.tomorrow)
+        self.assertIsNone(c.shipping_line)
+        self.assertEqual(c.status, Container.Status.PENDING)
 
     def test_bulk_add_allows_optional_shipping_line(self):
         self.login('sup')

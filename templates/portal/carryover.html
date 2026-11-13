@@ -1,22 +1,20 @@
 {% extends 'portal/base_portal.html' %}
 
-{% block title %}Conteneurs non vérifiés — Cap Terminal S.A.{% endblock %}
+{% block title %}Inspection · Non vérifiés — Cap Terminal S.A.{% endblock %}
 
 {% block portal_content %}
-<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-5">
 
-  <!-- En-tête : titre + liste visée par l'ajout en un clic -->
-  <div class="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4 pb-5 border-b border-[#dadada]">
-    <div>
-      <h1 class="mb-1">
-        Conteneurs programmés, pas encore vérifiés
-      </h1>
-      <p class="text-sm text-[#666666] m-0 max-w-3xl">
-        Tout conteneur inscrit sur une liste reste ici tant qu'il n'est pas vérifié, quel que soit son dernier statut.
-        Ajoutez-le à la liste suivante en un clic au lieu de le ressaisir, ou rejetez-le s'il ne doit plus revenir.
-      </p>
-    </div>
+  <header>
+    <h1 class="text-xl sm:text-2xl font-heading font-extrabold text-[#2c3741] m-0">Inspection</h1>
+    <p class="text-sm text-[#64748b] mt-1 mb-0 max-w-3xl">
+      Tout conteneur programmé reste ici tant qu'il n'est pas vérifié, quel que soit son dernier statut.
+      Ajoutez-le à la liste suivante en un clic au lieu de le ressaisir, ou rejetez-le.
+    </p>
+    {% include 'partials/inspection_tabs.html' with tab='backlog' %}
+  </header>
 
+  <div class="flex flex-wrap items-end justify-between gap-3">
     <form action="{% url 'terminal:carryover' %}" method="get" class="flex flex-wrap items-end gap-2 shrink-0">
       <div class="form-field mb-0">
         <label for="carry-date" class="text-xs">Liste à compléter</label>
@@ -35,25 +33,25 @@
   </div>
 
   <!-- Synthèse du suivi -->
-  <div class="kpi-grid">
-    <div class="kpi-card rounded-xl border border-slate-200/80 shadow-xs">
+  <div class="metric-strip">
+    <div class="stat-tile">
       <div class="kpi-label">À suivre</div>
       <div class="kpi-value tabular-nums">{{ breakdown.total }}</div>
       <div class="kpi-note">
         {% if oldest and not status_filter and not line_filter %}Le plus ancien : {{ oldest.days_since_first_scheduled }} j{% else %}conteneur{{ breakdown.total|pluralize }} non vérifié{{ breakdown.total|pluralize }}{% endif %}
       </div>
     </div>
-    <div class="kpi-card rounded-xl border border-slate-200/80 shadow-xs">
+    <div class="stat-tile">
       <div class="kpi-label">Dernier statut : confirmé</div>
       <div class="kpi-value tabular-nums text-[#008751]">{{ breakdown.confirmed }}</div>
       <div class="kpi-note">disponibles mais non vérifiés</div>
     </div>
-    <div class="kpi-card rounded-xl border border-slate-200/80 shadow-xs">
+    <div class="stat-tile">
       <div class="kpi-label">Dernier statut : en attente</div>
       <div class="kpi-value tabular-nums text-[#8a5300]">{{ breakdown.pending }}</div>
       <div class="kpi-note">jamais positionnés</div>
     </div>
-    <div class="kpi-card rounded-xl border border-slate-200/80 shadow-xs">
+    <div class="stat-tile">
       <div class="kpi-label">Dernier statut : indisponible</div>
       <div class="kpi-value tabular-nums text-[#e74c3c]">{{ breakdown.unavailable }}</div>
       <div class="kpi-note">motif indiqué sur la ligne</div>

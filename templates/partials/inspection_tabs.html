@@ -1,0 +1,10 @@
+{# Onglets communs à l'Inspection : la séance du jour et le suivi des non vérifiés. `tab` = session | backlog #}
+<nav class="list-tabs" aria-label="Sections de l'inspection" style="padding-inline:0">
+  <a href="{% url 'terminal:inspection' %}" class="list-tab" {% if tab == 'session' %}aria-current="true"{% endif %}>
+    Inspection de la séance
+  </a>
+  <a href="{% url 'terminal:carryover' %}" class="list-tab" {% if tab == 'backlog' %}aria-current="true"{% endif %}>
+    Non vérifiés
+    {% if portal_unverified_count %}<span class="list-tab-count">{{ portal_unverified_count }}</span>{% endif %}
+  </a>
+</nav>

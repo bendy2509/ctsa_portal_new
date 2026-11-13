@@ -6,15 +6,15 @@
 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-5">
 
   <!-- En-tête : quelle liste on prépare -->
-  <div class="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4 pb-4 border-b border-slate-200/80">
+  <header class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
     <div>
-      <h1 class="text-xl sm:text-2xl font-heading font-extrabold text-[#2c3741] m-0">Préparer la liste du {{ selected_date|date:"d/m/Y" }}</h1>
-      <p class="text-sm text-[#64748b] m-0 mt-0.5">
+      <h1 class="text-xl sm:text-2xl font-heading font-extrabold text-[#2c3741] m-0">Préparer une liste</h1>
+      <p class="text-sm text-[#64748b] mt-1 mb-0">
         {{ selected_date|date:"l j F Y"|capfirst }} ·
         {% if registered_count %}
-          <a href="{% url 'terminal:dashboard' %}?date={{ selected_date|date:'Y-m-d' }}" class="font-semibold text-[#217dbb] underline underline-offset-2">{{ registered_count }} conteneur{{ registered_count|pluralize }} déjà inscrit{{ registered_count|pluralize }}</a>
+          <a href="{% url 'terminal:dashboard' %}?date={{ selected_date|date:'Y-m-d' }}" class="font-semibold text-[#217dbb] underline underline-offset-2 tabular-nums">{{ registered_count }} conteneur{{ registered_count|pluralize }} inscrit{{ registered_count|pluralize }}</a>
         {% else %}
-          aucun conteneur inscrit pour l'instant
+          aucun conteneur inscrit
         {% endif %}
       </p>
     </div>
@@ -32,7 +32,7 @@
           Demain
         </a>
       </div>
-      <form action="{% url 'terminal:prepare' %}" method="get" class="inline-flex items-center gap-1.5">
+      <form action="{% url 'terminal:prepare' %}" method="get" class="inline-flex items-center">
         <label for="prepare-date" class="visually-hidden">Choisir une autre date</label>
         <input type="date"
                id="prepare-date"
@@ -41,118 +41,36 @@
                value="{{ selected_date|date:'Y-m-d' }}"
                data-auto-submit-date
                class="border border-slate-200/80 rounded-lg px-3 py-1.5 min-h-[38px] text-xs font-semibold text-[#2c3741] bg-white">
-        <button type="submit" class="btn-admin rounded-lg">Afficher</button>
       </form>
     </div>
-  </div>
+  </header>
 
-  <!-- 1. Reprendre : d'abord ce qui est déjà connu, pour ne rien ressaisir -->
-  {% if backlog.total %}
-    <section aria-labelledby="prepare-backlog-title" class="bg-white rounded-xl border border-slate-200/80 shadow-xs overflow-hidden">
-      <div class="bg-[#f8fafc] border-b border-slate-200/80 px-4 sm:px-5 py-3.5 flex flex-wrap items-center justify-between gap-3">
-        <div class="flex items-start gap-2.5">
-          <svg class="portal-icon text-[#3498db] mt-0.5 shrink-0" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
-          <div>
-            <h2 id="prepare-backlog-title" class="text-sm font-heading font-extrabold uppercase tracking-wider text-[#2c3741] m-0">Reprendre des conteneurs non vérifiés</h2>
-            <p class="text-xs text-[#64748b] mt-0.5 mb-0">
-              {{ backlog.total }} conteneur{{ backlog.total|pluralize }} déjà programmé{{ backlog.total|pluralize }} : un clic les ajoute à cette liste en statut « En attente ».
-            </p>
-          </div>
-        </div>
-        <a href="{% url 'terminal:carryover' %}?date={{ selected_date|date:'Y-m-d' }}" class="btn-admin rounded-lg">Voir tout le suivi</a>
-      </div>
-
-      <ul class="list-none m-0 p-0 max-h-72 overflow-y-auto divide-y divide-slate-100">
-        {% for b in backlog_rows %}
-          <li class="px-4 sm:px-5 py-3 flex flex-wrap items-center justify-between gap-3 hover:bg-slate-50/70 transition">
-            <div class="flex flex-wrap items-center gap-x-3 gap-y-1 min-w-0">
-              <span class="font-mono text-sm font-bold tracking-wide text-[#2c3741] tabular-nums">{{ b.container_number }}</span>
-              {% if b.status == 'confirmed' %}
-                <span class="status-badge status-confirmed inline-flex items-center gap-1.5 rounded-full">
-                  <span class="status-seg-dot dot-confirmed"></span>Confirmé
-                </span>
-              {% elif b.status == 'pending' %}
-                <span class="status-badge status-pending inline-flex items-center gap-1.5 rounded-full">
-                  <span class="status-seg-dot dot-pending"></span>En attente
-                </span>
-              {% else %}
-                <span class="status-badge status-unavailable inline-flex items-center gap-1.5 rounded-full">
-                  <span class="status-seg-dot dot-unavailable"></span>Indisponible
-                </span>
-              {% endif %}
-              <span class="text-sm text-[#64748b]">{{ b.shipping_line.name|default:"Ligne non renseignée" }}</span>
-              <span class="text-sm text-[#64748b] tabular-nums">séance du {{ b.scheduled_date|date:"d/m" }}{% if b.days_since_first_scheduled > 1 %} · programmé depuis {{ b.days_since_first_scheduled }} j{% endif %}</span>
-            </div>
-            <div class="flex items-center gap-3">
-              <form action="{% url 'terminal:carryover_decide' %}" method="post">
-                {% csrf_token %}
-                <input type="hidden" name="decision" value="carry">
-                <input type="hidden" name="ids" value="{{ b.pk }}">
-                <input type="hidden" name="date" value="{{ selected_date|date:'Y-m-d' }}">
-                <input type="hidden" name="next" value="{{ request.get_full_path }}">
-                <button type="submit" class="btn-admin btn-admin-primary min-h-[34px] py-1">Ajouter à cette liste</button>
-              </form>
-              <form action="{% url 'terminal:carryover_decide' %}" method="post">
-                {% csrf_token %}
-                <input type="hidden" name="decision" value="reject">
-                <input type="hidden" name="ids" value="{{ b.pk }}">
-                <input type="hidden" name="date" value="{{ selected_date|date:'Y-m-d' }}">
-                <input type="hidden" name="next" value="{{ request.get_full_path }}">
-                <button type="submit"
-                        data-confirm-title="Rejeter ce conteneur ?"
-                        data-confirm="{{ b.container_number }} sortira du suivi des non vérifiés et ne sera plus proposé pour les prochaines listes."
-                        data-confirm-label="Rejeter"
-                        data-confirm-tone="danger"
-                        class="text-sm font-semibold text-[#5b656d] hover:text-[#b82c1f] underline">
-                  Rejeter
-                </button>
-              </form>
-            </div>
-          </li>
-        {% endfor %}
-      </ul>
-      {% if backlog.total > backlog_rows|length %}
-        <p class="px-4 sm:px-5 py-2.5 border-t border-[#e1e5e8] m-0 text-sm text-[#5b656d]">
-          {{ backlog_rows|length }} affichés sur {{ backlog.total }} : la suite est dans « Voir tout le suivi ».
-        </p>
-      {% endif %}
-    </section>
-  {% endif %}
-
-  <!-- 2. Inscrire de nouveaux conteneurs -->
+  <!-- 1. Inscrire des conteneurs -->
   <section aria-labelledby="prepare-add-title" class="bg-white rounded-xl border border-slate-200/80 shadow-xs overflow-hidden">
-    <div class="bg-[#f8fafc] px-4 sm:px-5 py-3.5 flex flex-wrap items-center justify-between gap-3 border-b border-slate-200/80">
-      <div class="flex items-start gap-2.5">
-        <svg class="portal-icon text-[#3498db] mt-0.5 shrink-0" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M8 12h8"/><path d="M12 8v8"/></svg>
-        <div>
-          <h2 id="prepare-add-title" class="text-sm font-heading font-extrabold uppercase tracking-wider text-[#2c3741] m-0">Inscrire de nouveaux conteneurs</h2>
-          <p class="text-xs text-[#64748b] mt-0.5 mb-0">Tout nouvel ajout est automatiquement marqué « En attente » jusqu'à son arrivée sur la rampe.</p>
-        </div>
+    <div class="px-4 sm:px-6 pt-4 pb-0 flex flex-wrap items-end justify-between gap-3 border-b border-slate-200/80">
+      <div class="pb-3">
+        <h2 id="prepare-add-title" class="text-base font-heading font-extrabold text-[#2c3741] m-0">Inscrire des conteneurs</h2>
+        <p class="text-xs text-[#64748b] mt-0.5 mb-0">Ajoutés « En attente » jusqu'à leur confirmation sur la rampe.</p>
       </div>
-      <div class="inline-flex rounded-lg border border-slate-200/80 bg-white p-0.5" role="tablist" aria-label="Mode d'enregistrement">
-        <button type="button"
-                data-tab-target="panel-single-add"
-                aria-selected="true"
-                class="tab-btn px-3.5 py-1.5 rounded-md text-xs font-bold bg-[#3498db] text-white transition">
-          Un seul conteneur
+      <div class="list-tabs" role="tablist" aria-label="Mode d'enregistrement" style="border:0;padding:0">
+        <button type="button" data-tab-target="panel-single-add" aria-selected="true" class="tab-btn list-tab" style="border-top:0;border-inline:0;background:none;cursor:pointer">
+          Un conteneur
         </button>
-        <button type="button"
-                data-tab-target="panel-bulk-add"
-                aria-selected="false"
-                class="tab-btn px-3.5 py-1.5 rounded-md text-xs font-bold bg-transparent text-[#2c3741] hover:bg-slate-50 transition">
+        <button type="button" data-tab-target="panel-bulk-add" aria-selected="false" class="tab-btn list-tab" style="border-top:0;border-inline:0;background:none;cursor:pointer">
           Coller une liste
         </button>
       </div>
     </div>
 
     <!-- Un seul conteneur -->
-    <div id="panel-single-add" class="p-4 sm:p-5">
+    <div id="panel-single-add" class="p-4 sm:p-6">
       <form action="{% url 'terminal:container_add_single' %}" method="post">
         {% csrf_token %}
         <input type="hidden" name="scheduled_date" value="{{ selected_date|date:'Y-m-d' }}">
         <input type="hidden" name="next" value="{{ request.get_full_path }}">
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-3 items-start">
-          <div class="lg:col-span-4 form-field mb-0">
+        <input type="hidden" name="status" value="pending">
+        <div class="grid grid-cols-1 lg:grid-cols-[2fr_1.2fr_auto] gap-3 items-end">
+          <div class="form-field mb-0">
             <label for="add-single-number">Numéro du conteneur</label>
             <input type="text"
                    id="add-single-number"
@@ -169,44 +87,36 @@
             <div id="add-single-err" class="error-msg">4 lettres et 7 chiffres requis.</div>
           </div>
 
-          <div class="lg:col-span-4 form-field mb-0">
-            <label for="add-single-line">Ligne maritime</label>
-            <select id="add-single-line" name="shipping_line" required class="form-control">
-              <option value="">Choisir…</option>
+          <div class="form-field mb-0">
+            <label for="add-single-line">Ligne maritime <span class="font-normal text-[#64748b]">(facultatif)</span></label>
+            <select id="add-single-line" name="shipping_line" class="form-control">
+              <option value="">Aucune pour l'instant</option>
               {% for line in shipping_lines %}
                 <option value="{{ line.id }}">{{ line.name }}</option>
               {% endfor %}
             </select>
           </div>
 
-          <div class="lg:col-span-2 form-field mb-0">
-            <label for="add-single-status">Statut initial</label>
-            <input type="hidden" name="status" value="pending">
-            <input type="text" id="add-single-status" value="En attente" disabled class="form-control bg-[#f8fafc] text-[#64748b]">
-          </div>
-
-          <div class="lg:col-span-2 lg:pt-[1.65rem]">
-            <button type="submit" class="btn-admin btn-admin-primary w-full min-h-[46px] rounded-lg">Ajouter</button>
+          <div>
+            <button type="submit" class="btn-admin btn-admin-primary w-full lg:w-auto min-h-[46px] px-6 rounded-lg">Ajouter</button>
           </div>
         </div>
-        <p class="text-xs text-[#64748b] mt-2.5 mb-0">
-          Tout nouvel ajout est automatiquement marqué « En attente » jusqu'à son arrivée sur la rampe.
-        </p>
       </form>
     </div>
 
     <!-- Coller une liste -->
-    <div id="panel-bulk-add" hidden class="p-4 sm:p-5">
+    <div id="panel-bulk-add" hidden class="p-4 sm:p-6">
       <form action="{% url 'terminal:container_add_bulk' %}" method="post">
         {% csrf_token %}
         <input type="hidden" name="scheduled_date" value="{{ selected_date|date:'Y-m-d' }}">
         <input type="hidden" name="next" value="{{ request.get_full_path }}">
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
-          <div class="lg:col-span-6 form-field mb-0">
+        <input type="hidden" name="default_status" value="pending">
+        <div class="grid grid-cols-1 lg:grid-cols-[3fr_2fr] gap-4 items-start">
+          <div class="form-field mb-0">
             <label for="bulk-container-list">Numéros, un par ligne</label>
             <textarea id="bulk-container-list"
                       name="container_list"
-                      rows="6"
+                      rows="5"
                       required
                       autocorrect="off"
                       autocapitalize="characters"
@@ -214,27 +124,16 @@
                       placeholder="CMAU4052450&#10;ASJU2190841"
                       class="form-control font-mono uppercase"></textarea>
           </div>
-
-          <div class="lg:col-span-6 space-y-3">
+          <div class="space-y-3">
             <div class="form-field mb-0">
-              <label for="bulk-line">Ligne maritime (optionnel)</label>
+              <label for="bulk-line">Ligne maritime <span class="font-normal text-[#64748b]">(facultatif)</span></label>
               <select id="bulk-line" name="shipping_line" class="form-control">
-                <option value="">Non renseignée (à compléter plus tard)</option>
+                <option value="">Aucune pour l'instant</option>
                 {% for line in shipping_lines %}
                   <option value="{{ line.id }}">{{ line.name }}</option>
                 {% endfor %}
               </select>
             </div>
-
-            <div class="form-field mb-0">
-              <label for="bulk-status">Statut initial</label>
-              <input type="hidden" name="default_status" value="pending">
-              <input type="text" id="bulk-status" value="En attente" disabled class="form-control bg-[#f8fafc] text-[#64748b]">
-              <p class="text-xs text-[#64748b] mt-1.5 mb-0">
-                Tous les conteneurs ajoutés seront marqués « En attente » jusqu'à leur confirmation sur la rampe.
-              </p>
-            </div>
-
             <button type="submit" class="btn-admin btn-admin-primary w-full min-h-[46px] rounded-lg">Enregistrer la liste</button>
           </div>
         </div>
@@ -242,34 +141,95 @@
     </div>
   </section>
 
-  <!-- 3. Ce qui vient d'être inscrit -->
+  <!-- 2. Reprendre ce qui est déjà connu, sans ressaisie -->
+  {% if backlog.total %}
+    <section aria-labelledby="prepare-backlog-title" class="bg-white rounded-xl border border-slate-200/80 shadow-xs overflow-hidden">
+      <div class="px-4 sm:px-6 py-3.5 flex flex-wrap items-center justify-between gap-3 border-b border-slate-200/80">
+        <div>
+          <h2 id="prepare-backlog-title" class="text-base font-heading font-extrabold text-[#2c3741] m-0">
+            À reprendre <span class="text-[#64748b] font-semibold tabular-nums">· {{ backlog.total }}</span>
+          </h2>
+          <p class="text-xs text-[#64748b] mt-0.5 mb-0">Déjà programmés et non vérifiés : un clic les ajoute à cette liste, sans les ressaisir.</p>
+        </div>
+        <a href="{% url 'terminal:carryover' %}?date={{ selected_date|date:'Y-m-d' }}" class="text-sm font-semibold text-[#217dbb] hover:underline">Tout voir dans Inspection</a>
+      </div>
+
+      <ul class="list-none m-0 p-0 max-h-[26rem] overflow-y-auto divide-y divide-slate-100">
+        {% for b in backlog_rows %}
+          <li class="px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 hover:bg-slate-50/70 transition">
+            <div class="min-w-0">
+              <div class="flex flex-wrap items-center gap-x-3 gap-y-1.5">
+                <span class="font-mono text-sm font-bold tracking-wide text-[#2c3741] tabular-nums">{{ b.container_number }}</span>
+                {% if b.status == 'confirmed' %}
+                  <span class="status-badge status-confirmed inline-flex items-center gap-1.5 rounded-full"><span class="status-seg-dot dot-confirmed"></span>Confirmé</span>
+                {% elif b.status == 'pending' %}
+                  <span class="status-badge status-pending inline-flex items-center gap-1.5 rounded-full"><span class="status-seg-dot dot-pending"></span>En attente</span>
+                {% else %}
+                  <span class="status-badge status-unavailable inline-flex items-center gap-1.5 rounded-full"><span class="status-seg-dot dot-unavailable"></span>Indisponible</span>
+                {% endif %}
+              </div>
+              <div class="text-xs text-[#64748b] mt-1 tabular-nums">
+                {% if b.shipping_line %}{{ b.shipping_line.name }} · {% endif %}séance du {{ b.scheduled_date|date:"d/m" }}{% if b.days_since_first_scheduled > 1 %} · programmé depuis {{ b.days_since_first_scheduled }} j{% endif %}
+              </div>
+            </div>
+            <div class="flex items-center gap-4 w-full sm:w-auto pt-1 sm:pt-0">
+              <form action="{% url 'terminal:carryover_decide' %}" method="post" class="flex-1 sm:flex-none">
+                {% csrf_token %}
+                <input type="hidden" name="decision" value="carry">
+                <input type="hidden" name="ids" value="{{ b.pk }}">
+                <input type="hidden" name="date" value="{{ selected_date|date:'Y-m-d' }}">
+                <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                <button type="submit" class="btn-admin btn-admin-primary w-full sm:w-auto min-h-[40px] py-1">Ajouter à cette liste</button>
+              </form>
+              <form action="{% url 'terminal:carryover_decide' %}" method="post">
+                {% csrf_token %}
+                <input type="hidden" name="decision" value="reject">
+                <input type="hidden" name="ids" value="{{ b.pk }}">
+                <input type="hidden" name="date" value="{{ selected_date|date:'Y-m-d' }}">
+                <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                <button type="submit"
+                        data-confirm-title="Rejeter ce conteneur ?"
+                        data-confirm="{{ b.container_number }} sortira du suivi des non vérifiés et ne sera plus proposé pour les prochaines listes."
+                        data-confirm-label="Rejeter"
+                        data-confirm-tone="danger"
+                        class="text-sm font-semibold text-[#5b656d] hover:text-[#b82c1f] underline px-2 py-2">
+                  Rejeter
+                </button>
+              </form>
+            </div>
+          </li>
+        {% endfor %}
+      </ul>
+      {% if backlog.total > backlog_rows|length %}
+        <p class="px-4 sm:px-6 py-2.5 border-t border-slate-200/80 m-0 text-xs text-[#64748b]">
+          {{ backlog_rows|length }} affichés sur {{ backlog.total }} : la suite est dans Inspection, onglet Non vérifiés.
+        </p>
+      {% endif %}
+    </section>
+  {% endif %}
+
+  <!-- 3. Derniers inscrits -->
   {% if recent %}
     <section aria-labelledby="prepare-recent-title" class="bg-white rounded-xl border border-slate-200/80 shadow-xs overflow-hidden">
-      <div class="bg-[#f8fafc] border-b border-slate-200/80 px-4 sm:px-5 py-3.5 flex flex-wrap items-center justify-between gap-3">
-        <h2 id="prepare-recent-title" class="text-sm font-heading font-extrabold uppercase tracking-wider text-[#2c3741] m-0">Derniers inscrits sur cette liste</h2>
-        <a href="{% url 'terminal:dashboard' %}?date={{ selected_date|date:'Y-m-d' }}" class="btn-admin rounded-lg tabular-nums">
-          Voir la liste complète ({{ registered_count }})
+      <div class="px-4 sm:px-6 py-3.5 flex flex-wrap items-center justify-between gap-3 border-b border-slate-200/80">
+        <h2 id="prepare-recent-title" class="text-base font-heading font-extrabold text-[#2c3741] m-0">Derniers inscrits</h2>
+        <a href="{% url 'terminal:dashboard' %}?date={{ selected_date|date:'Y-m-d' }}" class="text-sm font-semibold text-[#217dbb] hover:underline tabular-nums">
+          Voir les {{ registered_count }}
         </a>
       </div>
       <ul class="list-none m-0 p-0 divide-y divide-slate-100">
         {% for c in recent %}
-          <li class="px-4 sm:px-5 py-2.5 flex flex-wrap items-center justify-between gap-3 hover:bg-slate-50/70 transition">
-            <div class="flex flex-wrap items-center gap-x-3 gap-y-1">
+          <li class="px-4 sm:px-6 py-2.5 flex flex-wrap items-center justify-between gap-3">
+            <div class="flex flex-wrap items-center gap-x-3 gap-y-0.5">
               <span class="font-mono text-sm font-bold tracking-wide text-[#2c3741] tabular-nums">{{ c.container_number }}</span>
-              <span class="text-sm text-[#64748b]">{{ c.shipping_line.name|default:"Ligne non renseignée" }}</span>
+              {% if c.shipping_line %}<span class="text-xs text-[#64748b]">{{ c.shipping_line.name }}</span>{% endif %}
             </div>
             {% if c.status == 'confirmed' %}
-              <span class="status-badge status-confirmed inline-flex items-center gap-1.5 rounded-full">
-                <span class="status-seg-dot dot-confirmed"></span>Confirmé
-              </span>
+              <span class="status-badge status-confirmed inline-flex items-center gap-1.5 rounded-full"><span class="status-seg-dot dot-confirmed"></span>Confirmé</span>
             {% elif c.status == 'pending' %}
-              <span class="status-badge status-pending inline-flex items-center gap-1.5 rounded-full">
-                <span class="status-seg-dot dot-pending"></span>En attente
-              </span>
+              <span class="status-badge status-pending inline-flex items-center gap-1.5 rounded-full"><span class="status-seg-dot dot-pending"></span>En attente</span>
             {% else %}
-              <span class="status-badge status-unavailable inline-flex items-center gap-1.5 rounded-full">
-                <span class="status-seg-dot dot-unavailable"></span>Indisponible
-              </span>
+              <span class="status-badge status-unavailable inline-flex items-center gap-1.5 rounded-full"><span class="status-seg-dot dot-unavailable"></span>Indisponible</span>
             {% endif %}
           </li>
         {% endfor %}

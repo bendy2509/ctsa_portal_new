@@ -133,7 +133,7 @@ document.addEventListener('DOMContentLoaded', () => {
       tabButtons.forEach((b) => {
         const active = b === btn;
         b.setAttribute('aria-selected', String(active));
-        b.className = active
+        if (!b.classList.contains('list-tab')) b.className = active
           ? 'tab-btn px-3.5 py-1.5 rounded text-xs font-heading font-bold uppercase tracking-wider bg-[#3498db] text-white transition'
           : 'tab-btn px-3.5 py-1.5 rounded text-xs font-heading font-bold uppercase tracking-wider bg-transparent text-[#2c3741] hover:bg-[#f4f4f4] transition';
         const panel = document.getElementById(b.getAttribute('data-tab-target'));

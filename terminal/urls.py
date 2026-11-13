@@ -30,7 +30,5 @@ urlpatterns = [
     path('admin/containers/export-pdf/', views.container_export_pdf_view, name='container_export_pdf'),
     path('admin/containers/export-csv/', views.container_export_csv_view, name='container_export_csv'),
     path('admin/historique/', views.status_logs_view, name='status_logs'),
-    path('admin/motifs/', views.prefixes_view, name='prefixes'),
-    path('admin/prefixes/', views.prefixes_view, name='prefixes_legacy'),
     path('admin/lignes-maritimes/', views.shipping_lines_view, name='shipping_lines'),
 ]

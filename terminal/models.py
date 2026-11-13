@@ -84,22 +84,6 @@ class ContainerPrefix(models.Model):
         return f"{self.prefix} → {self.shipping_line.name}"
 
 
-class UnavailabilityReason(models.Model):
-    code = models.SlugField(max_length=40, unique=True, verbose_name="Code")
-    label = models.CharField(max_length=140, unique=True, verbose_name="Motif d'indisponibilité")
-    description = models.CharField(max_length=240, blank=True, verbose_name="Explication")
-    is_active = models.BooleanField(default=True, verbose_name="Actif")
-
-    class Meta:
-        db_table = 'unavailability_reasons'
-        verbose_name = "Motif d'indisponibilité"
-        verbose_name_plural = "Motifs d'indisponibilité"
-        ordering = ['label']
-
-    def __str__(self):
-        return self.label
-
-
 class Container(models.Model):
     class Status(models.TextChoices):
         CONFIRMED = 'confirmed', 'Confirmé'
@@ -148,18 +132,10 @@ class Container(models.Model):
         db_index=True,
         verbose_name="Statut",
     )
-    unavailability_reason = models.ForeignKey(
-        UnavailabilityReason,
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name='containers',
-        verbose_name="Motif standardisé",
-    )
     unavailability_note = models.CharField(
         max_length=255,
         blank=True,
-        verbose_name="Précision sur le motif",
+        verbose_name="Motif d'indisponibilité",
     )
     # --- Résultat de la séance de vérification douanière ---
     verification_result = models.CharField(
@@ -261,12 +237,7 @@ class Container(models.Model):
     def full_reason_display(self) -> str:
         if self.status != self.Status.UNAVAILABLE:
             return ''
-        parts = []
-        if self.unavailability_reason:
-            parts.append(self.unavailability_reason.label)
-        if self.unavailability_note:
-            parts.append(self.unavailability_note)
-        return " — ".join(parts) if parts else "Motif non précisé"
+        return self.unavailability_note or "Motif non précisé"
 
     @property
     def is_verified(self) -> bool:
@@ -325,7 +296,6 @@ class Container(models.Model):
         self.container_number = normalize_container_number(self.container_number)
 
         if self.status != self.Status.UNAVAILABLE:
-            self.unavailability_reason = None
             self.unavailability_note = ''
 
         # Une vérification n'a de sens que pour un conteneur confirmé.
@@ -342,7 +312,7 @@ class Container(models.Model):
         old_reason = ''
         is_new = self.pk is None
         if not is_new:
-            previous = Container.objects.select_related('unavailability_reason').filter(pk=self.pk).first()
+            previous = Container.objects.filter(pk=self.pk).first()
             if previous:
                 old_status = previous.status
                 old_reason = previous.full_reason_display

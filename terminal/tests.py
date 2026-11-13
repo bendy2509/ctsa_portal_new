@@ -5,7 +5,6 @@ from accounts.models import User
 from terminal.models import (
     ShippingLine,
     ContainerPrefix,
-    UnavailabilityReason,
     Container,
     ContainerStatusLog,
 )
@@ -18,9 +17,6 @@ class CTSAPortalBusinessTests(TestCase):
         self.client_http = Client()
         self.cma = ShippingLine.objects.create(name='CMA CGM', code='CMA')
         self.antillean = ShippingLine.objects.create(name='Antillean Marine', code='ANT')
-        self.reason_stacker = UnavailabilityReason.objects.create(
-            code='panne-reach-stacker', label='Panne reach stacker'
-        )
 
         self.admin_user = User.objects.create_user(
             username='admin_test', password='Password123!', role=User.Role.ADMIN
@@ -46,9 +42,8 @@ class CTSAPortalBusinessTests(TestCase):
         self.assertEqual(c.shipping_line, self.antillean)
         self.assertEqual(ContainerStatusLog.objects.filter(container=c).count(), 1)
 
-        # Change status to Unavailable with reason
+        # Change status to Unavailable with reason note
         c.status = Container.Status.UNAVAILABLE
-        c.unavailability_reason = self.reason_stacker
         c.unavailability_note = 'Intervention en cours'
         c.save(acting_user=self.admin_user)
 
@@ -56,7 +51,7 @@ class CTSAPortalBusinessTests(TestCase):
         self.assertEqual(len(logs), 2)
         self.assertEqual(logs[1].old_status, Container.Status.PENDING)
         self.assertEqual(logs[1].new_status, Container.Status.UNAVAILABLE)
-        self.assertIn('Panne reach stacker', logs[1].reason_text)
+        self.assertIn('Intervention en cours', logs[1].reason_text)
 
     def test_supervisor_forced_to_pending_on_add_and_has_compiled_rights(self):
         self.client_http.login(username='sup_test', password='Password123!')
@@ -241,14 +236,13 @@ class CTSAPortalBusinessTests(TestCase):
         self.assertEqual(c1.status, Container.Status.CONFIRMED)
         self.assertEqual(c2.status, Container.Status.CONFIRMED)
 
-        # 2. Mark selected container as unavailable with reason
+        # 2. Mark selected container as unavailable with reason note
         resp_unavail = self.client_http.post(
             reverse('terminal:container_status_bulk'),
             {
                 'date': today.isoformat(),
                 'ids': [str(c1.pk)],
                 'status': Container.Status.UNAVAILABLE,
-                'unavailability_reason': str(self.reason_stacker.id),
                 'unavailability_note': 'En maintenance',
             },
         )
@@ -256,7 +250,7 @@ class CTSAPortalBusinessTests(TestCase):
         c1.refresh_from_db()
         c2.refresh_from_db()
         self.assertEqual(c1.status, Container.Status.UNAVAILABLE)
-        self.assertEqual(c1.unavailability_reason, self.reason_stacker)
+        self.assertEqual(c1.unavailability_note, 'En maintenance')
         self.assertEqual(c2.status, Container.Status.CONFIRMED)
 
 

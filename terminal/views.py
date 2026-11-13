@@ -17,7 +17,6 @@ from accounts.utils import safe_next_url
 from .models import (
     ShippingLine,
     ContainerPrefix,
-    UnavailabilityReason,
     Container,
     ContainerStatusLog,
     SavedContainer,
@@ -97,7 +96,7 @@ def unverified_backlog(target_date: datetime.date):
     return (
         Container.objects.filter(scheduled_date__lt=limit, carry_decision='')
         .exclude(verification_result=Container.Verification.VERIFIED)
-        .select_related('shipping_line', 'unavailability_reason')
+        .select_related('shipping_line')
     )
 
 
@@ -188,7 +187,7 @@ def _relevant_schedules(numbers, today: datetime.date) -> dict:
     """Pour chaque numéro, la programmation à montrer au client (voir _pick_relevant_schedule)."""
     grouped = {}
     for c in (
-        Container.objects.select_related('shipping_line', 'unavailability_reason')
+        Container.objects.select_related('shipping_line')
         .filter(container_number__in=list(numbers))
         .order_by('container_number', '-scheduled_date', '-updated_at')
     ):
@@ -362,7 +361,6 @@ def prepare_view(request):
         'backlog': _backlog_breakdown(backlog_qs),
         'backlog_rows': list(backlog_qs.order_by('first_scheduled_date', 'container_number')[:40]),
         'shipping_lines': ShippingLine.objects.filter(is_active=True),
-        'reasons': UnavailabilityReason.objects.filter(is_active=True),
         'status_choices': Container.Status.choices,
     })
 
@@ -383,7 +381,7 @@ def dashboard_view(request):
     verification_filter = request.GET.get('verification', '').strip()
 
     base_qs = Container.objects.filter(scheduled_date=selected_date).select_related(
-        'shipping_line', 'prefix_ref', 'unavailability_reason', 'created_by', 'updated_by',
+        'shipping_line', 'prefix_ref', 'created_by', 'updated_by',
         'carried_from', 'verified_by',
     )
 
@@ -419,7 +417,6 @@ def dashboard_view(request):
     page, page_query = _paginate(request, containers)
 
     shipping_lines = ShippingLine.objects.filter(is_active=True)
-    reasons = UnavailabilityReason.objects.filter(is_active=True)
     recent_logs = (
         ContainerStatusLog.objects.select_related('container', 'changed_by')
         .filter(container__scheduled_date=selected_date)
@@ -441,7 +438,6 @@ def dashboard_view(request):
         'page': page,
         'page_query': page_query,
         'shipping_lines': shipping_lines,
-        'reasons': reasons,
         'recent_logs': recent_logs,
         'status_choices': Container.Status.choices,
     })
@@ -464,7 +460,6 @@ def container_add_single_view(request):
     status = Container.Status.PENDING
 
     shipping_line_id = request.POST.get('shipping_line') or ''
-    reason_id = request.POST.get('unavailability_reason') or None
     note = request.POST.get('unavailability_note', '').strip()
 
     if not CONTAINER_NUMBER_REGEX.match(normalized):
@@ -474,12 +469,8 @@ def container_add_single_view(request):
         )
         return redirect(_safe_next(request, _dashboard_url(target_date)))
 
-    if not shipping_line_id.isdigit():
-        messages.error(
-            request,
-            "Veuillez sélectionner manuellement la ligne maritime du conteneur."
-        )
-        return redirect(_safe_next(request, _dashboard_url(target_date)))
+    # La ligne maritime est facultative : elle peut être renseignée plus tard.
+    line_id = int(shipping_line_id) if shipping_line_id.isdigit() else None
 
     existing = Container.objects.filter(
         container_number=normalized, scheduled_date=target_date
@@ -506,8 +497,8 @@ def container_add_single_view(request):
 
     if existing:
         existing.status = status
-        existing.shipping_line_id = int(shipping_line_id)
-        existing.unavailability_reason_id = int(reason_id) if (reason_id and reason_id.isdigit()) else None
+        if line_id:
+            existing.shipping_line_id = line_id
         existing.unavailability_note = note
         existing.save(acting_user=request.user)
         messages.info(
@@ -519,8 +510,7 @@ def container_add_single_view(request):
             container_number=normalized,
             scheduled_date=target_date,
             status=status,
-            shipping_line_id=int(shipping_line_id),
-            unavailability_reason_id=int(reason_id) if (reason_id and reason_id.isdigit()) else None,
+            shipping_line_id=line_id,
             unavailability_note=note,
         )
         container.save(acting_user=request.user)
@@ -628,7 +618,6 @@ def container_update_status_view(request, pk):
 
     container = get_object_or_404(Container, pk=pk)
     new_status = request.POST.get('status', container.status)
-    reason_id = request.POST.get('unavailability_reason') or None
     note = request.POST.get('unavailability_note', '').strip()
     shipping_line_id = request.POST.get('shipping_line') or None
 
@@ -637,14 +626,9 @@ def container_update_status_view(request, pk):
         if shipping_line_id and shipping_line_id.isdigit():
             container.shipping_line_id = int(shipping_line_id)
         if new_status == Container.Status.UNAVAILABLE:
-            if reason_id and reason_id.isdigit():
-                container.unavailability_reason_id = int(reason_id)
-            elif 'unavailability_reason' in request.POST and reason_id is None:
-                container.unavailability_reason = None
             if 'unavailability_note' in request.POST:
                 container.unavailability_note = note
         else:
-            container.unavailability_reason = None
             container.unavailability_note = ''
         container.save(acting_user=request.user)
         messages.success(
@@ -669,7 +653,6 @@ def container_status_bulk_view(request):
     today = timezone.localdate()
     target_date = _parse_date(request.POST.get('date', ''), today)
     new_status = request.POST.get('status', '').strip()
-    reason_id = request.POST.get('unavailability_reason') or None
     note = request.POST.get('unavailability_note', '').strip()
     fallback = _dashboard_url(target_date)
 
@@ -691,10 +674,8 @@ def container_status_bulk_view(request):
     for container in qs:
         container.status = new_status
         if new_status == Container.Status.UNAVAILABLE:
-            container.unavailability_reason_id = int(reason_id) if (reason_id and reason_id.isdigit()) else None
             container.unavailability_note = note
         else:
-            container.unavailability_reason = None
             container.unavailability_note = ''
         container.save(acting_user=request.user)
         updated_count += 1
@@ -834,7 +815,7 @@ def inspection_view(request):
     page, page_query = _paginate(request, rows)
     not_confirmed_rows = list(
         session_qs.exclude(status=Container.Status.CONFIRMED)
-        .select_related('shipping_line', 'unavailability_reason')
+        .select_related('shipping_line')
         .order_by('status', 'container_number')
     )
 
@@ -848,7 +829,6 @@ def inspection_view(request):
         'page': page,
         'page_query': page_query,
         'not_confirmed_rows': not_confirmed_rows,
-        'reasons': UnavailabilityReason.objects.filter(is_active=True),
         'search_q': search_q,
         'state': state,
     })
@@ -866,7 +846,7 @@ def register_view(request):
     line_filter = request.GET.get('line', '').strip()
     has_dates = bool(request.GET.get('du') or request.GET.get('au'))
 
-    qs = Container.objects.select_related('shipping_line', 'verified_by', 'unavailability_reason')
+    qs = Container.objects.select_related('shipping_line', 'verified_by')
     # Une recherche de numéro sans dates porte sur tout l'historique : on veut savoir à quelle
     # date le conteneur a été vérifié, quelle qu'elle soit.
     if search_q and not has_dates:
@@ -933,7 +913,6 @@ def register_view(request):
         'page': page,
         'page_query': page_query,
         'shipping_lines': ShippingLine.objects.filter(is_active=True),
-        'reasons': UnavailabilityReason.objects.filter(is_active=True),
     })
 
 
@@ -983,7 +962,6 @@ def carryover_view(request):
         'status_filter': status_filter,
         'line_filter': line_filter,
         'shipping_lines': ShippingLine.objects.filter(is_active=True),
-        'reasons': UnavailabilityReason.objects.filter(is_active=True),
         'status_choices': Container.Status.choices,
         'oldest': oldest,
         'page': page,
@@ -1213,7 +1191,7 @@ def container_export_pdf_view(request):
     line_filter = request.GET.get('line', '').strip()
 
     qs = Container.objects.filter(scheduled_date=selected_date).select_related(
-        'shipping_line', 'unavailability_reason', 'updated_by'
+        'shipping_line', 'updated_by'
     ).order_by('status', 'container_number')
 
     status_label = "Tous les statuts"
@@ -1349,7 +1327,7 @@ def container_export_csv_view(request):
     status_filter = request.GET.get('status', '').strip()
 
     qs = Container.objects.filter(scheduled_date=selected_date).select_related(
-        'shipping_line', 'prefix_ref', 'unavailability_reason', 'updated_by'
+        'shipping_line', 'prefix_ref', 'updated_by'
     ).order_by('container_number')
 
     if status_filter in dict(Container.Status.choices):
@@ -1417,91 +1395,6 @@ def status_logs_view(request):
         'page': page,
         'page_query': page_query,
         'q': q,
-    })
-
-
-@login_required
-def prefixes_view(request):
-    if not request.user.is_portal_admin:
-        messages.error(request, "Accès réservé aux administrateurs.")
-        return redirect('terminal:dashboard')
-
-    if request.method == 'POST':
-        action = request.POST.get('action', 'add_prefix')
-        if action == 'add_prefix':
-            prefix = (request.POST.get('prefix') or '').strip().upper()
-            line_id = request.POST.get('shipping_line')
-            description = (request.POST.get('description') or '').strip()
-            if not re.match(r'^[A-Z]{4}$', prefix):
-                messages.error(request, "Le préfixe doit contenir exactement 4 lettres (ex. CMAU).")
-            elif not line_id or not line_id.isdigit():
-                messages.error(request, "Veuillez sélectionner une ligne maritime.")
-            else:
-                obj, created = ContainerPrefix.objects.update_or_create(
-                    prefix=prefix,
-                    defaults={
-                        'shipping_line_id': int(line_id),
-                        'description': description,
-                    },
-                )
-                # Backfill existing containers matching this 4-letter prefix
-                Container.objects.filter(container_number__startswith=prefix).update(
-                    prefix_ref=obj, shipping_line_id=int(line_id)
-                )
-                messages.success(
-                    request,
-                    f"Préfixe {prefix} rattaché à {obj.shipping_line.name} avec succès."
-                )
-        elif action == 'delete_prefix':
-            pk = request.POST.get('prefix_id')
-            pref = get_object_or_404(ContainerPrefix, pk=pk)
-            code = pref.prefix
-            pref.delete()
-            messages.info(request, f"Le préfixe {code} a été supprimé.")
-        elif action == 'add_reason':
-            label = (request.POST.get('label') or '').strip()
-            description = (request.POST.get('description') or '').strip()
-            if label:
-                from django.utils.text import slugify
-                code = slugify(label)[:40] or 'motif'
-                UnavailabilityReason.objects.update_or_create(
-                    code=code,
-                    defaults={'label': label, 'description': description, 'is_active': True},
-                )
-                messages.success(request, f"Motif d'indisponibilité « {label} » enregistré.")
-        elif action == 'save_reason':
-            reason = get_object_or_404(UnavailabilityReason, pk=request.POST.get('reason_id'))
-            label = (request.POST.get('label') or '').strip()[:140]
-            description = (request.POST.get('description') or '').strip()[:240]
-            if not label:
-                messages.error(request, "L'intitulé du motif est obligatoire.")
-            elif UnavailabilityReason.objects.filter(label__iexact=label).exclude(pk=reason.pk).exists():
-                messages.warning(request, f"Un autre motif s'appelle déjà « {label} ».")
-            else:
-                # Le code interne ne change pas : les conteneurs déjà marqués gardent leur motif,
-                # avec le nouvel intitulé.
-                reason.label = label
-                reason.description = description
-                reason.save(update_fields=['label', 'description'])
-                messages.success(request, f"Motif modifié : « {label} ».")
-        elif action == 'delete_reason':
-            pk = request.POST.get('reason_id')
-            reason = get_object_or_404(UnavailabilityReason, pk=pk)
-            reason.delete()
-            messages.info(request, "Motif d'indisponibilité supprimé.")
-
-        return redirect('terminal:prefixes')
-
-    prefixes = ContainerPrefix.objects.select_related('shipping_line').annotate(
-        container_count=Count('containers')
-    )
-    shipping_lines = ShippingLine.objects.filter(is_active=True)
-    reasons = UnavailabilityReason.objects.annotate(usage_count=Count('containers'))
-
-    return render(request, 'portal/prefixes.html', {
-        'prefixes': prefixes,
-        'shipping_lines': shipping_lines,
-        'reasons': reasons,
     })
 
 

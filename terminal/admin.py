@@ -2,7 +2,6 @@ from django.contrib import admin
 from .models import (
     ShippingLine,
     ContainerPrefix,
-    UnavailabilityReason,
     Container,
     ContainerStatusLog,
     SavedContainer,
@@ -25,13 +24,6 @@ class ContainerPrefixAdmin(admin.ModelAdmin):
     list_filter = ('shipping_line',)
 
 
-@admin.register(UnavailabilityReason)
-class UnavailabilityReasonAdmin(admin.ModelAdmin):
-    list_display = ('label', 'code', 'is_active')
-    search_fields = ('label', 'code')
-    list_filter = ('is_active',)
-
-
 class ContainerStatusLogInline(admin.TabularInline):
     model = ContainerStatusLog
     extra = 0
@@ -46,11 +38,11 @@ class ContainerAdmin(admin.ModelAdmin):
         'scheduled_date',
         'status',
         'shipping_line',
-        'unavailability_reason',
+        'unavailability_note',
         'updated_by',
         'updated_at',
     )
-    list_filter = ('scheduled_date', 'status', 'shipping_line', 'unavailability_reason')
+    list_filter = ('scheduled_date', 'status', 'shipping_line')
     search_fields = ('container_number', 'unavailability_note', 'shipping_line__name')
     inlines = [ContainerStatusLogInline]
 
