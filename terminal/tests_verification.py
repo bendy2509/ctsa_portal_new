@@ -19,11 +19,8 @@ class VerificationTrackingTests(TestCase):
         self.cma = ShippingLine.objects.create(name='CMA CGM', code='CMA')
         self.other = ShippingLine.objects.create(name='Antillean Marine', code='ANT')
         self.admin = User.objects.create_user(username='adm', password='Password123!', role=User.Role.ADMIN)
-        self.evening = User.objects.create_user(
-            username='soir', password='Password123!', role=User.Role.EVENING_SUPERVISOR
-        )
-        self.morning = User.objects.create_user(
-            username='matin', password='Password123!', role=User.Role.MORNING_SUPERVISOR
+        self.supervisor = User.objects.create_user(
+            username='sup', password='Password123!', role=User.Role.SUPERVISOR
         )
         self.customer = User.objects.create_user(username='cli', password='Password123!', role=User.Role.CLIENT)
 
@@ -45,7 +42,7 @@ class VerificationTrackingTests(TestCase):
         return sorted(unverified_backlog(target).values_list('container_number', flat=True))
 
     def test_three_staff_roles_can_mark_but_client_cannot(self):
-        for idx, username in enumerate(['adm', 'soir', 'matin']):
+        for idx, username in enumerate(['adm', 'sup']):
             c = self.make(f'CMAU000000{idx}', self.today)
             self.login(username)
             self.mark(c, 'verified')
@@ -85,7 +82,7 @@ class VerificationTrackingTests(TestCase):
         self.assertIsNone(c.verified_at)
 
     def test_bulk_marks_remaining_confirmed(self):
-        self.login('matin')
+        self.login('sup')
         done = self.make('CMAU0000001', self.today)
         done.set_verification('not_verified', acting_user=self.admin)
         left = self.make('CMAU0000002', self.today)
@@ -115,7 +112,7 @@ class VerificationTrackingTests(TestCase):
 
     def test_one_click_button_appears_once_the_list_is_started(self):
         old = self.make('CMAU0000001', self.yesterday, Container.Status.UNAVAILABLE, line=self.other)
-        self.login('soir')
+        self.login('sup')
         url = reverse('terminal:carryover') + f'?date={self.tomorrow.isoformat()}'
         page = self.client.get(url)
         self.assertContains(page, 'CMAU0000001')
@@ -158,7 +155,7 @@ class VerificationTrackingTests(TestCase):
     def test_retyping_an_unverified_number_carries_it_instead_of_registering_again(self):
         old = self.make('CMAU0000001', self.yesterday, line=self.other)
         old_bulk = self.make('CMAU0000002', self.yesterday, line=self.other)
-        self.login('soir')
+        self.login('sup')
         resp = self.client.post(reverse('terminal:container_add_single'), {
             'container_number': 'CMAU0000001',
             'shipping_line': str(self.cma.id),
@@ -185,16 +182,13 @@ class VerificationTrackingTests(TestCase):
         self.assertEqual(fresh.first_scheduled_date, self.tomorrow)
         self.assertEqual(self.backlog_numbers(self.tomorrow), [])
 
-    def test_morning_supervisor_can_only_carry_into_today(self):
+    def test_supervisor_can_carry_into_tomorrow(self):
         old = self.make('CMAU0000001', self.yesterday)
-        self.login('matin')
+        self.login('sup')
         self.client.post(reverse('terminal:carryover_decide'), {
             'decision': 'carry', 'ids': str(old.pk), 'date': self.tomorrow.isoformat(),
         })
         self.assertTrue(
-            Container.objects.filter(container_number='CMAU0000001', scheduled_date=self.today).exists()
-        )
-        self.assertFalse(
             Container.objects.filter(container_number='CMAU0000001', scheduled_date=self.tomorrow).exists()
         )
 
@@ -206,7 +200,7 @@ class VerificationTrackingTests(TestCase):
         a.set_verification('verified', acting_user=self.admin)
         b.set_verification('not_verified', acting_user=self.admin)
 
-        self.login('matin')
+        self.login('sup')
         resp = self.client.get(reverse('terminal:statistics'), {'periode': 'semaine'})
         self.assertEqual(resp.status_code, 200)
         totals = resp.context['totals']
@@ -230,7 +224,7 @@ class VerificationTrackingTests(TestCase):
     def test_portal_pages_render_with_sidebar_for_each_staff_role(self):
         self.make('CMAU0000001', self.yesterday)
         self.make('CMAU0000002', self.today)
-        for username in ('adm', 'soir', 'matin'):
+        for username in ('adm', 'sup'):
             self.login(username)
             for name in ('dashboard', 'prepare', 'inspection', 'carryover', 'statistics', 'register', 'status_logs'):
                 resp = self.client.get(reverse(f'terminal:{name}'))
@@ -249,7 +243,7 @@ class VerificationTrackingTests(TestCase):
         self.assertNotContains(dash, 'name="result" value="verified"')
 
     def test_not_verified_note_is_saved_then_cleared_when_marking_changes(self):
-        self.login('matin')
+        self.login('sup')
         c = self.make('CMAU0000001', self.today)
         self.client.post(
             reverse('terminal:container_set_verification', args=[c.pk]),
@@ -368,27 +362,21 @@ class VerificationTrackingTests(TestCase):
     def test_dashboard_shows_only_the_list_and_prepare_page_holds_the_forms(self):
         self.make('CMAU0000001', self.yesterday)
         pending = self.make('CMAU0000002', self.today, Container.Status.PENDING)
-        self.login('soir')
+        self.login('sup')
 
         dash = self.client.get(reverse('terminal:dashboard'), {'date': self.today.isoformat()})
         # Plus de formulaire d'inscription ni de bloc de reprise sur la liste du jour.
         self.assertNotContains(dash, 'name="container_list"')
         self.assertNotContains(dash, 'id="add-single-number"')
         self.assertContains(dash, reverse('terminal:prepare') + f'?date={self.today.isoformat()}')
-        # Une ligne : un bouton d'action rapide, le reste derrière « Modifier ».
+        # Une ligne : sélecteur rapide de statut + panneau de ligne + barre d'actions groupées.
         self.assertContains(dash, f'data-toggle-panel="row-edit-{pending.pk}"')
         self.assertContains(dash, f'<tr id="row-edit-{pending.pk}" hidden')
         self.assertContains(dash, 'data-selection-bar="dashboard" hidden')
 
-        # Le superviseur matin ne modifie pas les statuts : aucune commande d'édition.
-        self.login('matin')
-        readonly = self.client.get(reverse('terminal:dashboard'))
-        self.assertNotContains(readonly, 'data-toggle-panel="row-edit-')
-        self.assertNotContains(readonly, 'data-selection-bar')
-
     def test_prepare_page_registers_and_comes_back_to_itself(self):
         self.make('CMAU0000001', self.yesterday)
-        self.login('soir')
+        self.login('sup')
         url = reverse('terminal:prepare') + f'?date={self.tomorrow.isoformat()}'
         page = self.client.get(url)
         self.assertEqual(page.context['selected_date'], self.tomorrow)
@@ -405,18 +393,17 @@ class VerificationTrackingTests(TestCase):
         self.assertEqual(after.context['registered_count'], 1)
         self.assertEqual([c.container_number for c in after.context['recent']], ['CMAU0000005'])
 
-        # Une date passée est ramenée à aujourd'hui ; le superviseur matin reste sur la liste du jour.
+        # Une date passée est ramenée à aujourd'hui ; le superviseur peut préparer aujourd'hui ou demain.
         past = self.client.get(reverse('terminal:prepare'), {'date': self.yesterday.isoformat()})
         self.assertEqual(past.context['selected_date'], self.today)
-        self.login('matin')
-        forced = self.client.get(reverse('terminal:prepare'), {'date': self.tomorrow.isoformat()})
-        self.assertEqual(forced.context['selected_date'], self.today)
+        tomorrow_page = self.client.get(reverse('terminal:prepare'), {'date': self.tomorrow.isoformat()})
+        self.assertEqual(tomorrow_page.context['selected_date'], self.tomorrow)
 
     def test_inspection_lists_confirmed_containers_of_a_started_session(self):
         confirmed = self.make('CMAU0000001', self.today)
         self.make('CMAU0000002', self.today, Container.Status.PENDING)
         old = self.make('CMAU0000003', self.yesterday)
-        self.login('matin')
+        self.login('sup')
 
         page = self.client.get(reverse('terminal:inspection'))
         self.assertEqual([c.container_number for c in page.context['rows']], ['CMAU0000001'])
@@ -446,7 +433,7 @@ class VerificationTrackingTests(TestCase):
         second = self.make('CMAU0000001', self.yesterday)
         second.set_verification('verified', acting_user=self.admin)
         self.make('CMAU0000002', self.today)
-        self.login('soir')
+        self.login('sup')
 
         # Sans dates, la recherche d'un numéro couvre tout l'historique.
         found = self.client.get(reverse('terminal:register'), {'q': 'cmau 0000001'})
@@ -487,7 +474,7 @@ class VerificationTrackingTests(TestCase):
         )
         url = reverse('terminal:prefixes')
 
-        self.login('soir')  # réservé aux administrateurs
+        self.login('sup')  # réservé aux administrateurs
         self.client.post(url, {'action': 'save_reason', 'reason_id': reason.pk, 'label': 'Piraté'})
         reason.refresh_from_db()
         self.assertEqual(reason.label, 'Panne')
@@ -519,3 +506,69 @@ class VerificationTrackingTests(TestCase):
         self.assertContains(resp, 'status-verified')
         self.assertContains(resp, 'Vérification douanière effectuée')
         self.assertNotContains(resp, 'Déplacement autorisé')
+
+    def test_all_new_additions_default_to_pending_even_if_previously_confirmed(self):
+        # Conteneur confirmé (et même vérifié) dans la séance précédente
+        prev = self.make('CMAU0000010', self.yesterday, Container.Status.CONFIRMED)
+        prev.set_verification('verified', acting_user=self.admin)
+        unverified_prev = self.make('CMAU0000011', self.yesterday, Container.Status.CONFIRMED)
+
+        self.login('sup')
+        # Ajout unitaire en tentant d'envoyer status='confirmed'
+        self.client.post(reverse('terminal:container_add_single'), {
+            'container_number': 'CMAU0000010',
+            'shipping_line': str(self.cma.id),
+            'status': Container.Status.CONFIRMED,
+            'scheduled_date': self.tomorrow.isoformat(),
+        })
+        new_single = Container.objects.get(container_number='CMAU0000010', scheduled_date=self.tomorrow)
+        self.assertEqual(new_single.status, Container.Status.PENDING)
+
+        # Ajout en lot en tentant d'envoyer default_status='confirmed' (reprise + nouveau)
+        self.client.post(reverse('terminal:container_add_bulk'), {
+            'container_list': 'CMAU0000011\nCMAU0000012',
+            'shipping_line': str(self.cma.id),
+            'default_status': Container.Status.CONFIRMED,
+            'scheduled_date': self.tomorrow.isoformat(),
+        })
+        carried = Container.objects.get(container_number='CMAU0000011', scheduled_date=self.tomorrow)
+        fresh = Container.objects.get(container_number='CMAU0000012', scheduled_date=self.tomorrow)
+        self.assertEqual(carried.carried_from, unverified_prev)
+        self.assertEqual(carried.status, Container.Status.PENDING)
+        self.assertEqual(fresh.status, Container.Status.PENDING)
+
+        # La liste du tableau de bord affiche bien le sélecteur rapide 1 clic (Confirmé / En attente / Indisponible)
+        dash = self.client.get(reverse('terminal:dashboard'), {'date': self.tomorrow.isoformat()})
+        self.assertContains(dash, f'data-toggle-unavailable="{fresh.pk}"')
+        self.assertContains(dash, 'status-segmented')
+
+    def test_dashboard_and_inspection_are_paginated(self):
+        for i in range(55):
+            self.make(f'CMAU{i:07d}', self.today, Container.Status.CONFIRMED)
+        self.login('adm')
+
+        dash_p1 = self.client.get(reverse('terminal:dashboard'), {'date': self.today.isoformat()})
+        self.assertEqual(len(dash_p1.context['containers']), 50)
+        self.assertContains(dash_p1, 'Page 1 sur 2')
+        dash_p2 = self.client.get(reverse('terminal:dashboard'), {'date': self.today.isoformat(), 'page': 2})
+        self.assertEqual(len(dash_p2.context['containers']), 5)
+
+        insp_p1 = self.client.get(reverse('terminal:inspection'), {'date': self.today.isoformat()})
+        self.assertEqual(len(insp_p1.context['rows']), 50)
+        self.assertContains(insp_p1, 'Page 1 sur 2')
+        insp_p2 = self.client.get(reverse('terminal:inspection'), {'date': self.today.isoformat(), 'page': 2})
+        self.assertEqual(len(insp_p2.context['rows']), 5)
+
+    def test_bulk_add_allows_optional_shipping_line(self):
+        self.login('sup')
+        self.client.post(reverse('terminal:container_add_bulk'), {
+            'container_list': 'CMAU0000020\nASJU0000021',
+            'shipping_line': '',
+            'scheduled_date': self.tomorrow.isoformat(),
+        })
+        c1 = Container.objects.get(container_number='CMAU0000020', scheduled_date=self.tomorrow)
+        c2 = Container.objects.get(container_number='ASJU0000021', scheduled_date=self.tomorrow)
+        self.assertIsNone(c1.shipping_line)
+        self.assertIsNone(c2.shipping_line)
+        self.assertEqual(c1.status, Container.Status.PENDING)
+        self.assertEqual(c2.status, Container.Status.PENDING)

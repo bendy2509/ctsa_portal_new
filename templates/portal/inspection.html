@@ -15,15 +15,15 @@
     </div>
 
     <div class="flex flex-wrap items-center gap-2">
-      <a href="{% url 'terminal:inspection' %}?date={{ previous_date|date:'Y-m-d' }}" class="btn-admin">
-        <svg class="portal-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>Jour précédent
+      <a href="{% url 'terminal:inspection' %}?date={{ previous_date|date:'Y-m-d' }}" class="btn-admin rounded-lg">
+        <svg class="portal-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>Jour précédent
       </a>
       {% if selected_date != today %}
-        <a href="{% url 'terminal:inspection' %}" class="btn-admin">Aujourd'hui</a>
+        <a href="{% url 'terminal:inspection' %}" class="btn-admin rounded-lg">Aujourd'hui</a>
       {% endif %}
       {% if next_date %}
-        <a href="{% url 'terminal:inspection' %}?date={{ next_date|date:'Y-m-d' }}" class="btn-admin">
-          Jour suivant<svg class="portal-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
+        <a href="{% url 'terminal:inspection' %}?date={{ next_date|date:'Y-m-d' }}" class="btn-admin rounded-lg">
+          Jour suivant<svg class="portal-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
         </a>
       {% endif %}
       <form action="{% url 'terminal:inspection' %}" method="get" class="inline-flex items-center gap-1.5">
@@ -34,37 +34,37 @@
                max="{{ today|date:'Y-m-d' }}"
                value="{{ selected_date|date:'Y-m-d' }}"
                data-auto-submit-date
-               class="border border-[#dadada] rounded-md px-3 py-1.5 min-h-[38px] text-sm font-semibold text-[#2c3741] bg-white">
-        <button type="submit" class="btn-admin">Afficher</button>
+               class="border border-slate-200/80 rounded-lg px-3 py-1.5 min-h-[38px] text-sm font-semibold text-[#2c3741] bg-white">
+        <button type="submit" class="btn-admin rounded-lg">Afficher</button>
       </form>
     </div>
   </div>
 
   <!-- Avancement de la séance -->
-  <div class="metric-strip">
-    <a href="{% url 'terminal:inspection' %}?date={{ selected_date|date:'Y-m-d' }}" class="stat-tile">
-      <div class="stat-tile-label">Confirmés à inspecter</div>
-      <div class="stat-tile-value">{{ stats.confirmed }}</div>
-      <div class="stat-tile-note">sur {{ stats.scheduled }} programmé{{ stats.scheduled|pluralize }}</div>
+  <div class="kpi-grid">
+    <a href="{% url 'terminal:inspection' %}?date={{ selected_date|date:'Y-m-d' }}" class="kpi-card rounded-xl border border-slate-200/80 shadow-xs {% if not etat %}ring-2 ring-[#3498db]{% endif %}">
+      <div class="kpi-label">Confirmés à inspecter</div>
+      <div class="kpi-value tabular-nums">{{ stats.confirmed }}</div>
+      <div class="kpi-note">sur {{ stats.scheduled }} programmé{{ stats.scheduled|pluralize }}</div>
     </a>
-    <a href="{% url 'terminal:inspection' %}?date={{ selected_date|date:'Y-m-d' }}&etat=verified" class="stat-tile">
-      <div class="stat-tile-label">Vérifiés</div>
-      <div class="stat-tile-value text-[#006b3f]">{{ stats.verified }}</div>
-      <div class="stat-tile-note">{% if stats.rate is not None %}{{ stats.rate }} % des confirmés{% else %}aucun confirmé{% endif %}</div>
+    <a href="{% url 'terminal:inspection' %}?date={{ selected_date|date:'Y-m-d' }}&etat=verified" class="kpi-card rounded-xl border border-slate-200/80 shadow-xs {% if etat == 'verified' %}ring-2 ring-[#008751]{% endif %}">
+      <div class="kpi-label">Vérifiés</div>
+      <div class="kpi-value tabular-nums text-[#008751]">{{ stats.verified }}</div>
+      <div class="kpi-note">{% if stats.rate is not None %}{{ stats.rate }} % des confirmés{% else %}aucun confirmé{% endif %}</div>
     </a>
-    <a href="{% url 'terminal:inspection' %}?date={{ selected_date|date:'Y-m-d' }}&etat=not_verified" class="stat-tile">
-      <div class="stat-tile-label">Non vérifiés</div>
-      <div class="stat-tile-value">{{ stats.not_verified }}</div>
-      <div class="stat-tile-note">reproposés à la prochaine liste</div>
+    <a href="{% url 'terminal:inspection' %}?date={{ selected_date|date:'Y-m-d' }}&etat=not_verified" class="kpi-card rounded-xl border border-slate-200/80 shadow-xs {% if etat == 'not_verified' %}ring-2 ring-[#b26a00]{% endif %}">
+      <div class="kpi-label">Non vérifiés</div>
+      <div class="kpi-value tabular-nums text-[#8a5300]">{{ stats.not_verified }}</div>
+      <div class="kpi-note">reproposés à la prochaine liste</div>
     </a>
-    <a href="{% url 'terminal:inspection' %}?date={{ selected_date|date:'Y-m-d' }}&etat=to_verify" class="stat-tile">
-      <div class="stat-tile-label">Restent à marquer</div>
-      <div class="stat-tile-value">{{ stats.to_verify }}</div>
-      <div class="stat-tile-note">{% if stats.to_verify %}en tête de liste ci-dessous{% else %}séance entièrement marquée{% endif %}</div>
+    <a href="{% url 'terminal:inspection' %}?date={{ selected_date|date:'Y-m-d' }}&etat=to_verify" class="kpi-card rounded-xl border border-slate-200/80 shadow-xs {% if etat == 'to_verify' %}ring-2 ring-[#3498db]{% endif %}">
+      <div class="kpi-label">Restent à marquer</div>
+      <div class="kpi-value tabular-nums">{{ stats.to_verify }}</div>
+      <div class="kpi-note">{% if stats.to_verify %}en tête de liste ci-dessous{% else %}séance entièrement marquée{% endif %}</div>
     </a>
   </div>
 
-  <section aria-labelledby="inspection-caption" class="bg-white rounded-lg border border-[#dadada] shadow-sm overflow-hidden">
+  <section aria-labelledby="inspection-caption" class="bg-white rounded-xl border border-slate-200/80 shadow-xs overflow-hidden">
 
     <!-- Actions groupées + recherche -->
     <div class="p-4 sm:px-5 border-b border-[#dadada] flex flex-col xl:flex-row xl:items-center xl:justify-between gap-3">
@@ -175,6 +175,7 @@
         </tbody>
       </table>
     </div>
+    {% include 'partials/pagination.html' %}
 
     {% if not_confirmed_rows %}
       <div class="border-t border-[#dadada]">
@@ -193,7 +194,7 @@
         </div>
         <div tabindex="0" role="region" aria-label="Conteneurs non confirmés de la séance" class="table-wrapper border-0 rounded-none">
           <table class="ctsa-table" style="--label-2: 'Ligne maritime'; --label-3: 'Statut actuel'; --label-4: 'Changer le statut';">
-            <thead>
+            <thead class="sticky top-0 z-10 bg-slate-50/95 backdrop-blur-xs">
               <tr>
                 <th scope="col">Conteneur</th>
                 <th scope="col">Ligne maritime</th>
@@ -205,14 +206,18 @@
               {% for c in not_confirmed_rows %}
                 <tr>
                   <th scope="row">
-                    <span class="text-base font-bold text-[#2c3741]">{{ c.container_number }}</span>
+                    <span class="font-mono text-sm font-bold tracking-wide text-[#2c3741] tabular-nums">{{ c.container_number }}</span>
                   </th>
                   <td>{{ c.shipping_line.name|default:"Non renseignée" }}</td>
                   <td>
                     {% if c.status == 'pending' %}
-                      <span class="status-badge status-pending">En attente</span>
+                      <span class="status-badge status-pending inline-flex items-center gap-1.5 rounded-full">
+                        <span class="status-seg-dot dot-pending"></span>En attente
+                      </span>
                     {% else %}
-                      <span class="status-badge status-unavailable">Indisponible</span>
+                      <span class="status-badge status-unavailable inline-flex items-center gap-1.5 rounded-full">
+                        <span class="status-seg-dot dot-unavailable"></span>Indisponible
+                      </span>
                     {% endif %}
                   </td>
                   <td>{% include 'partials/status_actions.html' %}</td>

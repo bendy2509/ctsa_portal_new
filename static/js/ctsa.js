@@ -70,9 +70,21 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   };
 
+  const normalizeContainerInput = (el) => {
+    if (!el?.matches?.('input[pattern][data-error]')) return;
+    const cleaned = el.value.replace(/[\s-]+/g, '').toUpperCase();
+    if (cleaned !== el.value) el.value = cleaned;
+  };
+
   document.querySelectorAll('input, select, textarea').forEach((el) => syncAria(el));
 
-  document.addEventListener('blur', (e) => syncAria(e.target, true), true);
+  document.addEventListener('blur', (e) => {
+    normalizeContainerInput(e.target);
+    syncAria(e.target, true);
+  }, true);
+  document.addEventListener('submit', (e) => {
+    e.target.querySelectorAll?.('input[pattern][data-error]').forEach(normalizeContainerInput);
+  }, true);
   document.addEventListener('input', (e) => {
     if (e.target.hasAttribute('aria-invalid')) syncAria(e.target);
   });
@@ -133,19 +145,72 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // 5. Bouton "Indisponible" sur chaque ligne de /admin/ (ouvre le choix du motif)
-  document.querySelectorAll('[data-toggle-unavailable]').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      const pk = btn.getAttribute('data-toggle-unavailable');
-      const panel = document.getElementById(`unavail-panel-${pk}`);
-      if (!panel) return;
-      panel.hidden = !panel.hidden;
-      if (!panel.hidden) {
-        const select = panel.querySelector('select');
-        if (select) select.focus();
-      }
+  // 5. Dialogue modal de saisie du motif lors du passage au statut « Indisponible »
+  const unavailDialog = document.getElementById('unavailable-reason-dialog');
+  if (unavailDialog && typeof unavailDialog.showModal === 'function') {
+    const unavailForm = document.getElementById('unavail-dialog-form');
+    const unavailSubtitle = document.getElementById('unavail-dialog-subtitle');
+    const unavailNote = document.getElementById('unavail-dialog-note');
+    const unavailNext = document.getElementById('unavail-dialog-next');
+    const unavailExtras = document.getElementById('unavail-dialog-extra-fields');
+    const cancelBtn = unavailDialog.querySelector('[data-unavail-cancel]');
+
+    if (cancelBtn) {
+      cancelBtn.addEventListener('click', () => unavailDialog.close());
+    }
+    unavailDialog.addEventListener('click', (e) => {
+      if (e.target === unavailDialog) unavailDialog.close();
     });
-  });
+
+    const openUnavailDialog = ({ action, subtitle, note, nextUrl, extras }) => {
+      unavailForm.setAttribute('action', action);
+      unavailSubtitle.textContent = subtitle;
+      unavailNote.value = note || '';
+      unavailNext.value = nextUrl || '';
+      unavailExtras.innerHTML = '';
+      (extras || []).forEach(([name, value]) => {
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = name;
+        input.value = value;
+        unavailExtras.appendChild(input);
+      });
+      unavailDialog.showModal();
+      unavailNote.focus();
+    };
+
+    document.querySelectorAll('[data-unavailable-action]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        openUnavailDialog({
+          action: btn.getAttribute('data-unavailable-action'),
+          subtitle: `Indiquez la raison de l'indisponibilité pour le conteneur ${btn.getAttribute('data-unavailable-number') || ''}.`,
+          note: btn.getAttribute('data-unavailable-note') || '',
+          nextUrl: btn.getAttribute('data-unavailable-next') || '',
+        });
+      });
+    });
+
+    document.querySelectorAll('[data-unavailable-bulk]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const formId = btn.getAttribute('data-unavailable-bulk');
+        const sourceForm = document.getElementById(formId);
+        if (!sourceForm) return;
+        const checked = Array.from(document.querySelectorAll(`input[form="${formId}"][name="ids"]:checked`));
+        if (!checked.length) return;
+        const extras = checked.map((cb) => ['ids', cb.value]);
+        const dateInput = sourceForm.querySelector('input[name="date"]');
+        if (dateInput) extras.push(['date', dateInput.value]);
+        const nextInput = sourceForm.querySelector('input[name="next"]');
+        openUnavailDialog({
+          action: sourceForm.getAttribute('action'),
+          subtitle: `Indiquez la raison de l'indisponibilité pour les ${checked.length} conteneur(s) sélectionné(s).`,
+          note: '',
+          nextUrl: nextInput ? nextInput.value : '',
+          extras,
+        });
+      });
+    });
+  }
 
   // 5 bis. Panneaux dépliables génériques (ex. précision « Non vérifié »)
   document.querySelectorAll('[data-toggle-panel]').forEach((btn) => {
@@ -240,12 +305,50 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // 8 ter. Cases « tout sélectionner » des tableaux d'exploitation
+  // 8 ter. Cases « tout sélectionner » et compteur contextuel de sélection des tableaux
   document.querySelectorAll('[data-check-all]').forEach((master) => {
-    const boxes = () => document.querySelectorAll(`input[type="checkbox"][data-check-group="${master.dataset.checkAll}"]`);
+    const group = master.dataset.checkAll;
+    const boxes = () => Array.from(document.querySelectorAll(`input[type="checkbox"][data-check-group="${group}"]`));
+    const syncBulkBar = () => {
+      const all = boxes();
+      const checkedCount = all.filter((b) => b.checked).length;
+      master.indeterminate = checkedCount > 0 && checkedCount < all.length;
+      if (all.length > 0) master.checked = checkedCount === all.length;
+      const bar = document.querySelector(`[data-selection-bar="${group}"]`) || document.querySelector(`[data-bulk-bar="${group}"]`);
+      const countEl = document.querySelector(`[data-bulk-count="${group}"]`);
+      if (bar) {
+        if (bar.hasAttribute('data-selection-bar')) bar.hidden = checkedCount === 0;
+        bar.classList.toggle('is-selected', checkedCount > 0);
+      }
+      if (countEl) {
+        countEl.textContent = checkedCount > 0
+          ? `${checkedCount} sélectionné${checkedCount > 1 ? 's' : ''}`
+          : 'Sélection';
+      }
+    };
     master.addEventListener('change', () => {
       boxes().forEach((box) => { box.checked = master.checked; });
+      syncBulkBar();
     });
+    document.addEventListener('change', (e) => {
+      if (e.target.matches(`input[type="checkbox"][data-check-group="${group}"]`)) {
+        syncBulkBar();
+      }
+    });
+  });
+
+  // Fermer les menus déroulants (.portal-dropdown) au clic extérieur ou sur Échap
+  document.addEventListener('click', (e) => {
+    document.querySelectorAll('details.portal-dropdown[open]').forEach((dd) => {
+      if (!dd.contains(e.target)) dd.open = false;
+    });
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      document.querySelectorAll('details.portal-dropdown[open]').forEach((dd) => {
+        dd.open = false;
+      });
+    }
   });
 
   // 8 ter (suite). Barre de sélection : visible seulement quand au moins une case est cochée.

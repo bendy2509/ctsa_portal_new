@@ -1,270 +1,347 @@
 {% extends 'portal/base_portal.html' %}
 
-{% block title %}Conteneurs du jour — Cap Terminal S.A.{% endblock %}
+{% block title %}Conteneurs du Jour — Cap Terminal S.A.{% endblock %}
 
 {% block portal_content %}
-<div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-5">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 space-y-4">
 
-  <!-- En-tête : la séance affichée, et les deux seules actions de page -->
-  <div class="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
+  <!-- 1. En-tête compact : Titre + Sélecteur de date + Préparer + Exporter -->
+  <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 pb-4 border-b border-slate-200/80">
     <div>
-      <h1 class="mb-1">Conteneurs du {{ selected_date|date:"d/m/Y" }}</h1>
-      <p class="text-sm text-[#5b656d] m-0">
-        {{ selected_date|date:"l j F Y"|capfirst }}{% if selected_date == today %} · aujourd'hui{% elif selected_date == tomorrow %} · demain{% endif %}
-      </p>
+      <h1 class="mb-0 flex flex-wrap items-center gap-2.5 text-ctsa-slate font-heading">
+        <span>Conteneurs du {{ selected_date|date:"d/m/Y" }}</span>
+        {% if selected_date == today %}
+          <span class="inline-flex items-center gap-1.5 text-xs px-2.5 py-0.5 rounded-full bg-ctsa-green-bg text-ctsa-green border border-[#99d5bc] font-bold">
+            <span class="status-seg-dot dot-confirmed" aria-hidden="true"></span>
+            <span>Aujourd'hui</span>
+          </span>
+        {% elif selected_date == tomorrow %}
+          <span class="inline-flex items-center gap-1.5 text-xs px-2.5 py-0.5 rounded-full bg-ctsa-info-bg text-[#1d6fa5] border border-[#93c9ed] font-bold">
+            <span>Demain</span>
+          </span>
+        {% endif %}
+      </h1>
+      <p class="text-sm text-slate-500 mt-0.5 mb-0">{{ selected_date|date:"l j F Y"|capfirst }}</p>
     </div>
 
     <div class="flex flex-wrap items-center gap-2">
-      <div class="inline-flex rounded-md border border-[#dadada] bg-white overflow-hidden">
+      <div class="inline-flex rounded-lg border border-slate-200/80 bg-white overflow-hidden shadow-xs">
         <a href="{% url 'terminal:dashboard' %}?date={{ today|date:'Y-m-d' }}"
-           {% if selected_date == today %}aria-current="true"{% endif %}
-           class="px-3.5 py-2 text-xs font-bold border-r border-[#dadada] transition {% if selected_date == today %}bg-[#2c3741] text-white{% else %}text-[#2c3741] hover:bg-[#f4f4f4]{% endif %}">
+           class="px-3.5 py-2 text-xs font-bold border-r border-slate-200/80 transition {% if selected_date == today %}bg-ctsa-slate text-white{% else %}text-ctsa-slate hover:bg-slate-50{% endif %}">
           Aujourd'hui
         </a>
         <a href="{% url 'terminal:dashboard' %}?date={{ tomorrow|date:'Y-m-d' }}"
-           {% if selected_date == tomorrow %}aria-current="true"{% endif %}
-           class="px-3.5 py-2 text-xs font-bold transition {% if selected_date == tomorrow %}bg-[#2c3741] text-white{% else %}text-[#2c3741] hover:bg-[#f4f4f4]{% endif %}">
+           class="px-3.5 py-2 text-xs font-bold transition {% if selected_date == tomorrow %}bg-ctsa-slate text-white{% else %}text-ctsa-slate hover:bg-slate-50{% endif %}">
           Demain
         </a>
       </div>
 
-      <form action="{% url 'terminal:dashboard' %}" method="get">
-        <label for="quick-date-picker" class="visually-hidden">Choisir une autre date</label>
+      <form action="{% url 'terminal:dashboard' %}" method="get" class="inline-flex items-center gap-1.5">
+        <label for="quick-date-picker" class="visually-hidden">Choisir une date</label>
         <input type="date"
                id="quick-date-picker"
                name="date"
                value="{{ selected_date|date:'Y-m-d' }}"
                data-auto-submit-date
-               class="border border-[#dadada] rounded-md px-3 py-1.5 min-h-[38px] text-xs font-semibold text-[#2c3741] bg-white">
+               class="border border-slate-200/80 rounded-lg px-3 py-1.5 min-h-[38px] text-xs font-semibold text-ctsa-slate bg-white shadow-xs">
+        <button type="submit" class="btn-admin rounded-lg">Afficher</button>
       </form>
 
+      <a href="{% url 'terminal:prepare' %}?date={{ selected_date|date:'Y-m-d' }}"
+         class="btn-admin btn-admin-primary rounded-lg">
+        <!-- Lucide: plus -->
+        <svg class="portal-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+        <span>Préparer / Ajouter</span>
+      </a>
+
       <details class="portal-dropdown">
-        <summary class="btn-admin cursor-pointer">
+        <summary class="btn-admin btn-admin-slate rounded-lg cursor-pointer">
+          <!-- Lucide: download -->
+          <svg class="portal-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
           <span>Exporter</span>
-          <svg class="portal-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+          <svg class="portal-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
         </summary>
-        <div class="portal-dropdown-menu">
-          <a href="{% url 'terminal:container_export_pdf' %}?date={{ selected_date|date:'Y-m-d' }}" class="portal-dropdown-item">
-            <span>PDF de la liste complète</span>
+        <div class="portal-dropdown-menu" role="menu">
+          <a href="{% url 'terminal:container_export_pdf' %}?date={{ selected_date|date:'Y-m-d' }}&status=confirmed" class="portal-dropdown-item" role="menuitem">
+            <span>PDF Confirmés</span>
+            <span class="text-xs font-bold tabular-nums text-ctsa-green">{{ stats.confirmed }}</span>
           </a>
-          <a href="{% url 'terminal:container_export_pdf' %}?date={{ selected_date|date:'Y-m-d' }}&status=confirmed" class="portal-dropdown-item">
-            <span>PDF des confirmés</span>
+          <a href="{% url 'terminal:container_export_pdf' %}?date={{ selected_date|date:'Y-m-d' }}&status=pending" class="portal-dropdown-item" role="menuitem">
+            <span>PDF En attente</span>
+            <span class="text-xs font-bold tabular-nums text-ctsa-pending-text">{{ stats.pending }}</span>
           </a>
-          <a href="{% url 'terminal:container_export_pdf' %}?date={{ selected_date|date:'Y-m-d' }}&status=pending" class="portal-dropdown-item">
-            <span>PDF des en attente</span>
+          <a href="{% url 'terminal:container_export_pdf' %}?date={{ selected_date|date:'Y-m-d' }}" class="portal-dropdown-item" role="menuitem">
+            <span>PDF Complet</span>
+            <span class="text-xs font-bold tabular-nums text-slate-500">{{ stats.total }}</span>
           </a>
-          <a href="{% url 'terminal:container_export_csv' %}?date={{ selected_date|date:'Y-m-d' }}{% if status_filter %}&status={{ status_filter }}{% endif %}" class="portal-dropdown-item border-t border-[#e1e5e8] mt-1 pt-2">
+          <a href="{% url 'terminal:container_export_csv' %}?date={{ selected_date|date:'Y-m-d' }}{% if status_filter %}&status={{ status_filter }}{% endif %}" class="portal-dropdown-item border-t border-slate-200/80 mt-1 pt-2" role="menuitem">
             <span>Excel (CSV)</span>
           </a>
         </div>
       </details>
-
-      {% if selected_date >= today %}
-        <a href="{% url 'terminal:prepare' %}?date={{ selected_date|date:'Y-m-d' }}" class="btn-admin btn-admin-primary">
-          <svg class="portal-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
-          <span>Inscrire des conteneurs</span>
-        </a>
-      {% endif %}
     </div>
   </div>
 
-  <section aria-label="Liste des conteneurs" class="dashboard-card">
+  <!-- 2. 5 cartes KPI cliquables avec proportion et anneau actif net -->
+  <div class="kpi-grid" aria-label="Synthèse et filtres par statut">
+    <a href="{% url 'terminal:dashboard' %}?date={{ selected_date|date:'Y-m-d' }}{% if line_filter %}&line={{ line_filter }}{% endif %}"
+       class="kpi-card rounded-xl border-slate-200/80 {% if not status_filter and not verification_filter %}ring-2 ring-[#3498db] bg-white{% endif %}">
+      <div>
+        <div class="kpi-head">
+          <span class="kpi-label">Programmés</span>
+          <svg class="portal-icon text-slate-400" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>
+        </div>
+        <div class="kpi-value tabular-nums">{{ stats.total }}</div>
+      </div>
+      <div class="kpi-progress" aria-hidden="true">
+        <span class="bg-ctsa-slate" style="width: {% if stats.total %}100{% else %}0{% endif %}%;"></span>
+      </div>
+    </a>
 
-    <!-- Onglets : les quatre décomptes servent aussi de filtre -->
-    <nav aria-label="Filtrer par statut" class="list-tabs">
-      <a href="{% url 'terminal:dashboard' %}?date={{ selected_date|date:'Y-m-d' }}{% if line_filter %}&line={{ line_filter }}{% endif %}"
-         {% if not status_filter and not verification_filter %}aria-current="true"{% endif %}
-         class="list-tab">
-        Tous <span class="list-tab-count">{{ stats.total }}</span>
-      </a>
-      <a href="{% url 'terminal:dashboard' %}?date={{ selected_date|date:'Y-m-d' }}&status=pending{% if line_filter %}&line={{ line_filter }}{% endif %}"
-         {% if status_filter == 'pending' %}aria-current="true"{% endif %}
-         class="list-tab">
-        <span class="status-seg-dot dot-pending" aria-hidden="true"></span>En attente <span class="list-tab-count">{{ stats.pending }}</span>
-      </a>
-      <a href="{% url 'terminal:dashboard' %}?date={{ selected_date|date:'Y-m-d' }}&status=confirmed{% if line_filter %}&line={{ line_filter }}{% endif %}"
-         {% if status_filter == 'confirmed' %}aria-current="true"{% endif %}
-         class="list-tab">
-        <span class="status-seg-dot dot-confirmed" aria-hidden="true"></span>Confirmés <span class="list-tab-count">{{ stats.confirmed }}</span>
-      </a>
-      <a href="{% url 'terminal:dashboard' %}?date={{ selected_date|date:'Y-m-d' }}&status=unavailable{% if line_filter %}&line={{ line_filter }}{% endif %}"
-         {% if status_filter == 'unavailable' %}aria-current="true"{% endif %}
-         class="list-tab">
-        <span class="status-seg-dot dot-unavailable" aria-hidden="true"></span>Indisponibles <span class="list-tab-count">{{ stats.unavailable }}</span>
-      </a>
+    <a href="{% url 'terminal:dashboard' %}?date={{ selected_date|date:'Y-m-d' }}&status=confirmed{% if line_filter %}&line={{ line_filter }}{% endif %}"
+       class="kpi-card rounded-xl border-slate-200/80 {% if status_filter == 'confirmed' %}ring-2 ring-[#3498db] bg-ctsa-green-bg{% endif %}">
+      <div>
+        <div class="kpi-head">
+          <span class="kpi-label">Confirmés</span>
+          <svg class="portal-icon text-ctsa-green" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>
+        </div>
+        <div class="kpi-value tabular-nums text-ctsa-green">{{ stats.confirmed }}</div>
+      </div>
+      <div class="kpi-progress" aria-hidden="true">
+        <span class="bg-ctsa-green" style="width: {% if stats.total %}{% widthratio stats.confirmed stats.total 100 %}{% else %}0{% endif %}%;"></span>
+      </div>
+    </a>
 
-      {% if show_verification and stats.confirmed %}
-        <a href="{% url 'terminal:inspection' %}?date={{ selected_date|date:'Y-m-d' }}" class="list-tabs-aside">
-          {{ stats.verified }} vérifié{{ stats.verified|pluralize }} sur {{ stats.confirmed }} · Inspection
-        </a>
-      {% endif %}
-    </nav>
+    <a href="{% url 'terminal:dashboard' %}?date={{ selected_date|date:'Y-m-d' }}&status=pending{% if line_filter %}&line={{ line_filter }}{% endif %}"
+       class="kpi-card rounded-xl border-slate-200/80 {% if status_filter == 'pending' %}ring-2 ring-[#3498db] bg-ctsa-pending-bg{% endif %}">
+      <div>
+        <div class="kpi-head">
+          <span class="kpi-label">En attente</span>
+          <svg class="portal-icon text-ctsa-pending" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        </div>
+        <div class="kpi-value tabular-nums text-ctsa-pending-text">{{ stats.pending }}</div>
+      </div>
+      <div class="kpi-progress" aria-hidden="true">
+        <span class="bg-ctsa-pending" style="width: {% if stats.total %}{% widthratio stats.pending stats.total 100 %}{% else %}0{% endif %}%;"></span>
+      </div>
+    </a>
 
-    <!-- Recherche, et l'action la plus fréquente de la séance -->
-    <div class="px-4 sm:px-5 py-3 border-b border-[#e1e5e8] flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+    <a href="{% url 'terminal:dashboard' %}?date={{ selected_date|date:'Y-m-d' }}&status=unavailable{% if line_filter %}&line={{ line_filter }}{% endif %}"
+       class="kpi-card rounded-xl border-slate-200/80 {% if status_filter == 'unavailable' %}ring-2 ring-[#3498db] bg-ctsa-red-bg{% endif %}">
+      <div>
+        <div class="kpi-head">
+          <span class="kpi-label">Indisponibles</span>
+          <svg class="portal-icon text-ctsa-red" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></svg>
+        </div>
+        <div class="kpi-value tabular-nums text-ctsa-red-text">{{ stats.unavailable }}</div>
+      </div>
+      <div class="kpi-progress" aria-hidden="true">
+        <span class="bg-ctsa-red" style="width: {% if stats.total %}{% widthratio stats.unavailable stats.total 100 %}{% else %}0{% endif %}%;"></span>
+      </div>
+    </a>
+
+    {% if show_verification %}
+      <div class="kpi-card rounded-xl border-slate-200/80">
+        <div>
+          <div class="kpi-head">
+            <span class="kpi-label">Vérifiés</span>
+            <a href="{% url 'terminal:inspection' %}?date={{ selected_date|date:'Y-m-d' }}" class="text-xs font-semibold text-ctsa-bluehover hover:underline">
+              Ouvrir l'inspection
+            </a>
+          </div>
+          <div class="kpi-value tabular-nums text-[#006b3f]">
+            {{ stats.verified }} <span class="text-sm font-semibold text-slate-400">/ {{ stats.confirmed }}</span>
+          </div>
+        </div>
+        <div class="kpi-progress" aria-hidden="true">
+          <span class="bg-ctsa-green" style="width: {% if stats.confirmed %}{% widthratio stats.verified stats.confirmed 100 %}{% else %}0{% endif %}%;"></span>
+        </div>
+      </div>
+    {% endif %}
+  </div>
+
+  <!-- 3. Carte principale : Recherche + Tableau haute densité -->
+  <section id="liste-conteneurs-jour" aria-label="Liste des conteneurs" class="bg-white rounded-xl border border-slate-200/80 shadow-xs overflow-hidden">
+
+    <!-- Barre compacte : compteur + action rapide + recherche -->
+    <div class="px-4 py-3 sm:px-5 bg-white border-b border-slate-200/80 flex flex-col xl:flex-row xl:items-center xl:justify-between gap-2.5">
+      <div class="flex flex-wrap items-center gap-2">
+        <span class="text-xs font-semibold text-slate-500 tabular-nums">
+          {{ containers|length }} conteneur{{ containers|length|pluralize }}
+        </span>
+
+        {% if user.can_edit_or_delete_containers and stats.pending %}
+          <form action="{% url 'terminal:container_status_bulk' %}" method="post" class="inline">
+            {% csrf_token %}
+            <input type="hidden" name="date" value="{{ selected_date|date:'Y-m-d' }}">
+            <input type="hidden" name="scope" value="all_pending">
+            <input type="hidden" name="status" value="confirmed">
+            <input type="hidden" name="next" value="{{ request.get_full_path }}">
+            <button type="submit" class="btn-admin btn-admin-primary rounded-lg min-h-[34px] py-1 tabular-nums">
+              Confirmer les {{ stats.pending }} en attente
+            </button>
+          </form>
+        {% endif %}
+
+        {% if status_filter or line_filter or search_q or verification_filter %}
+          <a href="{% url 'terminal:dashboard' %}?date={{ selected_date|date:'Y-m-d' }}" class="text-xs text-ctsa-bluehover hover:underline font-bold ml-1">
+            Réinitialiser
+          </a>
+        {% endif %}
+      </div>
+
       <search>
-        <form action="{% url 'terminal:dashboard' %}" method="get" class="flex flex-wrap items-center gap-2">
+        <form action="{% url 'terminal:dashboard' %}" method="get" class="flex flex-wrap sm:flex-nowrap items-center gap-2">
           <input type="hidden" name="date" value="{{ selected_date|date:'Y-m-d' }}">
           {% if status_filter %}<input type="hidden" name="status" value="{{ status_filter }}">{% endif %}
-          <label for="filter-q" class="visually-hidden">Rechercher un numéro de conteneur</label>
-          <input type="search" id="filter-q" name="q" value="{{ search_q }}" placeholder="Rechercher un numéro…" autocorrect="off" spellcheck="false"
-                 class="border border-[#dadada] rounded-md px-3 py-1.5 min-h-[38px] text-sm font-mono uppercase bg-white w-full sm:w-56">
+
           <label for="filter-line" class="visually-hidden">Ligne maritime</label>
-          <select id="filter-line" name="line" data-auto-submit-select class="border border-[#dadada] rounded-md px-3 py-1.5 min-h-[38px] text-sm bg-white text-[#2c3741]">
+          <select id="filter-line" name="line" data-auto-submit-select class="border border-slate-200/80 rounded-lg px-3 py-1.5 min-h-[36px] text-xs font-semibold bg-white text-ctsa-slate">
             <option value="">Toutes les lignes</option>
             {% for line in shipping_lines %}
               <option value="{{ line.id }}" {% if line_filter == line.id|stringformat:"s" %}selected{% endif %}>{{ line.name }}</option>
             {% endfor %}
           </select>
-          <button type="submit" class="btn-admin">Rechercher</button>
-          {% if filtered %}
-            <a href="{% url 'terminal:dashboard' %}?date={{ selected_date|date:'Y-m-d' }}" class="text-sm text-[#217dbb] hover:underline font-semibold">Tout afficher</a>
-          {% endif %}
+
+          <label for="filter-q" class="visually-hidden">Rechercher un numéro</label>
+          <input type="search" id="filter-q" name="q" value="{{ search_q }}" placeholder="Rechercher..." autocorrect="off" spellcheck="false" class="border border-slate-200/80 rounded-lg px-3 py-1.5 min-h-[36px] text-xs font-mono uppercase bg-white w-full sm:w-auto sm:min-w-[170px]">
+
+          <button type="submit" class="btn-admin btn-admin-primary rounded-lg min-h-[36px] py-1 w-full sm:w-auto">
+            <svg class="portal-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+            <span>Filtrer</span>
+          </button>
         </form>
       </search>
-
-      {% if user.can_edit_or_delete_containers and stats.pending %}
-        <form action="{% url 'terminal:container_status_bulk' %}" method="post" class="shrink-0">
-          {% csrf_token %}
-          <input type="hidden" name="date" value="{{ selected_date|date:'Y-m-d' }}">
-          <input type="hidden" name="scope" value="all_pending">
-          <input type="hidden" name="status" value="confirmed">
-          <input type="hidden" name="next" value="{{ request.get_full_path }}">
-          <button type="submit"
-                  data-confirm-title="Confirmer tous les conteneurs en attente ?"
-                  data-confirm="{{ stats.pending }} conteneur{{ stats.pending|pluralize }} en attente de la liste du {{ selected_date|date:'d/m/Y' }} {{ stats.pending|pluralize:'passera,passeront' }} au statut « Confirmé ». Les clients verront aussitôt ce changement."
-                  data-confirm-label="Confirmer"
-                  class="btn-admin">
-            {% if stats.pending == 1 %}Confirmer le conteneur en attente{% else %}Confirmer les {{ stats.pending }} en attente{% endif %}
-          </button>
-        </form>
-      {% endif %}
     </div>
 
-    <!-- Barre de sélection : n'apparaît que lorsqu'au moins une case est cochée -->
-    {% if user.can_edit_or_delete_containers and containers %}
-      <div data-selection-bar="dashboard" hidden class="selection-bar">
-        <form id="dashboard-bulk-status-form" action="{% url 'terminal:container_status_bulk' %}" method="post" class="flex flex-wrap items-center gap-2">
-          {% csrf_token %}
-          <input type="hidden" name="date" value="{{ selected_date|date:'Y-m-d' }}">
-          <input type="hidden" name="next" value="{{ request.get_full_path }}">
-          <strong class="text-sm mr-1"><span data-selection-count>0</span> sélectionné(s)</strong>
-          <button type="submit" name="status" value="confirmed" class="btn-admin">Confirmer</button>
-          <button type="submit" name="status" value="pending" class="btn-admin">Mettre en attente</button>
-          <button type="button" data-toggle-panel="bulk-unavail-panel" aria-expanded="false" aria-controls="bulk-unavail-panel" class="btn-admin">
-            Indisponible…
-          </button>
-        </form>
-        <div id="bulk-unavail-panel" hidden class="mt-2 flex flex-wrap items-center gap-2">
-          <label for="bulk-reason-select" class="text-sm font-semibold">Motif</label>
-          <select id="bulk-reason-select" name="unavailability_reason" form="dashboard-bulk-status-form" class="text-sm border border-[#dadada] rounded px-2.5 py-1.5 bg-white text-[#2c3741]">
-            <option value="">Choisir le motif…</option>
-            {% for r in reasons %}
-              <option value="{{ r.id }}">{{ r.label }}</option>
-            {% endfor %}
-          </select>
-          <label for="bulk-reason-note" class="visually-hidden">Précision (facultatif)</label>
-          <input type="text" id="bulk-reason-note" name="unavailability_note" form="dashboard-bulk-status-form" placeholder="Précision (facultatif)"
-                 class="text-sm border border-[#dadada] rounded px-2.5 py-1.5 bg-white text-[#2c3741] w-full sm:w-52">
-          <button type="submit" name="status" value="unavailable" form="dashboard-bulk-status-form" class="btn-admin btn-admin-slate">Appliquer</button>
-        </div>
-      </div>
-    {% endif %}
-
-    <!-- La liste : une ligne dit le conteneur, sa ligne maritime et son statut. Le reste est derrière « Modifier ». -->
+    <!-- Tableau haute densité à en-tête collant et menu d'actions -->
     <div tabindex="0" role="region" aria-labelledby="rampe-table-caption" class="table-wrapper border-0 rounded-none">
-      <table class="ctsa-table" style="--label-2: 'Ligne maritime'; --label-3: 'Statut';">
+      <table class="ctsa-table" style="--label-2: 'Ligne maritime'; --label-3: 'Statut'; --label-4: 'Action';">
         <caption id="rampe-table-caption" class="visually-hidden">
           Conteneurs du {{ selected_date|date:"d/m/Y" }}
         </caption>
-        <thead>
+        <thead class="sticky top-0 z-10 bg-slate-50/95 backdrop-blur-xs">
           <tr>
             <th scope="col">
-              <label class="inline-flex items-center gap-2.5">
+              <label class="inline-flex items-center gap-2">
                 {% if user.can_edit_or_delete_containers and containers %}
-                  <input type="checkbox" data-check-all="dashboard" class="w-4 h-4" aria-label="Tout sélectionner">
+                  <input type="checkbox" data-check-all="dashboard" class="w-4 h-4 rounded">
                 {% endif %}
                 <span>Conteneur</span>
               </label>
             </th>
             <th scope="col">Ligne maritime</th>
             <th scope="col">Statut</th>
-            <th scope="col"><span class="visually-hidden">Actions</span></th>
+            <th scope="col" class="text-right">Action</th>
           </tr>
         </thead>
         <tbody>
           {% for c in containers %}
             <tr>
               <th scope="row">
-                <label class="inline-flex items-center gap-2.5">
+                <label class="inline-flex items-center gap-2">
                   {% if user.can_edit_or_delete_containers %}
-                    <input type="checkbox" name="ids" value="{{ c.pk }}" form="dashboard-bulk-status-form" data-check-group="dashboard" class="w-4 h-4" aria-label="Sélectionner {{ c.container_number }}">
+                    <input type="checkbox" name="ids" value="{{ c.pk }}" form="dashboard-bulk-status-form" data-check-group="dashboard" class="w-4 h-4 rounded">
                   {% endif %}
-                  <span class="text-base font-bold text-[#2c3741]">{{ c.container_number }}</span>
+                  <span class="text-base font-bold font-mono tabular-nums text-ctsa-slate">{{ c.container_number }}</span>
                 </label>
-                {% if c.carried_from %}
-                  <div class="text-xs font-sans font-normal text-[#5b656d] mt-0.5">repris du {{ c.carried_from.scheduled_date|date:"d/m" }}</div>
-                {% endif %}
+                <div class="text-xs font-sans font-normal text-slate-500 mt-0.5 tabular-nums">
+                  {{ c.updated_at|date:"H:i" }}{% if c.updated_by %} · {{ c.updated_by.display_name }}{% endif %}{% if c.carried_from %} · repris du {{ c.carried_from.scheduled_date|date:"d/m" }}{% endif %}
+                </div>
               </th>
 
-              <td>{{ c.shipping_line.name|default:"Non renseignée" }}</td>
+              <td class="font-semibold text-ctsa-slate">
+                {{ c.shipping_line.name|default:"Non renseignée" }}
+              </td>
 
               <td>
-                {% if c.status == 'confirmed' %}
-                  <span class="status-badge status-confirmed">Confirmé</span>
-                  {% if c.verification_result == 'verified' %}
-                    <span class="status-badge status-verified">Vérifié</span>
-                  {% elif c.verification_result == 'not_verified' %}
-                    <span class="status-badge status-not-verified">Non vérifié</span>
+                <div class="flex flex-wrap items-center gap-1.5">
+                  {% if c.status == 'confirmed' %}
+                    <span class="status-badge status-confirmed rounded-full">
+                      <span class="status-seg-dot dot-confirmed" aria-hidden="true"></span>
+                      <span>Confirmé</span>
+                    </span>
+                  {% elif c.status == 'pending' %}
+                    <span class="status-badge status-pending rounded-full">
+                      <span class="status-seg-dot dot-pending" aria-hidden="true"></span>
+                      <span>En attente</span>
+                    </span>
+                  {% else %}
+                    <span class="status-badge status-unavailable rounded-full">
+                      <span class="status-seg-dot dot-unavailable" aria-hidden="true"></span>
+                      <span>Indisponible</span>
+                    </span>
                   {% endif %}
-                {% elif c.status == 'pending' %}
-                  <span class="status-badge status-pending">En attente</span>
-                {% else %}
-                  <span class="status-badge status-unavailable">Indisponible</span>
-                  <div class="text-xs font-semibold text-[#b82c1f] mt-1">{{ c.full_reason_display }}</div>
+                  {% if c.status == 'confirmed' and c.verification_result == 'verified' %}
+                    <span class="status-badge status-verified rounded-full">Vérifié</span>
+                  {% elif c.status == 'confirmed' and c.verification_result == 'not_verified' %}
+                    <span class="status-badge status-not-verified rounded-full">Non vérifié</span>
+                  {% endif %}
+                </div>
+                {% if c.status == 'unavailable' %}
+                  <div class="text-xs font-semibold text-ctsa-red-text mt-1">{{ c.full_reason_display }}</div>
                 {% endif %}
               </td>
 
               <td class="text-right">
                 {% if user.can_edit_or_delete_containers %}
-                  <div class="inline-flex flex-wrap items-center justify-end gap-2">
-                    {% if c.status == 'pending' %}
-                      <form action="{% url 'terminal:container_update_status' c.pk %}" method="post">
-                        {% csrf_token %}
-                        <input type="hidden" name="status" value="confirmed">
-                        <input type="hidden" name="next" value="{{ request.get_full_path }}">
-                        <button type="submit" class="btn-admin btn-admin-primary min-h-[34px] py-1">Confirmer</button>
-                      </form>
-                    {% endif %}
-                    <button type="button"
-                            data-toggle-panel="row-edit-{{ c.pk }}"
-                            aria-expanded="false"
-                            aria-controls="row-edit-{{ c.pk }}"
-                            class="btn-admin min-h-[34px] py-1">
-                      Modifier
-                    </button>
+                  <div class="flex sm:inline-flex flex-wrap items-center justify-between sm:justify-end gap-2 w-full sm:w-auto">
+                    <div class="text-left w-full sm:w-auto">
+                      {% include 'partials/status_actions.html' %}
+                    </div>
+
+                    <details class="portal-dropdown inline-block text-left">
+                      <summary class="btn-admin rounded-lg min-h-[34px] px-2.5 py-1 cursor-pointer" aria-label="Actions pour {{ c.container_number }}">
+                        <svg class="portal-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>
+                      </summary>
+                      <div class="portal-dropdown-menu" role="menu">
+                        <button type="button"
+                                data-toggle-panel="row-edit-{{ c.pk }}"
+                                aria-expanded="false"
+                                aria-controls="row-edit-{{ c.pk }}"
+                                role="menuitem"
+                                class="w-full flex items-center gap-2 px-3 py-2 rounded-md text-xs font-semibold text-ctsa-slate hover:bg-slate-100 transition">
+                          <svg class="portal-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
+                          <span>Modifier la ligne maritime</span>
+                        </button>
+                        <a href="{% url 'terminal:register' %}?q={{ c.container_number }}" class="portal-dropdown-item" role="menuitem">
+                          <span>Historique du conteneur</span>
+                        </a>
+                        <form action="{% url 'terminal:container_delete' c.pk %}" method="post" class="border-t border-slate-100 mt-1 pt-1">
+                          {% csrf_token %}
+                          <button type="submit"
+                                  data-confirm-title="Supprimer ce conteneur ?"
+                                  data-confirm="{{ c.container_number }} sera retiré de la liste du {{ c.scheduled_date|date:'d/m/Y' }}, avec son historique. Cette action est définitive."
+                                  data-confirm-label="Supprimer"
+                                  data-confirm-tone="danger"
+                                  role="menuitem"
+                                  class="w-full flex items-center gap-2 px-3 py-2 rounded-md text-xs font-bold text-ctsa-red-text hover:bg-ctsa-red-bg transition">
+                            <svg class="portal-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>
+                            <span>Supprimer</span>
+                          </button>
+                        </form>
+                      </div>
+                    </details>
                   </div>
+                {% else %}
+                  <span class="text-xs text-slate-400">—</span>
                 {% endif %}
               </td>
             </tr>
 
             {% if user.can_edit_or_delete_containers %}
-              <!-- Tout ce qui se modifie sur un conteneur, masqué tant qu'on ne le demande pas -->
-              <tr id="row-edit-{{ c.pk }}" hidden class="row-edit">
-                <td colspan="4">
-                  <div class="row-edit-grid">
-                    <div>
-                      <div class="row-edit-label">Statut</div>
-                      {% include 'partials/status_actions.html' %}
-                    </div>
-
-                    <form action="{% url 'terminal:container_update_status' c.pk %}" method="post">
+              <tr id="row-edit-{{ c.pk }}" hidden class="bg-[#f8fafc]">
+                <td colspan="4" class="p-4 border-b border-slate-200/80">
+                  <div class="flex flex-wrap items-center justify-between gap-4">
+                    <form action="{% url 'terminal:container_update_status' c.pk %}" method="post" class="flex flex-wrap items-center gap-2">
                       {% csrf_token %}
                       <input type="hidden" name="status" value="{{ c.status }}">
                       <input type="hidden" name="next" value="{{ request.get_full_path }}">
-                      <label for="line-row-{{ c.pk }}" class="row-edit-label">Ligne maritime</label>
-                      <select id="line-row-{{ c.pk }}" name="shipping_line" data-auto-submit-select
-                              class="border border-[#dadada] rounded px-2.5 py-1.5 text-sm text-[#2c3741] bg-white">
+                      <label for="line-row-{{ c.pk }}" class="text-xs font-bold text-slate-500">Ligne maritime :</label>
+                      <select id="line-row-{{ c.pk }}"
+                              name="shipping_line"
+                              data-auto-submit-select
+                              class="border border-slate-200/80 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-ctsa-slate bg-white">
                         {% if not c.shipping_line %}
                           <option value="">Non renseignée</option>
                         {% endif %}
@@ -273,46 +350,52 @@
                         {% endfor %}
                       </select>
                     </form>
-
-                    <div class="row-edit-end">
-                      <span class="text-xs text-[#5b656d]">
-                        Modifié le {{ c.updated_at|date:"d/m à H:i" }}{% if c.updated_by %} par {{ c.updated_by.display_name }}{% endif %}
-                      </span>
-                      <form action="{% url 'terminal:container_delete' c.pk %}" method="post">
-                        {% csrf_token %}
-                        <button type="submit"
-                                data-confirm-title="Supprimer ce conteneur ?"
-                                data-confirm="{{ c.container_number }} sera retiré de la liste du {{ c.scheduled_date|date:'d/m/Y' }}, avec son historique. Cette action est définitive."
-                                data-confirm-label="Supprimer"
-                                data-confirm-tone="danger"
-                                class="text-sm font-semibold text-[#b82c1f] hover:underline">
-                          Supprimer de la liste
-                        </button>
-                      </form>
-                    </div>
                   </div>
                 </td>
               </tr>
             {% endif %}
           {% empty %}
             <tr>
-              <th scope="row"><span class="visually-hidden">Liste vide</span></th>
-              <td colspan="3" class="py-10 text-[#5b656d]">
-                {% if filtered %}
-                  Aucun conteneur ne correspond à ce filtre.
-                  <a href="{% url 'terminal:dashboard' %}?date={{ selected_date|date:'Y-m-d' }}" class="font-semibold text-[#217dbb] underline">Tout afficher</a>
-                {% elif selected_date >= today %}
-                  Aucun conteneur inscrit pour cette séance.
-                  <a href="{% url 'terminal:prepare' %}?date={{ selected_date|date:'Y-m-d' }}" class="font-semibold text-[#217dbb] underline">Préparer cette liste</a>
-                {% else %}
-                  Aucun conteneur n'était programmé ce jour-là.
-                {% endif %}
+              <th scope="row">—</th>
+              <td colspan="3" class="text-center py-8 text-slate-500">
+                Aucun conteneur pour cette séance.
               </td>
             </tr>
           {% endfor %}
         </tbody>
       </table>
     </div>
+    {% include 'partials/pagination.html' %}
   </section>
+
+  <!-- 4. Barre flottante sombre d'actions groupées (affichée dès qu'au moins une case est cochée) -->
+  {% if user.can_edit_or_delete_containers %}
+    <div data-selection-bar="dashboard" hidden class="sticky bottom-4 z-30 rounded-xl bg-[#2c3741] text-white p-3.5 sm:px-5 shadow-xl border border-white/10 space-y-2.5">
+      <div class="flex flex-wrap items-center justify-between gap-2">
+        <form id="dashboard-bulk-status-form" action="{% url 'terminal:container_status_bulk' %}" method="post" class="flex flex-wrap items-center gap-2">
+          {% csrf_token %}
+          <input type="hidden" name="date" value="{{ selected_date|date:'Y-m-d' }}">
+          <input type="hidden" name="next" value="{{ request.get_full_path }}">
+          <span data-bulk-count="dashboard" class="inline-flex items-center px-3 py-1 rounded-full bg-ctsa-blue text-white text-xs font-bold tabular-nums mr-1">
+            Sélection
+          </span>
+          <button type="submit" name="status" value="confirmed" class="btn-admin rounded-lg">
+            <span class="status-seg-dot dot-confirmed" aria-hidden="true"></span>
+            <span>Confirmer</span>
+          </button>
+          <button type="submit" name="status" value="pending" class="btn-admin rounded-lg">
+            <span class="status-seg-dot dot-pending" aria-hidden="true"></span>
+            <span>En attente</span>
+          </button>
+          <button type="button"
+                  data-unavailable-bulk="dashboard-bulk-status-form"
+                  class="btn-admin rounded-lg">
+            <span class="status-seg-dot dot-unavailable" aria-hidden="true"></span>
+            <span>Indisponible</span>
+          </button>
+        </form>
+      </div>
+    </div>
+  {% endif %}
 </div>
 {% endblock %}

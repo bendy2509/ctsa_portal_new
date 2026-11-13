@@ -14,23 +14,23 @@
 
   <!-- Recherche + intervalle -->
   <search>
-    <form action="{% url 'terminal:register' %}" method="get" class="bg-white rounded-lg border border-[#dadada] p-4 sm:p-5 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-12 gap-3 items-end">
+    <form action="{% url 'terminal:register' %}" method="get" class="bg-white rounded-xl border border-slate-200/80 shadow-xs p-4 sm:p-5 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-12 gap-3 items-end">
       <div class="xl:col-span-3 form-field mb-0">
         <label for="reg-q" class="text-xs">Numéro de conteneur</label>
         <input type="search" id="reg-q" name="q" value="{{ search_q }}" placeholder="ex. CMAU4052450" autocorrect="off" spellcheck="false"
-               class="border border-[#dadada] rounded-md px-3 py-1.5 min-h-[40px] text-sm font-mono uppercase bg-white">
+               class="border border-slate-200/80 rounded-lg px-3 py-1.5 min-h-[40px] text-sm font-mono uppercase bg-white">
       </div>
       <div class="xl:col-span-2 form-field mb-0">
         <label for="reg-du" class="text-xs">Du</label>
-        <input type="date" id="reg-du" name="du" value="{{ start|date:'Y-m-d' }}" class="border border-[#dadada] rounded-md px-3 py-1.5 min-h-[40px] text-sm bg-white">
+        <input type="date" id="reg-du" name="du" value="{{ start|date:'Y-m-d' }}" class="border border-slate-200/80 rounded-lg px-3 py-1.5 min-h-[40px] text-sm bg-white">
       </div>
       <div class="xl:col-span-2 form-field mb-0">
         <label for="reg-au" class="text-xs">Au</label>
-        <input type="date" id="reg-au" name="au" value="{{ end|date:'Y-m-d' }}" class="border border-[#dadada] rounded-md px-3 py-1.5 min-h-[40px] text-sm bg-white">
+        <input type="date" id="reg-au" name="au" value="{{ end|date:'Y-m-d' }}" class="border border-slate-200/80 rounded-lg px-3 py-1.5 min-h-[40px] text-sm bg-white">
       </div>
       <div class="xl:col-span-2 form-field mb-0">
         <label for="reg-result" class="text-xs">Résultat</label>
-        <select id="reg-result" name="resultat" class="border border-[#dadada] rounded-md px-3 py-1.5 min-h-[40px] text-sm bg-white text-[#2c3741]">
+        <select id="reg-result" name="resultat" class="border border-slate-200/80 rounded-lg px-3 py-1.5 min-h-[40px] text-sm bg-white text-[#2c3741]">
           <option value="">Tous</option>
           <option value="verified" {% if result_filter == 'verified' %}selected{% endif %}>Vérifiés</option>
           <option value="not_verified" {% if result_filter == 'not_verified' %}selected{% endif %}>Non vérifiés</option>
@@ -39,7 +39,7 @@
       </div>
       <div class="xl:col-span-2 form-field mb-0">
         <label for="reg-line" class="text-xs">Ligne maritime</label>
-        <select id="reg-line" name="line" class="border border-[#dadada] rounded-md px-3 py-1.5 min-h-[40px] text-sm bg-white text-[#2c3741]">
+        <select id="reg-line" name="line" class="border border-slate-200/80 rounded-lg px-3 py-1.5 min-h-[40px] text-sm bg-white text-[#2c3741]">
           <option value="">Toutes</option>
           {% for line in shipping_lines %}
             <option value="{{ line.id }}" {% if line_filter == line.id|stringformat:"s" %}selected{% endif %}>{{ line.name }}</option>
@@ -47,7 +47,7 @@
         </select>
       </div>
       <div class="sm:col-span-2 xl:col-span-1">
-        <button type="submit" class="btn-admin btn-admin-primary w-full min-h-[40px]">Chercher</button>
+        <button type="submit" class="btn-admin btn-admin-primary w-full min-h-[40px] rounded-lg">Chercher</button>
       </div>
     </form>
   </search>
@@ -64,50 +64,50 @@
   </p>
 
   <!-- Quantités de la sélection -->
-  <div class="metric-strip">
-    <div class="stat-tile">
-      <div class="stat-tile-label">Programmations</div>
-      <div class="stat-tile-value">{{ totals.scheduled }}</div>
-      <div class="stat-tile-note">{{ totals.distinct }} conteneur{{ totals.distinct|pluralize }} distinct{{ totals.distinct|pluralize }}</div>
+  <div class="kpi-grid">
+    <div class="kpi-card rounded-xl border border-slate-200/80 shadow-xs">
+      <div class="kpi-label">Programmations</div>
+      <div class="kpi-value tabular-nums">{{ totals.scheduled }}</div>
+      <div class="kpi-note">{{ totals.distinct }} conteneur{{ totals.distinct|pluralize }} distinct{{ totals.distinct|pluralize }}</div>
     </div>
-    <div class="stat-tile">
-      <div class="stat-tile-label">Confirmés</div>
-      <div class="stat-tile-value">{{ totals.confirmed }}</div>
-      <div class="stat-tile-note">disponibles à la RAMPE</div>
+    <div class="kpi-card rounded-xl border border-slate-200/80 shadow-xs">
+      <div class="kpi-label">Confirmés</div>
+      <div class="kpi-value tabular-nums text-[#008751]">{{ totals.confirmed }}</div>
+      <div class="kpi-note">disponibles à la RAMPE</div>
     </div>
-    <div class="stat-tile">
-      <div class="stat-tile-label">Vérifiés</div>
-      <div class="stat-tile-value text-[#006b3f]">{{ totals.verified }}</div>
-      <div class="stat-tile-note">{% if totals.rate is not None %}{{ totals.rate }} % des confirmés{% else %}aucun confirmé{% endif %}</div>
+    <div class="kpi-card rounded-xl border border-slate-200/80 shadow-xs">
+      <div class="kpi-label">Vérifiés</div>
+      <div class="kpi-value tabular-nums text-[#008751]">{{ totals.verified }}</div>
+      <div class="kpi-note">{% if totals.rate is not None %}{{ totals.rate }} % des confirmés{% else %}aucun confirmé{% endif %}</div>
     </div>
-    <div class="stat-tile">
-      <div class="stat-tile-label">Non vérifiés</div>
-      <div class="stat-tile-value">{{ totals.not_verified }}</div>
-      <div class="stat-tile-note">+ {{ totals.to_verify }} confirmé{{ totals.to_verify|pluralize }} non marqué{{ totals.to_verify|pluralize }}</div>
+    <div class="kpi-card rounded-xl border border-slate-200/80 shadow-xs">
+      <div class="kpi-label">Non vérifiés</div>
+      <div class="kpi-value tabular-nums text-[#8a5300]">{{ totals.not_verified }}</div>
+      <div class="kpi-note">+ {{ totals.to_verify }} confirmé{{ totals.to_verify|pluralize }} non marqué{{ totals.to_verify|pluralize }}</div>
     </div>
-    <div class="stat-tile">
-      <div class="stat-tile-label">Repris</div>
-      <div class="stat-tile-value">{{ totals.carried }}</div>
-      <div class="stat-tile-note">reportés sur une liste suivante</div>
+    <div class="kpi-card rounded-xl border border-slate-200/80 shadow-xs">
+      <div class="kpi-label">Repris</div>
+      <div class="kpi-value tabular-nums text-[#3498db]">{{ totals.carried }}</div>
+      <div class="kpi-note">reportés sur une liste suivante</div>
     </div>
-    <div class="stat-tile">
-      <div class="stat-tile-label">Rejetés</div>
-      <div class="stat-tile-value">{{ totals.rejected }}</div>
-      <div class="stat-tile-note">sortis du suivi</div>
+    <div class="kpi-card rounded-xl border border-slate-200/80 shadow-xs">
+      <div class="kpi-label">Rejetés</div>
+      <div class="kpi-value tabular-nums text-[#e74c3c]">{{ totals.rejected }}</div>
+      <div class="kpi-note">sortis du suivi</div>
     </div>
   </div>
 
-  <section aria-labelledby="register-caption" class="bg-white rounded-lg border border-[#dadada] shadow-sm overflow-hidden">
-    <div class="px-4 sm:px-5 py-3 border-b border-[#dadada] flex flex-wrap items-center justify-between gap-3">
+  <section aria-labelledby="register-caption" class="bg-white rounded-xl border border-slate-200/80 shadow-xs overflow-hidden">
+    <div class="px-4 sm:px-5 py-3 border-b border-slate-200/80 flex flex-wrap items-center justify-between gap-3 bg-[#f8fafc]">
       <h2 id="register-caption" class="text-sm font-bold text-[#2c3741] m-0">
         {{ page.paginator.count }} ligne{{ page.paginator.count|pluralize }}{% if result_filter %} pour ce résultat{% endif %}
       </h2>
-      <a href="?{% if page_query %}{{ page_query }}&amp;{% endif %}export=csv" class="btn-admin btn-admin-slate">Excel (CSV)</a>
+      <a href="?{% if page_query %}{{ page_query }}&amp;{% endif %}export=csv" class="btn-admin btn-admin-slate rounded-lg">Excel (CSV)</a>
     </div>
 
     <div tabindex="0" role="region" aria-labelledby="register-caption" class="table-wrapper border-0 rounded-none">
       <table class="ctsa-table" style="--label-2: 'Séance'; --label-3: 'Ligne maritime'; --label-4: 'Statut'; --label-5: 'Vérifié le'; --label-6: 'Marquer';">
-        <thead>
+        <thead class="sticky top-0 z-10 bg-slate-50/95 backdrop-blur-xs">
           <tr>
             <th scope="col">Conteneur</th>
             <th scope="col">Séance</th>

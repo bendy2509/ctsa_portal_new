@@ -3,16 +3,16 @@
 {% block title %}Gestion des Utilisateurs — Cap Terminal S.A.{% endblock %}
 
 {% block portal_content %}
-<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-5">
 
   <!-- En-tête de page sobre avec bouton d'ouverture du formulaire de création -->
-  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-5 border-b border-[#dadada]">
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-slate-200/80">
     <div>
-      <h1 class="mb-1">
+      <h1 class="text-xl sm:text-2xl font-heading font-extrabold text-[#2c3741] m-0">
         Utilisateurs et rôles
       </h1>
-      <p class="text-sm text-[#666666] m-0">
-        Gérez les comptes des administrateurs, des superviseurs du soir et du matin, ainsi que des clients.
+      <p class="text-sm text-[#64748b] m-0 mt-0.5">
+        Gérez les comptes des administrateurs, des superviseurs et des clients.
       </p>
     </div>
 
@@ -20,14 +20,15 @@
             id="toggle-create-user-btn"
             aria-expanded="{% if create_form.errors %}true{% else %}false{% endif %}"
             aria-controls="create-user-panel"
-            class="btn-admin btn-admin-primary px-5 min-h-[42px]">
-      Créer un compte utilisateur
+            class="btn-admin btn-admin-primary px-4 min-h-[40px] rounded-lg inline-flex items-center gap-2">
+      <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" x2="19" y1="8" y2="14"/><line x1="22" x2="16" y1="11" y2="11"/></svg>
+      <span>Créer un compte utilisateur</span>
     </button>
   </div>
 
   <!-- Panneau dépliable de création d'utilisateur -->
-  <section id="create-user-panel" {% if not create_form.errors %}hidden{% endif %} aria-labelledby="user-create-title" class="bg-white rounded-lg p-6 border border-[#dadada] shadow-sm">
-    <h2 id="user-create-title" class="font-heading text-sm font-extrabold uppercase tracking-wider text-[#2c3741] mb-4">
+  <section id="create-user-panel" {% if not create_form.errors %}hidden{% endif %} aria-labelledby="user-create-title" class="bg-white rounded-xl p-5 sm:p-6 border border-slate-200/80 shadow-xs">
+    <h2 id="user-create-title" class="font-heading text-xs font-extrabold uppercase tracking-wider text-[#2c3741] mb-4">
       Nouveau compte utilisateur
     </h2>
     <form action="{% url 'accounts:user_list' %}" method="post" aria-labelledby="user-create-title">
@@ -86,32 +87,32 @@
   </section>
 
   <!-- Cadre principal unifié : Onglets de rôle + Recherche + Tableau des utilisateurs -->
-  <section aria-labelledby="users-table-caption" class="bg-white rounded-lg border border-[#dadada] shadow-sm overflow-hidden">
+  <section aria-labelledby="users-table-caption" class="bg-white rounded-xl border border-slate-200/80 shadow-xs overflow-hidden">
 
     <!-- Barre d'onglets par rôle et recherche -->
-    <div class="bg-[#f4f4f4] border-b border-[#dadada] px-4 sm:px-5 pt-3 flex flex-col xl:flex-row xl:items-end xl:justify-between gap-3">
+    <div class="bg-[#f8fafc] border-b border-slate-200/80 px-4 sm:px-5 pt-3 flex flex-col xl:flex-row xl:items-end xl:justify-between gap-3">
       <nav aria-label="Filtrer par rôle" class="flex flex-wrap items-center gap-1 -mb-px">
         <a href="{% url 'accounts:user_list' %}"
-           class="px-3.5 py-2.5 rounded-t-md border text-xs font-heading font-bold uppercase tracking-wider transition
-             {% if not role_filter %}bg-white border-[#dadada] border-b-white text-[#2c3741]{% else %}bg-transparent border-transparent text-[#666666] hover:text-[#2c3741]{% endif %}">
+           class="px-3.5 py-2.5 rounded-t-lg border text-xs font-heading font-bold uppercase tracking-wider transition
+             {% if not role_filter %}bg-white border-slate-200/80 border-b-white text-[#2c3741]{% else %}bg-transparent border-transparent text-[#64748b] hover:text-[#2c3741]{% endif %}">
           Tous les rôles
         </a>
         {% for val, label in role_choices %}
           <a href="{% url 'accounts:user_list' %}?role={{ val }}"
-             class="px-3.5 py-2.5 rounded-t-md border text-xs font-heading font-bold uppercase tracking-wider transition
-               {% if role_filter == val %}bg-white border-[#dadada] border-b-white text-[#3498db]{% else %}bg-transparent border-transparent text-[#666666] hover:text-[#2c3741]{% endif %}">
+             class="px-3.5 py-2.5 rounded-t-lg border text-xs font-heading font-bold uppercase tracking-wider transition
+               {% if role_filter == val %}bg-white border-slate-200/80 border-b-white text-[#3498db]{% else %}bg-transparent border-transparent text-[#64748b] hover:text-[#2c3741]{% endif %}">
             {{ label }}
           </a>
         {% endfor %}
       </nav>
 
-      <div class="pb-2.5">
+      <div class="pb-2.5 w-full xl:w-auto">
         <search>
-          <form action="{% url 'accounts:user_list' %}" method="get" class="flex items-center gap-2">
+          <form action="{% url 'accounts:user_list' %}" method="get" class="flex flex-wrap sm:flex-nowrap items-center gap-2">
             {% if role_filter %}<input type="hidden" name="role" value="{{ role_filter }}">{% endif %}
             <label for="user-q" class="visually-hidden">Rechercher un utilisateur</label>
-            <input type="search" id="user-q" name="q" value="{{ q }}" placeholder="Nom, identifiant, entreprise..." class="border border-[#dadada] rounded-md px-3 py-1.5 min-h-[36px] text-xs bg-white min-w-[210px]">
-            <button type="submit" class="btn-admin btn-admin-primary py-1.5 px-3.5 min-h-[36px]">
+            <input type="search" id="user-q" name="q" value="{{ q }}" placeholder="Nom, identifiant, entreprise..." class="border border-slate-200/80 rounded-lg px-3 py-1.5 min-h-[36px] text-xs bg-white flex-1 min-w-0 sm:min-w-[210px]">
+            <button type="submit" class="btn-admin btn-admin-primary py-1.5 px-3.5 min-h-[36px] rounded-lg shrink-0">
               Filtrer
             </button>
           </form>
@@ -123,9 +124,9 @@
     <div tabindex="0" role="region" aria-labelledby="users-table-caption" class="table-wrapper border-0 rounded-none">
       <table class="ctsa-table" style="--label-2: 'Nom complet'; --label-3: 'Rôle'; --label-4: 'Service / Entreprise'; --label-5: 'Coordonnées'; --label-6: 'État'; --label-7: 'Actions';">
         <caption id="users-table-caption" class="visually-hidden">
-          Comptes utilisateurs enregistrés ({{ users|length }})
+          Comptes utilisateurs enregistrés ({{ page.paginator.count }})
         </caption>
-        <thead>
+        <thead class="sticky top-0 z-10 bg-slate-50/95 backdrop-blur-xs">
           <tr>
             <th scope="col">Identifiant</th>
             <th scope="col">Nom complet</th>
@@ -139,26 +140,30 @@
         <tbody>
           {% for u in users %}
             <tr>
-              <th scope="row">{{ u.username }}</th>
+              <th scope="row" class="font-mono text-xs">{{ u.username }}</th>
               <td class="font-semibold text-[#2c3741]">{{ u.display_name }}</td>
               <td>
-                <span class="inline-flex items-center px-2.5 py-1 rounded text-xs font-heading font-bold uppercase tracking-wider
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-heading font-bold uppercase tracking-wider
                   {% if u.role == 'admin' %}bg-[#2c3741] text-white
-                  {% elif u.role == 'evening_supervisor' or u.role == 'morning_supervisor' %}bg-[#eef7fd] text-[#1d6fa5] border border-[#93c9ed]
-                  {% else %}bg-[#f4f4f4] text-[#333333] border border-[#dadada]{% endif %}">
+                  {% elif u.role == 'supervisor' %}bg-[#3498db]/10 text-[#1d6fa5] border border-[#3498db]/25
+                  {% else %}bg-slate-100 text-[#333333] border border-slate-200/80{% endif %}">
                   {{ u.get_role_display }}
                 </span>
               </td>
-              <td class="text-sm text-[#666666]">{{ u.company_name|default:"—" }}</td>
-              <td class="text-xs text-[#666666]">
+              <td class="text-sm text-[#64748b]">{{ u.company_name|default:"—" }}</td>
+              <td class="text-xs text-[#64748b]">
                 <div>{{ u.email|default:"—" }}</div>
                 {% if u.phone %}<div>{{ u.phone }}</div>{% endif %}
               </td>
               <td>
                 {% if u.is_active %}
-                  <span class="text-xs font-bold text-[#008751]">Actif</span>
+                  <span class="inline-flex items-center gap-1.5 rounded-full bg-[#008751]/10 text-[#008751] border border-[#008751]/20 px-2.5 py-0.5 text-xs font-semibold">
+                    <span class="status-seg-dot dot-confirmed"></span>Actif
+                  </span>
                 {% else %}
-                  <span class="text-xs font-bold text-[#e74c3c]">Désactivé</span>
+                  <span class="inline-flex items-center gap-1.5 rounded-full bg-[#e74c3c]/10 text-[#e74c3c] border border-[#e74c3c]/20 px-2.5 py-0.5 text-xs font-semibold">
+                    <span class="status-seg-dot dot-unavailable"></span>Désactivé
+                  </span>
                 {% endif %}
               </td>
               <td class="text-right">
@@ -191,6 +196,7 @@
         </tbody>
       </table>
     </div>
+    {% include 'partials/pagination.html' %}
   </section>
 
 </div>

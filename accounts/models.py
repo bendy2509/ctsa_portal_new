@@ -7,8 +7,7 @@ from django.db import models
 class User(AbstractUser):
     class Role(models.TextChoices):
         ADMIN = 'admin', 'Administrateur'
-        EVENING_SUPERVISOR = 'evening_supervisor', 'Superviseur soir'
-        MORNING_SUPERVISOR = 'morning_supervisor', 'Superviseur matin'
+        SUPERVISOR = 'supervisor', 'Superviseur'
         CLIENT = 'client', 'Client'
 
     role = models.CharField(
@@ -51,23 +50,20 @@ class User(AbstractUser):
         return self.is_superuser or self.role == self.Role.ADMIN
 
     @property
-    def is_evening_supervisor(self) -> bool:
-        return self.role == self.Role.EVENING_SUPERVISOR
-
-    @property
-    def is_morning_supervisor(self) -> bool:
-        return self.role == self.Role.MORNING_SUPERVISOR
+    def is_supervisor(self) -> bool:
+        return self.role == self.Role.SUPERVISOR
 
     @property
     def is_staff_member(self) -> bool:
-        return self.is_portal_admin or self.is_evening_supervisor or self.is_morning_supervisor
+        return self.is_portal_admin or self.is_supervisor
 
     @property
     def can_mark_verification(self) -> bool:
-        # Admin et les deux superviseurs peuvent clôturer une séance (Vérifié / Non vérifié).
+        # Administrateur et Superviseur peuvent marquer la vérification (Vérifié / Non vérifié).
         return self.is_staff_member
 
     @property
     def can_edit_or_delete_containers(self) -> bool:
-        return self.is_portal_admin or self.is_evening_supervisor
+        # Droits compilés pour Administrateur et Superviseur.
+        return self.is_staff_member
 

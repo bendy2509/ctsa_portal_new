@@ -61,7 +61,7 @@ def _pick_relevant_schedule(containers, today: datetime.date):
     return chosen
 
 
-PAGE_SIZE = 50
+PAGE_SIZE = 20
 
 
 def _paginate(request, queryset):
@@ -82,11 +82,8 @@ def _safe_next(request, fallback: str) -> str:
 
 
 def default_work_date(user) -> datetime.date:
-    """Liste sur laquelle travaille l'utilisateur : demain pour le superviseur soir, aujourd'hui sinon."""
-    today = timezone.localdate()
-    if getattr(user, 'is_evening_supervisor', False):
-        return today + datetime.timedelta(days=1)
-    return today
+    """Liste par défaut : aujourd'hui pour l'administrateur et le superviseur."""
+    return timezone.localdate()
 
 
 def unverified_backlog(target_date: datetime.date):
@@ -349,11 +346,7 @@ def prepare_view(request):
 
     today = timezone.localdate()
     tomorrow = today + datetime.timedelta(days=1)
-    if request.user.is_morning_supervisor:
-        # Le superviseur matin n'inscrit que sur la liste du jour.
-        selected_date = today
-    else:
-        selected_date = max(_parse_date(request.GET.get('date', ''), default_work_date(request.user)), today)
+    selected_date = max(_parse_date(request.GET.get('date', ''), default_work_date(request.user)), today)
 
     session_qs = Container.objects.filter(scheduled_date=selected_date).select_related('shipping_line')
     registered_count = session_qs.count()
@@ -382,7 +375,7 @@ def dashboard_view(request):
     today = timezone.localdate()
     tomorrow = today + datetime.timedelta(days=1)
 
-    default_date = tomorrow if request.user.is_evening_supervisor else today
+    default_date = today
     selected_date = _parse_date(request.GET.get('date', ''), default_date)
     status_filter = request.GET.get('status', '').strip()
     line_filter = request.GET.get('line', '').strip()
@@ -423,6 +416,8 @@ def dashboard_view(request):
             | Q(unavailability_note__icontains=search_q)
         )
 
+    page, page_query = _paginate(request, containers)
+
     shipping_lines = ShippingLine.objects.filter(is_active=True)
     reasons = UnavailabilityReason.objects.filter(is_active=True)
     recent_logs = (
@@ -442,7 +437,9 @@ def dashboard_view(request):
         'line_filter': line_filter,
         'search_q': search_q,
         'stats': stats,
-        'containers': containers,
+        'containers': page,
+        'page': page,
+        'page_query': page_query,
         'shipping_lines': shipping_lines,
         'reasons': reasons,
         'recent_logs': recent_logs,
@@ -457,21 +454,14 @@ def container_add_single_view(request):
         return redirect('terminal:home')
 
     today = timezone.localdate()
-    tomorrow = today + datetime.timedelta(days=1)
-    default_date = tomorrow if request.user.is_evening_supervisor else today
+    default_date = today
 
     raw_number = request.POST.get('container_number', '')
     normalized = normalize_container_number(raw_number)
     target_date = _parse_date(request.POST.get('scheduled_date', ''), default_date)
 
-    # Morning supervisor restriction: strictly 'pending' status
-    if request.user.is_morning_supervisor:
-        status = Container.Status.PENDING
-        target_date = today
-    else:
-        status = request.POST.get('status', Container.Status.PENDING)
-        if status not in dict(Container.Status.choices):
-            status = Container.Status.PENDING
+    # Tout nouvel ajout dans une liste démarre « En attente » jusqu'à confirmation sur la rampe.
+    status = Container.Status.PENDING
 
     shipping_line_id = request.POST.get('shipping_line') or ''
     reason_id = request.POST.get('unavailability_reason') or None
@@ -506,26 +496,15 @@ def container_add_single_view(request):
         )
     if prior:
         carried = _carry_into(prior, target_date, request.user)
-        if status != Container.Status.PENDING:
-            carried.status = status
-            carried.unavailability_reason_id = int(reason_id) if (reason_id and reason_id.isdigit()) else None
-            carried.unavailability_note = note
-            carried.save(acting_user=request.user)
         messages.info(
             request,
             f"{normalized} était déjà programmé depuis le "
-            f"{carried.first_scheduled_date.strftime('%d/%m/%Y')} : il a été repris dans la liste, "
-            f"sans nouvelle saisie (ligne maritime conservée)."
+            f"{carried.first_scheduled_date.strftime('%d/%m/%Y')} : il a été repris dans la liste "
+            f"avec le statut « En attente » (ligne maritime conservée)."
         )
         return redirect(_safe_next(request, _dashboard_url(target_date)))
 
     if existing:
-        if request.user.is_morning_supervisor:
-            messages.warning(
-                request,
-                f"Le conteneur {normalized} est déjà programmé pour le {target_date.strftime('%d/%m/%Y')}."
-            )
-            return redirect(_safe_next(request, _dashboard_url(target_date)))
         existing.status = status
         existing.shipping_line_id = int(shipping_line_id)
         existing.unavailability_reason_id = int(reason_id) if (reason_id and reason_id.isdigit()) else None
@@ -561,24 +540,15 @@ def container_add_bulk_view(request):
         return redirect('terminal:home')
 
     today = timezone.localdate()
-    tomorrow = today + datetime.timedelta(days=1)
-    default_date = tomorrow if request.user.is_evening_supervisor else today
+    default_date = today
 
     raw_list = request.POST.get('container_list', '')
     target_date = _parse_date(request.POST.get('scheduled_date', ''), default_date)
     shipping_line_id = request.POST.get('shipping_line') or ''
 
-    if request.user.is_morning_supervisor:
-        default_status = Container.Status.PENDING
-        target_date = today
-    else:
-        default_status = request.POST.get('default_status', Container.Status.PENDING)
-        if default_status not in dict(Container.Status.choices):
-            default_status = Container.Status.PENDING
-
-    if not shipping_line_id.isdigit():
-        messages.error(request, "Veuillez sélectionner la ligne maritime pour ce lot de conteneurs.")
-        return redirect(_safe_next(request, _dashboard_url(target_date)))
+    # Tout nouvel ajout dans une liste démarre « En attente » jusqu'à confirmation sur la rampe.
+    default_status = Container.Status.PENDING
+    resolved_line_id = int(shipping_line_id) if shipping_line_id.isdigit() else None
 
     tokens = [t.strip() for t in re.split(r'[\r\n,;]+', raw_list) if t.strip()]
     if not tokens:
@@ -608,10 +578,7 @@ def container_add_bulk_view(request):
             .first()
         )
         if prior:
-            carried = _carry_into(prior, target_date, request.user)
-            if default_status != Container.Status.PENDING:
-                carried.status = default_status
-                carried.save(acting_user=request.user)
+            _carry_into(prior, target_date, request.user)
             carried_numbers.append(normalized)
             continue
 
@@ -619,7 +586,7 @@ def container_add_bulk_view(request):
             container_number=normalized,
             scheduled_date=target_date,
             status=default_status,
-            shipping_line_id=int(shipping_line_id),
+            shipping_line_id=resolved_line_id,
         )
         c.save(acting_user=request.user)
         created_count += 1
@@ -655,7 +622,7 @@ def container_update_status_view(request, pk):
     if not request.user.can_edit_or_delete_containers:
         messages.error(
             request,
-            "Le rôle Superviseur matin permet uniquement d'ajouter des conteneurs en statut « En attente »."
+            "Action réservée aux administrateurs et superviseurs."
         )
         return redirect('terminal:dashboard')
 
@@ -695,7 +662,7 @@ def container_status_bulk_view(request):
     if not request.user.can_edit_or_delete_containers:
         messages.error(
             request,
-            "Le rôle Superviseur matin permet uniquement d'ajouter des conteneurs en statut « En attente ».",
+            "Action réservée aux administrateurs et superviseurs.",
         )
         return redirect('terminal:dashboard')
 
@@ -864,6 +831,7 @@ def inspection_view(request):
         rows = rows.filter(container_number__icontains=normalize_container_number(search_q))
     # Les conteneurs encore à marquer en premier.
     rows = sorted(rows, key=lambda c: (c.verification_result != '', c.container_number))
+    page, page_query = _paginate(request, rows)
     not_confirmed_rows = list(
         session_qs.exclude(status=Container.Status.CONFIRMED)
         .select_related('shipping_line', 'unavailability_reason')
@@ -876,7 +844,9 @@ def inspection_view(request):
         'previous_date': selected_date - datetime.timedelta(days=1),
         'next_date': selected_date + datetime.timedelta(days=1) if selected_date < today else None,
         'stats': stats,
-        'rows': rows,
+        'rows': page,
+        'page': page,
+        'page_query': page_query,
         'not_confirmed_rows': not_confirmed_rows,
         'reasons': UnavailabilityReason.objects.filter(is_active=True),
         'search_q': search_q,
@@ -974,9 +944,7 @@ def carryover_view(request):
         return redirect('terminal:home')
 
     today = timezone.localdate()
-    target_date = default_carry_target(request.user)
-    if not request.user.is_morning_supervisor:
-        target_date = max(_parse_date(request.GET.get('date', ''), target_date), today)
+    target_date = max(_parse_date(request.GET.get('date', ''), default_carry_target(request.user)), today)
     list_started = Container.objects.filter(scheduled_date=target_date).exists()
 
     status_filter = request.GET.get('status', '').strip()
@@ -1033,8 +1001,6 @@ def carryover_decide_view(request):
     today = timezone.localdate()
     decision = request.POST.get('decision', '').strip()
     target_date = _parse_date(request.POST.get('date', ''), default_work_date(request.user))
-    if request.user.is_morning_supervisor:
-        target_date = today
     fallback = f"{reverse('terminal:carryover')}?date={target_date.isoformat()}"
     back = _safe_next(request, fallback)
 

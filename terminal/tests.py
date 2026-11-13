@@ -25,11 +25,8 @@ class CTSAPortalBusinessTests(TestCase):
         self.admin_user = User.objects.create_user(
             username='admin_test', password='Password123!', role=User.Role.ADMIN
         )
-        self.evening_sup = User.objects.create_user(
-            username='evening_test', password='Password123!', role=User.Role.EVENING_SUPERVISOR
-        )
-        self.morning_sup = User.objects.create_user(
-            username='morning_test', password='Password123!', role=User.Role.MORNING_SUPERVISOR
+        self.supervisor = User.objects.create_user(
+            username='sup_test', password='Password123!', role=User.Role.SUPERVISOR
         )
         self.client_user = User.objects.create_user(
             username='client_test', password='Password123!', role=User.Role.CLIENT
@@ -43,7 +40,7 @@ class CTSAPortalBusinessTests(TestCase):
             scheduled_date=timezone.localdate(),
             status=Container.Status.PENDING,
         )
-        c.save(acting_user=self.evening_sup)
+        c.save(acting_user=self.supervisor)
 
         self.assertEqual(c.container_number, 'AMLU4052450')
         self.assertEqual(c.shipping_line, self.antillean)
@@ -61,8 +58,8 @@ class CTSAPortalBusinessTests(TestCase):
         self.assertEqual(logs[1].new_status, Container.Status.UNAVAILABLE)
         self.assertIn('Panne reach stacker', logs[1].reason_text)
 
-    def test_morning_supervisor_forced_to_pending_status_and_cannot_delete(self):
-        self.client_http.login(username='morning_test', password='Password123!')
+    def test_supervisor_forced_to_pending_on_add_and_has_compiled_rights(self):
+        self.client_http.login(username='sup_test', password='Password123!')
         response = self.client_http.post(
             reverse('terminal:container_add_single'),
             {
@@ -77,11 +74,19 @@ class CTSAPortalBusinessTests(TestCase):
         self.assertEqual(c.status, Container.Status.PENDING)
         self.assertEqual(c.shipping_line, self.cma)
 
+        # Le superviseur unifié peut confirmer un conteneur arrivé sur la rampe et supprimer si besoin.
+        self.client_http.post(
+            reverse('terminal:container_update_status', args=[c.pk]),
+            {'status': Container.Status.CONFIRMED},
+        )
+        c.refresh_from_db()
+        self.assertEqual(c.status, Container.Status.CONFIRMED)
+
         del_resp = self.client_http.post(
             reverse('terminal:container_delete', args=[c.pk])
         )
         self.assertEqual(del_resp.status_code, 302)
-        self.assertTrue(Container.objects.filter(pk=c.pk).exists())
+        self.assertFalse(Container.objects.filter(pk=c.pk).exists())
 
     def test_public_verification_search_and_pdf_export(self):
         c = Container(
@@ -90,7 +95,7 @@ class CTSAPortalBusinessTests(TestCase):
             scheduled_date=timezone.localdate(),
             status=Container.Status.CONFIRMED,
         )
-        c.save(acting_user=self.evening_sup)
+        c.save(acting_user=self.supervisor)
 
         response = self.client_http.get(
             reverse('terminal:verification'), {'q': 'cmau-4052450'}
@@ -101,7 +106,7 @@ class CTSAPortalBusinessTests(TestCase):
         self.assertContains(response, 'CMA CGM')
 
         # Test PDF export for confirmed containers
-        self.client_http.login(username='evening_test', password='Password123!')
+        self.client_http.login(username='sup_test', password='Password123!')
         pdf_resp = self.client_http.get(
             reverse('terminal:container_export_pdf'),
             {'date': timezone.localdate().isoformat(), 'status': 'confirmed'},
@@ -211,7 +216,7 @@ class CTSAPortalBusinessTests(TestCase):
         self.assertEqual(c.shipping_line, accordia)
 
     def test_bulk_status_update_and_confirm_all_pending(self):
-        self.client_http.login(username='evening_test', password='Password123!')
+        self.client_http.login(username='sup_test', password='Password123!')
         today = timezone.localdate()
         c1 = Container.objects.create(
             container_number='CMAU1111111',

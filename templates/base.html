@@ -192,6 +192,37 @@
     </form>
   </dialog>
 
+  <!-- Boîte de saisie du motif d'indisponibilité -->
+  <dialog id="unavailable-reason-dialog" class="confirm-dialog" aria-labelledby="unavail-dialog-title">
+    <form method="post" class="confirm-dialog-card" id="unavail-dialog-form">
+      {% csrf_token %}
+      <input type="hidden" name="status" value="unavailable">
+      <input type="hidden" name="next" value="" id="unavail-dialog-next">
+      <div id="unavail-dialog-extra-fields"></div>
+      <div class="confirm-dialog-body">
+        <span class="confirm-dialog-icon" style="background-color:#fdf2f1;color:#c0392b;" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></svg>
+        </span>
+        <div class="min-w-0 flex-1">
+          <h2 id="unavail-dialog-title" class="confirm-dialog-title">Motif d'indisponibilité</h2>
+          <p id="unavail-dialog-subtitle" class="confirm-dialog-message mb-3"></p>
+          <label for="unavail-dialog-note" class="visually-hidden">Motif d'indisponibilité</label>
+          <textarea id="unavail-dialog-note"
+                    name="unavailability_note"
+                    rows="3"
+                    required
+                    maxlength="255"
+                    placeholder="Saisissez le motif (ex. Panne reach stacker, blocage douane...)"
+                    class="w-full rounded-lg border border-slate-200/80 px-3 py-2 text-sm text-[#2c3741] bg-white focus:outline-none focus:border-[#3498db]"></textarea>
+        </div>
+      </div>
+      <div class="confirm-dialog-actions">
+        <button type="button" class="confirm-dialog-btn" data-unavail-cancel>Annuler</button>
+        <button type="submit" class="confirm-dialog-btn confirm-dialog-accept" style="border-color:#c0392b;background-color:#c0392b;">Valider l'indisponibilité</button>
+      </div>
+    </form>
+  </dialog>
+
   <script src="{% static 'js/ctsa.js' %}"></script>
 </body>
 </html>

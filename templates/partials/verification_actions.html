@@ -1,8 +1,8 @@
 {# Marquage Vérifié / Non vérifié d'un conteneur `c`, utilisable partout où il apparaît. #}
 {% if c.verification_result == 'verified' and not user.can_mark_verification %}
-  <span class="status-badge status-verified">Vérifié</span>
+  <span class="status-badge status-verified rounded-full">Vérifié</span>
 {% elif c.verification_result == 'not_verified' and not user.can_mark_verification %}
-  <span class="status-badge status-not-verified">Non vérifié</span>
+  <span class="status-badge status-not-verified rounded-full">Non vérifié</span>
 {% elif not c.can_be_verified %}
   <span class="text-xs text-[#5b656d]">
     {% if c.status != 'confirmed' %}À confirmer avant vérification{% else %}Séance à venir{% endif %}

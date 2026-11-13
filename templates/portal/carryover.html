@@ -17,55 +17,53 @@
       </p>
     </div>
 
-    {% if not user.is_morning_supervisor %}
-      <form action="{% url 'terminal:carryover' %}" method="get" class="flex flex-wrap items-end gap-2 shrink-0">
-        <div class="form-field mb-0">
-          <label for="carry-date" class="text-xs">Liste à compléter</label>
-          <input type="date"
-                 id="carry-date"
-                 name="date"
-                 min="{{ today|date:'Y-m-d' }}"
-                 value="{{ target_date|date:'Y-m-d' }}"
-                 data-auto-submit-date
-                 class="border border-[#dadada] rounded-md px-3 py-1.5 min-h-[40px] text-sm font-semibold text-[#2c3741] bg-white">
-        </div>
-        {% if status_filter %}<input type="hidden" name="status" value="{{ status_filter }}">{% endif %}
-        {% if line_filter %}<input type="hidden" name="line" value="{{ line_filter }}">{% endif %}
-        <button type="submit" class="btn-admin">Afficher</button>
-      </form>
-    {% endif %}
+    <form action="{% url 'terminal:carryover' %}" method="get" class="flex flex-wrap items-end gap-2 shrink-0">
+      <div class="form-field mb-0">
+        <label for="carry-date" class="text-xs">Liste à compléter</label>
+        <input type="date"
+               id="carry-date"
+               name="date"
+               min="{{ today|date:'Y-m-d' }}"
+               value="{{ target_date|date:'Y-m-d' }}"
+               data-auto-submit-date
+               class="border border-slate-200/80 rounded-lg px-3 py-1.5 min-h-[40px] text-sm font-semibold text-[#2c3741] bg-white">
+      </div>
+      {% if status_filter %}<input type="hidden" name="status" value="{{ status_filter }}">{% endif %}
+      {% if line_filter %}<input type="hidden" name="line" value="{{ line_filter }}">{% endif %}
+      <button type="submit" class="btn-admin rounded-lg">Afficher</button>
+    </form>
   </div>
 
   <!-- Synthèse du suivi -->
-  <div class="metric-strip">
-    <div class="stat-tile">
-      <div class="stat-tile-label">À suivre</div>
-      <div class="stat-tile-value">{{ breakdown.total }}</div>
-      <div class="stat-tile-note">
+  <div class="kpi-grid">
+    <div class="kpi-card rounded-xl border border-slate-200/80 shadow-xs">
+      <div class="kpi-label">À suivre</div>
+      <div class="kpi-value tabular-nums">{{ breakdown.total }}</div>
+      <div class="kpi-note">
         {% if oldest and not status_filter and not line_filter %}Le plus ancien : {{ oldest.days_since_first_scheduled }} j{% else %}conteneur{{ breakdown.total|pluralize }} non vérifié{{ breakdown.total|pluralize }}{% endif %}
       </div>
     </div>
-    <div class="stat-tile">
-      <div class="stat-tile-label">Dernier statut : confirmé</div>
-      <div class="stat-tile-value">{{ breakdown.confirmed }}</div>
-      <div class="stat-tile-note">disponibles mais non vérifiés</div>
+    <div class="kpi-card rounded-xl border border-slate-200/80 shadow-xs">
+      <div class="kpi-label">Dernier statut : confirmé</div>
+      <div class="kpi-value tabular-nums text-[#008751]">{{ breakdown.confirmed }}</div>
+      <div class="kpi-note">disponibles mais non vérifiés</div>
     </div>
-    <div class="stat-tile">
-      <div class="stat-tile-label">Dernier statut : en attente</div>
-      <div class="stat-tile-value">{{ breakdown.pending }}</div>
-      <div class="stat-tile-note">jamais positionnés</div>
+    <div class="kpi-card rounded-xl border border-slate-200/80 shadow-xs">
+      <div class="kpi-label">Dernier statut : en attente</div>
+      <div class="kpi-value tabular-nums text-[#8a5300]">{{ breakdown.pending }}</div>
+      <div class="kpi-note">jamais positionnés</div>
     </div>
-    <div class="stat-tile">
-      <div class="stat-tile-label">Dernier statut : indisponible</div>
-      <div class="stat-tile-value">{{ breakdown.unavailable }}</div>
-      <div class="stat-tile-note">motif indiqué sur la ligne</div>
+    <div class="kpi-card rounded-xl border border-slate-200/80 shadow-xs">
+      <div class="kpi-label">Dernier statut : indisponible</div>
+      <div class="kpi-value tabular-nums text-[#e74c3c]">{{ breakdown.unavailable }}</div>
+      <div class="kpi-note">motif indiqué sur la ligne</div>
     </div>
   </div>
 
-  <section aria-labelledby="carry-caption" class="bg-white rounded-lg border border-[#dadada] shadow-sm overflow-hidden">
+  <section aria-labelledby="carry-caption" class="bg-white rounded-xl border border-slate-200/80 shadow-xs overflow-hidden">
 
     <!-- État de la liste visée -->
-    <div class="px-4 sm:px-5 py-3 border-b border-[#dadada] {% if list_started %}bg-[#eef7fd]{% else %}bg-[#f4f4f4]{% endif %} text-sm text-[#2c3741]">
+    <div class="px-4 sm:px-5 py-3 border-b border-slate-200/80 {% if list_started %}bg-[#3498db]/10{% else %}bg-[#f8fafc]{% endif %} text-sm text-[#2c3741]">
       {% if list_started %}
         <strong>Liste du {{ target_date|date:"d/m/Y" }} en préparation.</strong>
         Le bouton « Ajouter » de chaque ligne y inscrit le conteneur avec le statut « En attente ».
@@ -128,10 +126,10 @@
         <caption id="carry-caption" class="visually-hidden">
           Conteneurs programmés et non vérifiés, du plus ancien au plus récent
         </caption>
-        <thead>
+        <thead class="sticky top-0 z-10 bg-slate-50/95 backdrop-blur-xs">
           <tr>
             <th scope="col">
-              <label class="inline-flex items-center gap-2">
+              <label class="inline-flex items-center gap-2 cursor-pointer">
                 <input type="checkbox" data-check-all="carry" class="w-4 h-4">
                 <span>Conteneur</span>
               </label>
@@ -150,7 +148,7 @@
               <th scope="row">
                 <label class="inline-flex items-center gap-2">
                   <input type="checkbox" name="ids" value="{{ c.pk }}" form="carry-bulk-form" data-check-group="carry" class="w-4 h-4">
-                  <span class="text-base font-bold text-[#2c3741]">{{ c.container_number }}</span>
+                  <span class="font-mono text-sm font-bold tracking-wide text-[#2c3741] tabular-nums">{{ c.container_number }}</span>
                 </label>
               </th>
               <td>{{ c.shipping_line.name|default:"Non renseignée" }}</td>
