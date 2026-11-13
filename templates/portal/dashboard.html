@@ -83,7 +83,7 @@
   </div>
 
   <!-- 2. 5 cartes KPI cliquables avec proportion et anneau actif net -->
-  <div class="kpi-grid" aria-label="Synthèse et filtres par statut">
+  <div class="kpi-grid kpi-grid-5" aria-label="Synthèse et filtres par statut">
     <a href="{% url 'terminal:dashboard' %}?date={{ selected_date|date:'Y-m-d' }}{% if line_filter %}&line={{ line_filter }}{% endif %}"
        class="kpi-card rounded-xl border-slate-200/80 {% if not status_filter and not verification_filter %}ring-2 ring-[#3498db] bg-white{% endif %}">
       <div>
@@ -216,7 +216,7 @@
 
     <!-- Tableau haute densité à en-tête collant et menu d'actions -->
     <div tabindex="0" role="region" aria-labelledby="rampe-table-caption" class="table-wrapper border-0 rounded-none">
-      <table class="ctsa-table" style="--label-2: 'Ligne maritime'; --label-3: 'Statut'; --label-4: 'Action';">
+      <table class="ctsa-table dash-table" style="--label-2: 'Ligne maritime'; --label-3: 'Statut'; --label-4: 'Action';">
         <caption id="rampe-table-caption" class="visually-hidden">
           Conteneurs du {{ selected_date|date:"d/m/Y" }}
         </caption>
