@@ -54,7 +54,8 @@ $env:CTSA_SEED_PASSWORD = "<votre mot de passe de démonstration>"
 
 | Écran | Rôle |
 |---|---|
-| **Conteneurs du jour** | Préparer une liste : inscrire, confirmer, mettre en attente, déclarer indisponible |
+| **Conteneurs du jour** | La liste d'une séance : confirmer, mettre en attente, déclarer indisponible, modifier ou supprimer une ligne |
+| **Préparer une liste** | Inscrire un conteneur ou coller une liste, reprendre en un clic les non vérifiés |
 | **Inspection** | Marquer Vérifié / Non vérifié les conteneurs confirmés d'une séance |
 | **Non vérifiés** | Tout conteneur programmé et pas encore vérifié ; ajout à la liste suivante en un clic, ou rejet |
 | **Historique** | Journal de toutes les opérations |
@@ -89,12 +90,28 @@ Les réglages sensibles sont lus dans l'environnement ; la liste complète est d
 
 ## Styles (Tailwind compilé en local)
 
-Le portail ne dépend plus du CDN Tailwind : les classes utilisées dans `templates/` et `static/js/` sont compilées dans [`static/css/tailwind.css`](static/css/tailwind.css), qui est commité. Après avoir ajouté ou retiré des classes Tailwind, régénérez ce fichier :
+Le portail ne dépend pas du CDN Tailwind : les classes utilisées dans `templates/` et `static/js/` sont compilées par Tailwind v4 dans [`static/css/output.css`](static/css/output.css), qui est commité. La source est [`static/src/input.css`](static/src/input.css) ; elle porte aussi les couleurs et les polices de la charte.
+
+Installer une fois les outils (Node et pnpm requis) :
 
 ```powershell
-.\tools\tailwind\tailwindcss.exe -c tailwind.config.js -i static/css/tailwind.input.css -o static/css/tailwind.css --minify
+pnpm install
 ```
 
-L'exécutable autonome (Tailwind v3.4.17, sans Node) n'est pas commité. Téléchargez `tailwindcss-windows-x64.exe` depuis les versions publiées de `tailwindlabs/tailwindcss` sur GitHub et placez-le dans `tools/tailwind/tailwindcss.exe`. Une classe absente de `tailwind.css` n'a aucun effet : en cas de style manquant, relancez la commande.
+Pendant le développement, recompiler à chaque modification :
+
+```powershell
+pnpm dev
+```
+
+Avant de commiter ou de mettre en ligne, générer le fichier minifié :
+
+```powershell
+pnpm build
+```
+
+Une classe absente de `output.css` n'a aucun effet : après avoir ajouté ou retiré des classes Tailwind, relancez `pnpm build` et commitez `output.css`. Le serveur de production n'a pas besoin de Node, puisque le fichier compilé est dans le dépôt.
+
+Les styles propres au portail (boutons, badges, tableaux, coque d'administration) sont dans [`static/css/ctsa.css`](static/css/ctsa.css) et ne passent pas par cette compilation.
 
 Les polices (Raleway, Open Sans) restent chargées depuis Google Fonts.

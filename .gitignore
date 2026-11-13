@@ -28,6 +28,5 @@ media/
 .DS_Store
 Thumbs.db
 
-# Executable Tailwind telecharge (voir tailwind.config.js)
-tools/
+# Dependances Node (compilation Tailwind, voir package.json)
 node_modules/

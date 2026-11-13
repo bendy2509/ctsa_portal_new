@@ -1,5 +1,0 @@
-/* Source du CSS Tailwind. Le fichier servi est tailwind.css, généré par la commande
-   indiquée dans tailwind.config.js. Les styles propres au portail sont dans ctsa.css. */
-@tailwind base;
-@tailwind components;
-@tailwind utilities;

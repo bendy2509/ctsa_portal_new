@@ -60,7 +60,7 @@ class LocalAssetsTests(TestCase):
             cls for cls in used
             if '.' + cls.replace('[', '\\[').replace(']', '\\]').replace('#', '\\#') not in css
         )
-        self.assertEqual(missing, [], "Relancez la compilation Tailwind (voir tailwind.config.js).")
+        self.assertEqual(missing, [], "Relancez la compilation Tailwind : pnpm build.")
 
 
 class LoginRedirectTests(TestCase):
