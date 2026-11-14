@@ -321,21 +321,21 @@ class VerificationTrackingTests(TestCase):
         self.assertNotEqual(before, self.client.get(url).json()['signature'])
 
     def test_history_and_backlog_are_paginated_and_keep_filters(self):
-        for i in range(55):
+        for i in range(65):
             self.make(f'CMAU{i:07d}', self.yesterday, Container.Status.PENDING)
         self.login('adm')
 
         first = self.client.get(reverse('terminal:carryover'), {'status': 'pending'})
         self.assertEqual(len(first.context['rows']), PAGE_SIZE)
-        self.assertContains(first, f'Lignes 1 à {PAGE_SIZE} sur 55')
+        self.assertContains(first, f'Lignes 1 à {PAGE_SIZE} sur 65')
         self.assertContains(first, 'status=pending&amp;page=2')
         second = self.client.get(reverse('terminal:carryover'), {'status': 'pending', 'page': 2})
         self.assertEqual(len(second.context['rows']), PAGE_SIZE)
-        self.assertEqual(second.context['breakdown']['total'], 55)
+        self.assertEqual(second.context['breakdown']['total'], 65)
 
         logs = self.client.get(reverse('terminal:status_logs'), {'q': 'CMAU'})
         self.assertEqual(len(logs.context['logs']), PAGE_SIZE)
-        self.assertContains(logs, '55 opérations enregistrées')
+        self.assertContains(logs, '65 opérations enregistrées')
         self.assertContains(logs, 'q=CMAU&amp;page=2')
 
     def test_close_backlog_command_simulation_then_real_run(self):
@@ -510,7 +510,7 @@ class VerificationTrackingTests(TestCase):
         self.assertContains(dash, 'status-segmented')
 
     def test_dashboard_and_inspection_are_paginated(self):
-        for i in range(55):
+        for i in range(65):
             self.make(f'CMAU{i:07d}', self.today, Container.Status.CONFIRMED)
         self.login('adm')
 

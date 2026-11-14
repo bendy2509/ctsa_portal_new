@@ -60,7 +60,7 @@ def _pick_relevant_schedule(containers, today: datetime.date):
     return chosen
 
 
-PAGE_SIZE = 20
+PAGE_SIZE = 30
 
 
 def _paginate(request, queryset):

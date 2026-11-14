@@ -123,7 +123,7 @@ def user_list_view(request):
             )
             return redirect('accounts:user_list')
 
-    page = Paginator(users, 50).get_page(request.GET.get('page'))
+    page = Paginator(users, 30).get_page(request.GET.get('page'))
     params = request.GET.copy()
     params.pop('page', None)
 

@@ -124,56 +124,56 @@
             <!-- Bandeau de décision et consigne client -->
             {% if result.is_verified and result.timing != 'upcoming' %}
               <div class="p-5 rounded-lg bg-[#eef8f3] border border-[#008751] text-[#006b3f]">
-                <div class="text-xs font-heading font-extrabold uppercase tracking-wider text-[#008751] mb-1">
+                <h3 class="text-lg sm:text-xl font-heading font-extrabold uppercase tracking-wide text-[#008751] mb-1.5">
                   Vérification douanière effectuée
-                </div>
+                </h3>
                 <p class="text-sm leading-relaxed mb-0">
-                  Ce conteneur a été vérifié à la RAMPE lors de la séance du <strong>{{ result.scheduled_date|date:"d/m/Y" }}</strong>. Aucune nouvelle présentation à la vérification n'est programmée.
+                  Ce conteneur a été vérifié à la RAMPE le <strong>{{ result.scheduled_date|date:"d/m/Y" }}</strong>. Aucune nouvelle vérification n'est programmée.
                 </p>
               </div>
             {% elif result.timing == 'upcoming' %}
               <div class="p-5 rounded-lg bg-[#f4f4f4] border border-[#687077] text-[#2c3741]">
-                <div class="text-xs font-heading font-extrabold uppercase tracking-wider text-[#2c3741] mb-1">
-                  Programmé pour le {{ result.scheduled_date|date:"d/m/Y" }} — Ne pas se déplacer aujourd'hui
-                </div>
+                <h3 class="text-lg sm:text-xl font-heading font-extrabold uppercase tracking-wide text-[#2c3741] mb-1.5">
+                  Programmé le {{ result.scheduled_date|date:"d/m/Y" }} — Ne pas se déplacer aujourd'hui
+                </h3>
                 <p class="text-sm leading-relaxed mb-0">
-                  Ce conteneur n'est pas programmé pour la séance d'aujourd'hui (<strong>{{ today|date:"d/m/Y" }}</strong>). Il est inscrit pour la séance du <strong>{{ result.scheduled_date|date:"d/m/Y" }}</strong>, avec le statut provisoire « {{ result.get_status_display }} ». Revenez vérifier son statut ce jour-là avant de vous déplacer.
+                  Ce conteneur n'est pas prévu aujourd'hui (<strong>{{ today|date:"d/m/Y" }}</strong>). Il est programmé pour le <strong>{{ result.scheduled_date|date:"d/m/Y" }}</strong> (statut provisoire : {{ result.get_status_display }}).
                 </p>
               </div>
             {% elif result.timing == 'past' %}
               <div class="p-5 rounded-lg bg-[#f4f4f4] border border-[#687077] text-[#2c3741]">
-                <div class="text-xs font-heading font-extrabold uppercase tracking-wider text-[#2c3741] mb-1">
+                <h3 class="text-lg sm:text-xl font-heading font-extrabold uppercase tracking-wide text-[#2c3741] mb-1.5">
                   Non programmé aujourd'hui — Ne pas se déplacer
-                </div>
+                </h3>
                 <p class="text-sm leading-relaxed mb-0">
-                  Ce conteneur ne figure pas sur la programmation d'aujourd'hui (<strong>{{ today|date:"d/m/Y" }}</strong>). Sa dernière séance connue date du <strong>{{ result.scheduled_date|date:"d/m/Y" }}</strong> ; son statut était alors « {{ result.get_status_display }} »{% if result.status == 'confirmed' %}, mais il n'a pas été vérifié lors de cette séance{% endif %}. Ce statut n'est plus valable aujourd'hui.
+                  Ce conteneur n'est pas sur la liste du jour (<strong>{{ today|date:"d/m/Y" }}</strong>). Dernière séance connue : <strong>{{ result.scheduled_date|date:"d/m/Y" }}</strong> ({{ result.get_status_display }}{% if result.status == 'confirmed' %}, non vérifié{% endif %}).
                 </p>
               </div>
             {% elif result.status == 'confirmed' %}
               <div class="p-5 rounded-lg bg-[#eef8f3] border border-[#008751] text-[#006b3f]">
-                <div class="text-xs font-heading font-extrabold uppercase tracking-wider text-[#008751] mb-1">
-                  Déplacement autorisé — Conteneur positionné à la RAMPE
-                </div>
+                <h3 class="text-lg sm:text-xl font-heading font-extrabold uppercase tracking-wide text-[#008751] mb-1.5">
+                  Déplacement autorisé — Conteneur à la RAMPE
+                </h3>
                 <p class="text-sm leading-relaxed mb-0">
-                  Ce conteneur est confirmé et disponible à la RAMPE pour la séance de vérification douanière du <strong>{{ result.scheduled_date|date:"d/m/Y" }}</strong>. Vous pouvez vous présenter au terminal muni de vos documents douaniers.
+                  Ce conteneur est confirmé pour la séance du <strong>{{ result.scheduled_date|date:"d/m/Y" }}</strong>. Présentez-vous au terminal avec vos documents douaniers.
                 </p>
               </div>
             {% elif result.status == 'pending' %}
               <div class="p-5 rounded-lg bg-[#fff6e0] border border-[#f0c36d] text-[#6b4000]">
-                <div class="text-xs font-heading font-extrabold uppercase tracking-wider text-[#8a5300] mb-1">
-                  En attente de confirmation — Ne pas se déplacer dans l'immédiat
-                </div>
+                <h3 class="text-lg sm:text-xl font-heading font-extrabold uppercase tracking-wide text-[#8a5300] mb-1.5">
+                  En attente de confirmation — Ne pas se déplacer
+                </h3>
                 <p class="text-sm leading-relaxed mb-0">
-                  Ce conteneur est inscrit sur la programmation du <strong>{{ result.scheduled_date|date:"d/m/Y" }}</strong>, mais sa mise à disposition physique à la RAMPE n'est pas encore confirmée par le terminal. Cette page se met à jour toute seule dès que le statut change.
+                  Ce conteneur est programmé pour le <strong>{{ result.scheduled_date|date:"d/m/Y" }}</strong>, mais n'est pas encore positionné à la RAMPE. La page se met à jour automatiquement.
                 </p>
               </div>
             {% else %}
               <div class="p-5 rounded-lg bg-[#fdf2f1] border border-[#e74c3c] text-[#b82c1f]">
-                <div class="text-xs font-heading font-extrabold uppercase tracking-wider text-[#b82c1f] mb-1">
-                  Conteneur indisponible pour la séance en cours
-                </div>
+                <h3 class="text-lg sm:text-xl font-heading font-extrabold uppercase tracking-wide text-[#b82c1f] mb-1.5">
+                  Conteneur indisponible — Ne pas se déplacer
+                </h3>
                 <p class="text-sm font-semibold leading-relaxed mb-0">
-                  Motif communiqué par le terminal : {{ result.full_reason_display }}
+                  Motif : {{ result.full_reason_display }}
                 </p>
               </div>
             {% endif %}
