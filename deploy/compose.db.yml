@@ -1,0 +1,22 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: ctsa_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME:-ctsa_portal}
+      POSTGRES_USER: ${DB_USER:-ctsa_user}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD est requis dans .env}
+      TZ: America/Port-au-Prince
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - ctsa_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  ctsa_pgdata:
