@@ -4,23 +4,23 @@
 
 {% block content %}
 <div class="max-w-md mx-auto px-4 sm:px-6 py-14">
-  <div class="bg-white rounded-lg shadow-sm p-6 sm:p-8 border border-gray-200 border-t-4 border-t-[#2c3741]">
+  <div class="bg-[#f4f4f4] rounded-lg p-6 sm:p-8 border border-[#dadada]">
     <h1 id="signin-heading" class="font-heading text-2xl font-extrabold text-[#2c3741] mb-1">
       Connexion
     </h1>
-    <p class="text-sm text-[#59626a] mb-6">
+    <p class="text-sm text-[#666666] mb-6">
       Veuillez saisir vos identifiants pour accéder à votre espace.
     </p>
 
     {% if form.non_field_errors %}
-      <div class="mb-4 p-3.5 rounded bg-[#fceae8] border border-[#e74c3c] text-[#991b1b] text-sm font-semibold" role="alert">
+      <div class="mb-4 p-3.5 rounded bg-[#fdf2f1] border border-[#e74c3c] text-[#b82c1f] text-sm font-semibold" role="alert">
         {% for err in form.non_field_errors %}
           <div>{{ err }}</div>
         {% endfor %}
       </div>
     {% endif %}
 
-    <form action="{% url 'accounts:login' %}{% if request.GET.next %}?next={{ request.GET.next }}{% endif %}" method="post" aria-labelledby="signin-heading">
+    <form action="{% url 'accounts:login' %}{% if request.GET.next %}?next={{ request.GET.next|urlencode:'' }}{% endif %}" method="post" aria-labelledby="signin-heading">
       {% csrf_token %}
 
       <div class="form-field">

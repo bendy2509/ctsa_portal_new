@@ -1,0 +1,37 @@
+@import "tailwindcss";
+@source "../../templates";
+@source "../js";
+
+@theme {
+  /* Typographie Cap Terminal S.A. */
+  --font-sans: "Open Sans", "Helvetica Neue", Arial, sans-serif;
+  --font-heading: "Raleway", "Open Sans", Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+
+  /* Palette officielle CTSA & tokens sémantiques */
+  --color-ctsa-slate: #2c3741;
+  --color-ctsa-slatedark: #232c34;
+  --color-ctsa-secondary: #2c3e50;
+  --color-ctsa-subnav: #687077;
+  --color-ctsa-blue: #3498db;
+  --color-ctsa-bluehover: #217dbb;
+  --color-ctsa-green: #008751;
+  --color-ctsa-green-bg: #eef8f3;
+  --color-ctsa-pending: #b26a00;
+  --color-ctsa-pending-text: #8a5300;
+  --color-ctsa-pending-bg: #fff6e0;
+  --color-ctsa-pending-border: #f0c36d;
+  --color-ctsa-red: #e74c3c;
+  --color-ctsa-red-text: #b82c1f;
+  --color-ctsa-red-bg: #fdf2f1;
+  --color-ctsa-info-bg: #eef7fd;
+  --color-ctsa-surface: #f8fafc;
+  --color-ctsa-bgalt: #f4f4f4;
+  --color-ctsa-border: #dadada;
+
+  /* Rayons & ombres « Industrial Precision » */
+  --radius-card: 0.75rem;
+  --radius-control: 0.5rem;
+  --shadow-card: 0 1px 2px rgba(44, 55, 65, 0.04), 0 1px 3px rgba(44, 55, 65, 0.03);
+  --shadow-float: 0 16px 36px -8px rgba(35, 44, 52, 0.35), 0 4px 12px rgba(35, 44, 52, 0.14);
+}

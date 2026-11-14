@@ -1,0 +1,69 @@
+{# Sélecteur 1 clic du statut d'un conteneur `c` (Confirmé / En attente / Indisponible), réutilisable sur toutes les pages d'exploitation. #}
+{% if user.can_edit_or_delete_containers %}
+  <div class="space-y-2">
+    <div class="status-segmented" role="group" aria-label="Changer le statut de {{ c.container_number }}">
+      <form action="{% url 'terminal:container_update_status' c.pk %}" method="post">
+        {% csrf_token %}
+        <input type="hidden" name="status" value="confirmed">
+        <input type="hidden" name="next" value="{{ request.get_full_path }}">
+        <button type="submit"
+                {% if c.status == 'confirmed' %}disabled{% endif %}
+                class="status-seg-btn {% if c.status == 'confirmed' %}is-confirmed{% endif %}">
+          <span class="status-seg-dot dot-confirmed" aria-hidden="true"></span>
+          <span>{% if c.status == 'confirmed' %}Confirmé{% else %}Confirmer{% endif %}</span>
+        </button>
+      </form>
+
+      <form action="{% url 'terminal:container_update_status' c.pk %}" method="post">
+        {% csrf_token %}
+        <input type="hidden" name="status" value="pending">
+        <input type="hidden" name="next" value="{{ request.get_full_path }}">
+        <button type="submit"
+                {% if c.status == 'pending' %}disabled{% endif %}
+                class="status-seg-btn {% if c.status == 'pending' %}is-pending{% endif %}">
+          <span class="status-seg-dot dot-pending" aria-hidden="true"></span>
+          <span>En attente</span>
+        </button>
+      </form>
+
+      <button type="button"
+              data-toggle-unavailable="{{ c.pk }}"
+              data-unavailable-action="{% url 'terminal:container_update_status' c.pk %}"
+              data-unavailable-number="{{ c.container_number }}"
+              data-unavailable-note="{{ c.unavailability_note }}"
+              data-unavailable-next="{{ request.get_full_path }}"
+              class="status-seg-btn {% if c.status == 'unavailable' %}is-unavailable{% endif %}">
+        <span class="status-seg-dot dot-unavailable" aria-hidden="true"></span>
+        <span>Indisponible</span>
+      </button>
+    </div>
+
+    {% if c.status == 'unavailable' and c.full_reason_display %}
+      <div class="text-xs font-semibold text-[#b82c1f]">
+        Motif : {{ c.full_reason_display }}
+      </div>
+    {% endif %}
+  </div>
+{% else %}
+  <div class="flex flex-wrap items-center gap-2">
+    {% if c.status == 'confirmed' %}
+      <span class="status-badge status-confirmed rounded-full">
+        <span class="status-seg-dot dot-confirmed" aria-hidden="true"></span>
+        <span>Confirmé</span>
+      </span>
+    {% elif c.status == 'pending' %}
+      <span class="status-badge status-pending rounded-full">
+        <span class="status-seg-dot dot-pending" aria-hidden="true"></span>
+        <span>En attente</span>
+      </span>
+    {% else %}
+      <span class="status-badge status-unavailable rounded-full">
+        <span class="status-seg-dot dot-unavailable" aria-hidden="true"></span>
+        <span>Indisponible</span>
+      </span>
+      <div class="text-xs font-semibold text-ctsa-red-text w-full">
+        Motif : {{ c.full_reason_display }}
+      </div>
+    {% endif %}
+  </div>
+{% endif %}

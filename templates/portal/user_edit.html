@@ -1,71 +1,81 @@
-{% extends 'base.html' %}
+{% extends 'portal/base_portal.html' %}
 
 {% block title %}Modifier l'Utilisateur — Cap Terminal S.A.{% endblock %}
 
-{% block content %}
-<div class="max-w-xl mx-auto px-4 sm:px-6 py-10">
-  <div class="bg-white rounded-lg shadow-sm p-6 sm:p-8 border border-gray-200 border-t-4 border-t-[#2c3741]">
-    <h1 id="edit-user-heading" class="font-heading text-xl sm:text-2xl font-extrabold text-[#2c3741] mb-1">
-      Modifier le compte « {{ target_user.display_name }} »
-    </h1>
-    <p class="text-sm text-[#59626a] mb-6">
-      Mettez à jour le rôle, les coordonnées ou le mot de passe de cet utilisateur.
-    </p>
+{% block portal_content %}
+<div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
 
+  <div class="pb-5 border-b border-[#dadada] flex items-center justify-between gap-4">
+    <div>
+      <h1 id="edit-user-heading" class="font-heading text-2xl font-extrabold text-[#2c3741] mt-1 mb-0">
+        Modifier le compte « {{ target_user.display_name }} »
+      </h1>
+    </div>
+    <a href="{% url 'accounts:user_list' %}" class="btn-admin">
+      Retour à la liste
+    </a>
+  </div>
+
+  <div class="bg-white rounded-lg p-6 sm:p-8 border border-[#dadada] shadow-sm">
     <form action="{% url 'accounts:user_edit' target_user.pk %}" method="post" aria-labelledby="edit-user-heading">
       {% csrf_token %}
 
-      <div class="form-field">
-        <label for="eu-username">Identifiant</label>
-        <input type="text" id="eu-username" name="username" value="{{ form.username.value|default:'' }}" required class="form-control">
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div class="form-field">
+          <label for="eu-username">Identifiant</label>
+          <input type="text" id="eu-username" name="username" value="{{ form.username.value|default:'' }}" required class="form-control">
+        </div>
+
+        <div class="form-field">
+          <label for="eu-fullname">Nom complet</label>
+          <input type="text" id="eu-fullname" name="full_name" value="{{ form.full_name.value|default:'' }}" class="form-control">
+        </div>
+
+        <div class="form-field">
+          <label for="eu-role">Rôle attribué</label>
+          <select id="eu-role" name="role" class="form-control">
+            {% for val, label in form.fields.role.choices %}
+              <option value="{{ val }}" {% if form.role.value == val %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="form-field">
+          <label for="eu-company">Entreprise / Service</label>
+          <input type="text" id="eu-company" name="company_name" value="{{ form.company_name.value|default:'' }}" class="form-control">
+        </div>
+
+        <div class="form-field">
+          <label for="eu-email">Adresse courriel</label>
+          <input type="email" id="eu-email" name="email" value="{{ form.email.value|default:'' }}" class="form-control">
+        </div>
+
+        <div class="form-field">
+          <label for="eu-phone">Téléphone</label>
+          <input type="tel" id="eu-phone" name="phone" value="{{ form.phone.value|default:'' }}" class="form-control">
+        </div>
       </div>
 
-      <div class="form-field">
-        <label for="eu-fullname">Nom complet</label>
-        <input type="text" id="eu-fullname" name="full_name" value="{{ form.full_name.value|default:'' }}" class="form-control">
-      </div>
-
-      <div class="form-field">
-        <label for="eu-email">Adresse courriel</label>
-        <input type="email" id="eu-email" name="email" value="{{ form.email.value|default:'' }}" class="form-control">
-      </div>
-
-      <div class="form-field">
-        <label for="eu-role">Rôle</label>
-        <select id="eu-role" name="role" class="form-control">
-          {% for val, label in form.fields.role.choices %}
-            <option value="{{ val }}" {% if form.role.value == val %}selected{% endif %}>{{ label }}</option>
-          {% endfor %}
-        </select>
-      </div>
-
-      <div class="form-field">
-        <label for="eu-company">Entreprise / Service</label>
-        <input type="text" id="eu-company" name="company_name" value="{{ form.company_name.value|default:'' }}" class="form-control">
-      </div>
-
-      <div class="form-field">
-        <label for="eu-phone">Téléphone</label>
-        <input type="tel" id="eu-phone" name="phone" value="{{ form.phone.value|default:'' }}" class="form-control">
-      </div>
-
-      <div class="form-field">
+      <div class="form-field mt-1">
         <label for="eu-newpwd">Nouveau mot de passe (laisser vide pour conserver l'actuel)</label>
         <input type="password" id="eu-newpwd" name="new_password" minlength="8" autocomplete="new-password" class="form-control">
       </div>
 
-      <div class="flex items-center gap-2 mb-6">
-        <input type="checkbox" id="eu-active" name="is_active" {% if form.is_active.value %}checked{% endif %} class="w-4 h-4">
-        <label for="eu-active" class="text-sm font-semibold text-[#2c3741]">Compte actif</label>
+      <div class="flex items-center gap-2.5 my-5 p-3.5 rounded bg-[#f4f4f4] border border-[#dadada]">
+        <input type="checkbox" id="eu-active" name="is_active" {% if form.is_active.value %}checked{% endif %} class="w-4 h-4 accent-[#3498db]">
+        <label for="eu-active" class="text-sm font-bold text-[#2c3741] cursor-pointer">Compte actif (autorisé à se connecter)</label>
       </div>
 
-      <div class="flex items-center gap-3">
-        <button type="submit" class="btn-ctsa btn-ctsa-filled flex-1">
-          Enregistrer
+      <div class="flex items-center gap-3 pt-4 border-t border-[#dadada]">
+        <button type="submit" class="btn-admin btn-admin-primary px-6 min-h-[44px]">
+          Enregistrer les modifications
         </button>
-        <a href="{% url 'accounts:user_list' %}" class="btn-ctsa">Annuler</a>
+        <a href="{% url 'accounts:user_list' %}" class="btn-admin min-h-[44px] px-5">
+          Annuler
+        </a>
       </div>
     </form>
   </div>
+
 </div>
 {% endblock %}

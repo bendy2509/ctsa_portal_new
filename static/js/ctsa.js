@@ -70,9 +70,21 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   };
 
+  const normalizeContainerInput = (el) => {
+    if (!el?.matches?.('input[pattern][data-error]')) return;
+    const cleaned = el.value.replace(/[\s-]+/g, '').toUpperCase();
+    if (cleaned !== el.value) el.value = cleaned;
+  };
+
   document.querySelectorAll('input, select, textarea').forEach((el) => syncAria(el));
 
-  document.addEventListener('blur', (e) => syncAria(e.target, true), true);
+  document.addEventListener('blur', (e) => {
+    normalizeContainerInput(e.target);
+    syncAria(e.target, true);
+  }, true);
+  document.addEventListener('submit', (e) => {
+    e.target.querySelectorAll?.('input[pattern][data-error]').forEach(normalizeContainerInput);
+  }, true);
   document.addEventListener('input', (e) => {
     if (e.target.hasAttribute('aria-invalid')) syncAria(e.target);
   });
@@ -121,25 +133,95 @@ document.addEventListener('DOMContentLoaded', () => {
       tabButtons.forEach((b) => {
         const active = b === btn;
         b.setAttribute('aria-selected', String(active));
-        b.className = active
-          ? 'tab-btn px-4 py-2 rounded text-xs font-heading font-bold uppercase tracking-wider bg-[#3498db] text-white'
-          : 'tab-btn px-4 py-2 rounded text-xs font-heading font-bold uppercase tracking-wider bg-white/10 text-white hover:bg-white/20';
+        if (!b.classList.contains('list-tab')) b.className = active
+          ? 'tab-btn px-3.5 py-1.5 rounded text-xs font-heading font-bold uppercase tracking-wider bg-[#3498db] text-white transition'
+          : 'tab-btn px-3.5 py-1.5 rounded text-xs font-heading font-bold uppercase tracking-wider bg-transparent text-[#2c3741] hover:bg-[#f4f4f4] transition';
         const panel = document.getElementById(b.getAttribute('data-tab-target'));
         if (panel) panel.hidden = !active;
       });
+      // Choisir un mode d'enregistrement déplie le formulaire s'il était replié.
+      const fold = document.getElementById(btn.getAttribute('data-tab-target'))?.closest('details');
+      if (fold) fold.open = true;
     });
   });
 
-  // 5. Bouton "Indisponible" sur chaque ligne de /admin/ (ouvre le choix du motif)
-  document.querySelectorAll('[data-toggle-unavailable]').forEach((btn) => {
+  // 5. Dialogue modal de saisie du motif lors du passage au statut « Indisponible »
+  const unavailDialog = document.getElementById('unavailable-reason-dialog');
+  if (unavailDialog && typeof unavailDialog.showModal === 'function') {
+    const unavailForm = document.getElementById('unavail-dialog-form');
+    const unavailSubtitle = document.getElementById('unavail-dialog-subtitle');
+    const unavailNote = document.getElementById('unavail-dialog-note');
+    const unavailNext = document.getElementById('unavail-dialog-next');
+    const unavailExtras = document.getElementById('unavail-dialog-extra-fields');
+    const cancelBtn = unavailDialog.querySelector('[data-unavail-cancel]');
+
+    if (cancelBtn) {
+      cancelBtn.addEventListener('click', () => unavailDialog.close());
+    }
+    unavailDialog.addEventListener('click', (e) => {
+      if (e.target === unavailDialog) unavailDialog.close();
+    });
+
+    const openUnavailDialog = ({ action, subtitle, note, nextUrl, extras }) => {
+      unavailForm.setAttribute('action', action);
+      unavailSubtitle.textContent = subtitle;
+      unavailNote.value = note || '';
+      unavailNext.value = nextUrl || '';
+      unavailExtras.innerHTML = '';
+      (extras || []).forEach(([name, value]) => {
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = name;
+        input.value = value;
+        unavailExtras.appendChild(input);
+      });
+      unavailDialog.showModal();
+      unavailNote.focus();
+    };
+
+    document.querySelectorAll('[data-unavailable-action]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        openUnavailDialog({
+          action: btn.getAttribute('data-unavailable-action'),
+          subtitle: `Indiquez la raison de l'indisponibilité pour le conteneur ${btn.getAttribute('data-unavailable-number') || ''}.`,
+          note: btn.getAttribute('data-unavailable-note') || '',
+          nextUrl: btn.getAttribute('data-unavailable-next') || '',
+        });
+      });
+    });
+
+    document.querySelectorAll('[data-unavailable-bulk]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const formId = btn.getAttribute('data-unavailable-bulk');
+        const sourceForm = document.getElementById(formId);
+        if (!sourceForm) return;
+        const checked = Array.from(document.querySelectorAll(`input[form="${formId}"][name="ids"]:checked`));
+        if (!checked.length) return;
+        const extras = checked.map((cb) => ['ids', cb.value]);
+        const dateInput = sourceForm.querySelector('input[name="date"]');
+        if (dateInput) extras.push(['date', dateInput.value]);
+        const nextInput = sourceForm.querySelector('input[name="next"]');
+        openUnavailDialog({
+          action: sourceForm.getAttribute('action'),
+          subtitle: `Indiquez la raison de l'indisponibilité pour les ${checked.length} conteneur(s) sélectionné(s).`,
+          note: '',
+          nextUrl: nextInput ? nextInput.value : '',
+          extras,
+        });
+      });
+    });
+  }
+
+  // 5 bis. Panneaux dépliables génériques (ex. précision « Non vérifié »)
+  document.querySelectorAll('[data-toggle-panel]').forEach((btn) => {
     btn.addEventListener('click', () => {
-      const pk = btn.getAttribute('data-toggle-unavailable');
-      const panel = document.getElementById(`unavail-panel-${pk}`);
+      const panel = document.getElementById(btn.getAttribute('data-toggle-panel'));
       if (!panel) return;
       panel.hidden = !panel.hidden;
+      btn.setAttribute('aria-expanded', String(!panel.hidden));
       if (!panel.hidden) {
-        const select = panel.querySelector('select');
-        if (select) select.focus();
+        const field = panel.querySelector('input[type="text"], select, textarea');
+        if (field) field.focus();
       }
     });
   });
@@ -192,6 +274,230 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  // 8 bis. Sidebar de l'administration repliable sur mobile (tiroir + fond sombre)
+  const portalToggle = document.getElementById('portal-nav-toggle');
+  const portalNav = document.getElementById('portal-nav');
+  const portalClose = document.getElementById('portal-nav-close');
+  const portalBackdrop = document.getElementById('portal-nav-backdrop');
+  if (portalToggle && portalNav) {
+    const setPortalNav = (open) => {
+      portalNav.classList.toggle('is-open', open);
+      portalToggle.setAttribute('aria-expanded', String(open));
+      if (portalBackdrop) portalBackdrop.hidden = !open;
+    };
+    portalToggle.addEventListener('click', () => {
+      setPortalNav(!portalNav.classList.contains('is-open'));
+    });
+    if (portalClose) {
+      portalClose.addEventListener('click', () => {
+        setPortalNav(false);
+        portalToggle.focus();
+      });
+    }
+    if (portalBackdrop) {
+      portalBackdrop.addEventListener('click', () => setPortalNav(false));
+    }
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && portalNav.classList.contains('is-open')) {
+        setPortalNav(false);
+        portalToggle.focus();
+      }
+    });
+  }
+
+  // 8 ter. Cases « tout sélectionner » et compteur contextuel de sélection des tableaux
+  document.querySelectorAll('[data-check-all]').forEach((master) => {
+    const group = master.dataset.checkAll;
+    const boxes = () => Array.from(document.querySelectorAll(`input[type="checkbox"][data-check-group="${group}"]`));
+    const syncBulkBar = () => {
+      const all = boxes();
+      const checkedCount = all.filter((b) => b.checked).length;
+      master.indeterminate = checkedCount > 0 && checkedCount < all.length;
+      if (all.length > 0) master.checked = checkedCount === all.length;
+      const bar = document.querySelector(`[data-selection-bar="${group}"]`) || document.querySelector(`[data-bulk-bar="${group}"]`);
+      const countEl = document.querySelector(`[data-bulk-count="${group}"]`);
+      if (bar) {
+        if (bar.hasAttribute('data-selection-bar')) bar.hidden = checkedCount === 0;
+        bar.classList.toggle('is-selected', checkedCount > 0);
+      }
+      if (countEl) {
+        countEl.textContent = checkedCount > 0
+          ? `${checkedCount} sélectionné${checkedCount > 1 ? 's' : ''}`
+          : 'Sélection';
+      }
+    };
+    master.addEventListener('change', () => {
+      boxes().forEach((box) => { box.checked = master.checked; });
+      syncBulkBar();
+    });
+    document.addEventListener('change', (e) => {
+      if (e.target.matches(`input[type="checkbox"][data-check-group="${group}"]`)) {
+        syncBulkBar();
+      }
+    });
+  });
+
+  // Fermer les menus déroulants (.portal-dropdown) au clic extérieur ou sur Échap
+  document.addEventListener('click', (e) => {
+    document.querySelectorAll('details.portal-dropdown[open]').forEach((dd) => {
+      if (!dd.contains(e.target)) dd.open = false;
+    });
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      document.querySelectorAll('details.portal-dropdown[open]').forEach((dd) => {
+        dd.open = false;
+      });
+    }
+  });
+
+  // 8 ter (suite). Barre de sélection : visible seulement quand au moins une case est cochée.
+  document.querySelectorAll('[data-selection-bar]').forEach((bar) => {
+    const group = bar.dataset.selectionBar;
+    const counter = bar.querySelector('[data-selection-count]');
+    const master = document.querySelector(`[data-check-all="${group}"]`);
+    const boxes = () => [...document.querySelectorAll(`input[type="checkbox"][data-check-group="${group}"]`)];
+    const refresh = () => {
+      const all = boxes();
+      const checked = all.filter((box) => box.checked).length;
+      bar.hidden = checked === 0;
+      if (counter) counter.textContent = String(checked);
+      if (master) {
+        master.checked = checked > 0 && checked === all.length;
+        master.indeterminate = checked > 0 && checked < all.length;
+      }
+    };
+    document.addEventListener('change', (e) => {
+      if (e.target.matches(`[data-check-group="${group}"], [data-check-all="${group}"]`)) refresh();
+    });
+    refresh();
+  });
+
+  // 8 quater. Boîte de confirmation du portail pour les actions destructrices.
+  // Le bouton porte data-confirm (message), data-confirm-title, data-confirm-label et
+  // data-confirm-tone="danger". Sans JavaScript, le formulaire part normalement.
+  const confirmDialog = document.getElementById('confirm-dialog');
+  if (confirmDialog && typeof confirmDialog.showModal === 'function') {
+    const titleEl = confirmDialog.querySelector('#confirm-dialog-title');
+    const messageEl = confirmDialog.querySelector('#confirm-dialog-message');
+    const acceptBtn = confirmDialog.querySelector('[data-confirm-accept]');
+    const cancelBtn = confirmDialog.querySelector('[data-confirm-cancel]');
+    let pendingBtn = null;
+
+    document.addEventListener('click', (e) => {
+      const btn = e.target.closest('button[data-confirm], input[type="submit"][data-confirm]');
+      if (!btn || !btn.form) return;
+      if (btn.dataset.confirmOk === '1') {
+        delete btn.dataset.confirmOk;
+        return;
+      }
+
+      let message = btn.dataset.confirm;
+      if (btn.dataset.confirmCount) {
+        const checked = document.querySelectorAll(
+          `input[type="checkbox"][data-check-group="${btn.dataset.confirmCount}"]:checked`
+        ).length;
+        // Rien de coché : on laisse le serveur répondre « aucun conteneur sélectionné ».
+        if (checked === 0) return;
+        message = checked === 1 && btn.dataset.confirmOne
+          ? btn.dataset.confirmOne
+          : message.replace('{n}', String(checked));
+      }
+
+      e.preventDefault();
+      pendingBtn = btn;
+      titleEl.textContent = btn.dataset.confirmTitle || 'Confirmer cette action ?';
+      messageEl.textContent = message;
+      acceptBtn.textContent = btn.dataset.confirmLabel || 'Confirmer';
+      confirmDialog.dataset.tone = btn.dataset.confirmTone || 'default';
+      confirmDialog.returnValue = 'cancel';
+      confirmDialog.showModal();
+      // « Annuler » reçoit le focus : la touche Entrée ne confirme jamais par accident.
+      cancelBtn.focus();
+    });
+
+    // La décision est traitée dès le clic sur « Annuler » ou « Confirmer » (événement submit du
+    // formulaire de la boîte), sans attendre l'événement close, que le navigateur peut différer.
+    const settle = (confirmed) => {
+      const btn = pendingBtn;
+      pendingBtn = null;
+      if (confirmDialog.open) confirmDialog.close(confirmed ? 'confirm' : 'cancel');
+      if (!btn) return;
+      if (confirmed) {
+        btn.dataset.confirmOk = '1';
+        btn.form.requestSubmit(btn);
+      } else {
+        btn.focus();
+      }
+    };
+
+    confirmDialog.querySelector('form').addEventListener('submit', (e) => {
+      e.preventDefault();
+      settle(e.submitter === acceptBtn);
+    });
+
+    // Échap annule (événement cancel), tout comme un clic sur le voile, en dehors de la carte.
+    confirmDialog.addEventListener('cancel', (e) => {
+      e.preventDefault();
+      settle(false);
+    });
+    confirmDialog.addEventListener('click', (e) => {
+      if (e.target === confirmDialog) settle(false);
+    });
+  }
+
+  // 8 quinquies. Actualisation automatique des pages de suivi (fiche publique, « Mes conteneurs »).
+  // La zone porte data-refresh-url et data-refresh-signature : on interroge l'empreinte toutes
+  // les minutes et on recharge la page seulement si elle a changé.
+  document.querySelectorAll('[data-refresh-url]').forEach((zone) => {
+    const REFRESH_EVERY_MS = 60 * 1000;
+    const STOP_AFTER_MS = 2 * 60 * 60 * 1000;
+    const url = zone.dataset.refreshUrl;
+    const knownSignature = zone.dataset.refreshSignature;
+    const stamp = zone.querySelector('[data-refresh-time]');
+    const status = zone.querySelector('[data-refresh-status]');
+    const startedAt = Date.now();
+    let timer = null;
+    let busy = false;
+
+    const userIsTyping = () => {
+      const el = document.activeElement;
+      return !!el && el.matches('input, textarea, select') && !!el.value;
+    };
+
+    const check = async () => {
+      if (busy || document.hidden) return;
+      if (Date.now() - startedAt > STOP_AFTER_MS) {
+        clearInterval(timer);
+        if (status) status.textContent = 'Actualisation automatique en pause : rechargez la page pour la relancer.';
+        return;
+      }
+      busy = true;
+      try {
+        const response = await fetch(url, { headers: { Accept: 'application/json' }, credentials: 'same-origin' });
+        if (!response.ok) return;
+        const data = await response.json();
+        if (data.signature && data.signature !== knownSignature) {
+          // On ne recharge pas sous les doigts de quelqu'un qui saisit un numéro.
+          if (!userIsTyping() && !document.querySelector('dialog[open]')) window.location.reload();
+          return;
+        }
+        if (stamp) {
+          stamp.textContent = new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+        }
+      } catch (err) {
+        // Réseau indisponible : on réessaiera au prochain passage.
+      } finally {
+        busy = false;
+      }
+    };
+
+    timer = setInterval(check, REFRESH_EVERY_MS);
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden) check();
+    });
+  });
+
   // 9. Panneau dépliable "Nouvel utilisateur"
   const createUserBtn = document.getElementById('toggle-create-user-btn');
   const createUserPanel = document.getElementById('create-user-panel');
@@ -202,4 +508,11 @@ document.addEventListener('DOMContentLoaded', () => {
       createUserBtn.setAttribute('aria-expanded', String(isHidden));
     });
   }
+
+  // 10. Bouton d'impression de la fiche bordereau RAMPE sur /verification/
+  document.querySelectorAll('[data-print-slip]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      window.print();
+    });
+  });
 });

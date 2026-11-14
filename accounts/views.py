@@ -2,6 +2,7 @@ from django.contrib import messages
 from django.contrib.auth import login, logout, update_session_auth_hash
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import PasswordChangeForm
+from django.core.paginator import Paginator
 from django.db.models import Q
 from django.shortcuts import render, redirect, get_object_or_404
 from django.views.decorators.http import require_POST
@@ -14,6 +15,7 @@ from .forms import (
     StaffUserUpdateForm,
 )
 from .models import User
+from .utils import safe_next_url
 
 # Create your views here.
 
@@ -29,7 +31,8 @@ def login_view(request):
         user = form.user_cache
         login(request, user)
         messages.success(request, f"Bienvenue sur CTSA Portal, {user.display_name}.")
-        next_url = request.GET.get('next')
+        # Retour vers la page d'origine (ex. la fiche du conteneur recherché), si elle est interne.
+        next_url = safe_next_url(request, request.GET.get('next', ''), '')
         if next_url:
             return redirect(next_url)
         if user.is_staff_member:
@@ -120,8 +123,14 @@ def user_list_view(request):
             )
             return redirect('accounts:user_list')
 
+    page = Paginator(users, 30).get_page(request.GET.get('page'))
+    params = request.GET.copy()
+    params.pop('page', None)
+
     return render(request, 'portal/users.html', {
-        'users': users,
+        'users': page,
+        'page': page,
+        'page_query': params.urlencode(),
         'create_form': create_form,
         'role_choices': User.Role.choices,
         'role_filter': role_filter,

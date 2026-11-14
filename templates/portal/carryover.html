@@ -1,0 +1,220 @@
+{% extends 'portal/base_portal.html' %}
+
+{% block title %}Inspection · Non vérifiés — Cap Terminal S.A.{% endblock %}
+
+{% block portal_content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-5">
+
+  <header>
+    <h1 class="text-xl sm:text-2xl font-heading font-extrabold text-[#2c3741] m-0">Inspection</h1>
+    <p class="text-sm text-[#64748b] mt-1 mb-0 max-w-3xl">
+      Tout conteneur programmé reste ici tant qu'il n'est pas vérifié, quel que soit son dernier statut.
+      Ajoutez-le à la liste suivante en un clic au lieu de le ressaisir, ou rejetez-le.
+    </p>
+    {% include 'partials/inspection_tabs.html' with tab='backlog' %}
+  </header>
+
+  <div class="flex flex-wrap items-end justify-between gap-3">
+    <form action="{% url 'terminal:carryover' %}" method="get" class="flex flex-wrap items-end gap-2 shrink-0">
+      <div class="form-field mb-0">
+        <label for="carry-date" class="text-xs">Liste à compléter</label>
+        <input type="date"
+               id="carry-date"
+               name="date"
+               min="{{ today|date:'Y-m-d' }}"
+               value="{{ target_date|date:'Y-m-d' }}"
+               data-auto-submit-date
+               class="border border-slate-200/80 rounded-lg px-3 py-1.5 min-h-[40px] text-sm font-semibold text-[#2c3741] bg-white">
+      </div>
+      {% if status_filter %}<input type="hidden" name="status" value="{{ status_filter }}">{% endif %}
+      {% if line_filter %}<input type="hidden" name="line" value="{{ line_filter }}">{% endif %}
+      <button type="submit" class="btn-admin rounded-lg">Afficher</button>
+    </form>
+  </div>
+
+  <!-- Synthèse du suivi -->
+  <div class="metric-strip">
+    <div class="stat-tile">
+      <div class="kpi-label">À suivre</div>
+      <div class="kpi-value tabular-nums">{{ breakdown.total }}</div>
+      <div class="kpi-note">
+        {% if oldest and not status_filter and not line_filter %}Le plus ancien : {{ oldest.days_since_first_scheduled }} j{% else %}conteneur{{ breakdown.total|pluralize }} non vérifié{{ breakdown.total|pluralize }}{% endif %}
+      </div>
+    </div>
+    <div class="stat-tile">
+      <div class="kpi-label">Dernier statut : confirmé</div>
+      <div class="kpi-value tabular-nums text-[#008751]">{{ breakdown.confirmed }}</div>
+      <div class="kpi-note">disponibles mais non vérifiés</div>
+    </div>
+    <div class="stat-tile">
+      <div class="kpi-label">Dernier statut : en attente</div>
+      <div class="kpi-value tabular-nums text-[#8a5300]">{{ breakdown.pending }}</div>
+      <div class="kpi-note">jamais positionnés</div>
+    </div>
+    <div class="stat-tile">
+      <div class="kpi-label">Dernier statut : indisponible</div>
+      <div class="kpi-value tabular-nums text-[#e74c3c]">{{ breakdown.unavailable }}</div>
+      <div class="kpi-note">motif indiqué sur la ligne</div>
+    </div>
+  </div>
+
+  <section aria-labelledby="carry-caption" class="bg-white rounded-xl border border-slate-200/80 shadow-xs overflow-hidden">
+
+    <!-- État de la liste visée -->
+    <div class="px-4 sm:px-5 py-3 border-b border-slate-200/80 {% if list_started %}bg-[#3498db]/10{% else %}bg-[#f8fafc]{% endif %} text-sm text-[#2c3741]">
+      {% if list_started %}
+        <strong>Liste du {{ target_date|date:"d/m/Y" }} en préparation.</strong>
+        Le bouton « Ajouter » de chaque ligne y inscrit le conteneur avec le statut « En attente ».
+      {% else %}
+        <strong>Aucune liste en préparation pour le {{ target_date|date:"d/m/Y" }}.</strong>
+        L'ajout en un clic s'active dès qu'un premier conteneur y est inscrit.
+        Vous pouvez aussi démarrer la liste en cochant des conteneurs ci-dessous.
+      {% endif %}
+    </div>
+
+    <!-- Filtres + actions sur la sélection -->
+    <div class="p-4 sm:px-5 bg-white border-b border-[#dadada] flex flex-col xl:flex-row xl:items-center xl:justify-between gap-3">
+      <form id="carry-bulk-form" action="{% url 'terminal:carryover_decide' %}" method="post" class="flex flex-wrap items-center gap-2">
+        {% csrf_token %}
+        <input type="hidden" name="date" value="{{ target_date|date:'Y-m-d' }}">
+        <input type="hidden" name="next" value="{{ request.get_full_path }}">
+        <span class="text-xs font-heading font-bold uppercase tracking-wider text-[#666666] mr-1">Sélection :</span>
+        <button type="submit" name="decision" value="carry" class="btn-admin btn-admin-primary">
+          Reprendre dans la liste du {{ target_date|date:"d/m" }}
+        </button>
+        <button type="submit" name="decision" value="reject"
+                data-confirm-title="Rejeter la sélection ?"
+                data-confirm="Les {n} conteneurs cochés sortiront du suivi des non vérifiés et ne seront plus proposés pour les prochaines listes."
+                data-confirm-one="Le conteneur coché sortira du suivi des non vérifiés et ne sera plus proposé pour les prochaines listes."
+                data-confirm-count="carry"
+                data-confirm-label="Rejeter"
+                data-confirm-tone="danger"
+                class="btn-admin">
+          Rejeter
+        </button>
+      </form>
+
+      <search>
+        <form action="{% url 'terminal:carryover' %}" method="get" class="flex flex-wrap items-center gap-2">
+          <input type="hidden" name="date" value="{{ target_date|date:'Y-m-d' }}">
+          <label for="carry-status" class="visually-hidden">Filtrer par dernier statut</label>
+          <select id="carry-status" name="status" data-auto-submit-select class="border border-[#dadada] rounded-md px-3 py-1.5 min-h-[38px] text-xs font-semibold bg-white text-[#2c3741]">
+            <option value="">Tous les statuts</option>
+            {% for val, label in status_choices %}
+              <option value="{{ val }}" {% if status_filter == val %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+          <label for="carry-line" class="visually-hidden">Filtrer par ligne maritime</label>
+          <select id="carry-line" name="line" data-auto-submit-select class="border border-[#dadada] rounded-md px-3 py-1.5 min-h-[38px] text-xs font-semibold bg-white text-[#2c3741]">
+            <option value="">Toutes les lignes maritimes</option>
+            {% for line in shipping_lines %}
+              <option value="{{ line.id }}" {% if line_filter == line.id|stringformat:"s" %}selected{% endif %}>{{ line.name }}</option>
+            {% endfor %}
+          </select>
+          <button type="submit" class="btn-admin min-h-[38px]">Filtrer</button>
+          {% if status_filter or line_filter %}
+            <a href="{% url 'terminal:carryover' %}?date={{ target_date|date:'Y-m-d' }}" class="text-xs text-[#3498db] hover:underline font-bold">Réinitialiser</a>
+          {% endif %}
+        </form>
+      </search>
+    </div>
+
+    <div tabindex="0" role="region" aria-labelledby="carry-caption" class="table-wrapper border-0 rounded-none">
+      <table class="ctsa-table" style="--label-2: 'Ligne maritime'; --label-3: 'Première programmation'; --label-4: 'Séances'; --label-5: 'Dernière séance'; --label-6: 'Dernier statut'; --label-7: 'Action';">
+        <caption id="carry-caption" class="visually-hidden">
+          Conteneurs programmés et non vérifiés, du plus ancien au plus récent
+        </caption>
+        <thead class="sticky top-0 z-10 bg-slate-50/95 backdrop-blur-xs">
+          <tr>
+            <th scope="col">
+              <label class="inline-flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" data-check-all="carry" class="w-4 h-4">
+                <span>Conteneur</span>
+              </label>
+            </th>
+            <th scope="col">Ligne maritime</th>
+            <th scope="col">Première programmation</th>
+            <th scope="col">Séances</th>
+            <th scope="col">Dernière séance</th>
+            <th scope="col">Dernier statut</th>
+            <th scope="col" class="text-right">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for c in rows %}
+            <tr>
+              <th scope="row">
+                <label class="inline-flex items-center gap-2">
+                  <input type="checkbox" name="ids" value="{{ c.pk }}" form="carry-bulk-form" data-check-group="carry" class="w-4 h-4">
+                  <span class="font-mono text-sm font-bold tracking-wide text-[#2c3741] tabular-nums">{{ c.container_number }}</span>
+                </label>
+              </th>
+              <td>{{ c.shipping_line.name|default:"Non renseignée" }}</td>
+              <td>
+                <span class="font-semibold">{{ c.first_scheduled_date|date:"d/m/Y" }}</span>
+                <div class="text-xs text-[#666666]">{% if c.days_since_first_scheduled %}il y a {{ c.days_since_first_scheduled }} jour{{ c.days_since_first_scheduled|pluralize }}{% else %}aujourd'hui{% endif %}</div>
+              </td>
+              <td>{{ c.session_count }}</td>
+              <td>{{ c.scheduled_date|date:"d/m/Y" }}</td>
+              <td>
+                {% include 'partials/status_actions.html' %}
+                {% if c.status == 'confirmed' %}
+                  <div class="text-xs font-semibold text-[#2c3741] mt-2">
+                    {% if c.verification_result == 'not_verified' %}Marqué non vérifié{% if c.verification_note %} : {{ c.verification_note }}{% endif %}{% else %}Vérification non marquée{% endif %}
+                  </div>
+                  <div class="mt-2">{% include 'partials/verification_actions.html' %}</div>
+                {% endif %}
+              </td>
+              <td class="text-right">
+                <div class="flex flex-wrap items-center justify-end gap-3">
+                  {% if list_started %}
+                    <form action="{% url 'terminal:carryover_decide' %}" method="post">
+                      {% csrf_token %}
+                      <input type="hidden" name="decision" value="carry">
+                      <input type="hidden" name="ids" value="{{ c.pk }}">
+                      <input type="hidden" name="date" value="{{ target_date|date:'Y-m-d' }}">
+                      <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                      <button type="submit" class="btn-admin btn-admin-primary min-h-[36px] py-1.5">
+                        Ajouter à la liste du {{ target_date|date:"d/m" }}
+                      </button>
+                    </form>
+                  {% else %}
+                    <span class="text-xs text-[#666666]">Aucune liste en préparation</span>
+                  {% endif %}
+                  <form action="{% url 'terminal:carryover_decide' %}" method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="decision" value="reject">
+                    <input type="hidden" name="ids" value="{{ c.pk }}">
+                    <input type="hidden" name="date" value="{{ target_date|date:'Y-m-d' }}">
+                    <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                    <button type="submit"
+                            data-confirm-title="Rejeter ce conteneur ?"
+                            data-confirm="{{ c.container_number }} sortira du suivi des non vérifiés et ne sera plus proposé pour les prochaines listes."
+                            data-confirm-label="Rejeter"
+                            data-confirm-tone="danger"
+                            class="text-xs font-bold text-[#666666] hover:text-[#b82c1f] underline">
+                      Rejeter
+                    </button>
+                  </form>
+                </div>
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <th scope="row">—</th>
+              <td colspan="6" class="text-center py-10 text-[#666666]">
+                {% if status_filter or line_filter %}
+                  Aucun conteneur non vérifié pour ce filtre.
+                {% else %}
+                  Tout est à jour : aucun conteneur programmé n'attend de vérification.
+                {% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% include 'partials/pagination.html' %}
+  </section>
+</div>
+{% endblock %}

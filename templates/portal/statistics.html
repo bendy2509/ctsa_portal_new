@@ -1,0 +1,204 @@
+{% extends 'portal/base_portal.html' %}
+
+{% block title %}Statistiques — Cap Terminal S.A.{% endblock %}
+
+{% block portal_content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-5">
+
+  <!-- En-tête : période affichée + navigation -->
+  <div class="flex flex-col xl:flex-row xl:items-end xl:justify-between gap-4 pb-4 border-b border-slate-200/80">
+    <div>
+      <h1 class="text-xl sm:text-2xl font-heading font-extrabold text-[#2c3741] m-0">
+        Statistiques de vérification
+      </h1>
+      <p class="text-sm text-[#64748b] m-0 mt-0.5">
+        Du <strong class="text-[#2c3741]">{{ start|date:"d/m/Y" }}</strong> au <strong class="text-[#2c3741]">{{ end|date:"d/m/Y" }}</strong>
+      </p>
+    </div>
+
+    <div class="flex flex-wrap items-center gap-2">
+      <div class="inline-flex rounded-lg border border-slate-200/80 bg-white overflow-hidden">
+        <a href="{% url 'terminal:statistics' %}?periode=semaine&ref={{ ref|date:'Y-m-d' }}"
+           {% if kind == 'semaine' %}aria-current="true"{% endif %}
+           class="px-3.5 py-2 text-xs font-heading font-bold uppercase tracking-wider border-r border-slate-200/80 transition {% if kind == 'semaine' %}bg-[#2c3741] text-white{% else %}text-[#2c3741] hover:bg-[#f8fafc]{% endif %}">
+          Semaine
+        </a>
+        <a href="{% url 'terminal:statistics' %}?periode=mois&ref={{ ref|date:'Y-m-d' }}"
+           {% if kind == 'mois' %}aria-current="true"{% endif %}
+           class="px-3.5 py-2 text-xs font-heading font-bold uppercase tracking-wider transition {% if kind == 'mois' %}bg-[#2c3741] text-white{% else %}text-[#2c3741] hover:bg-[#f8fafc]{% endif %}">
+          Mois
+        </a>
+      </div>
+
+      {% if prev_ref %}
+        <a href="{% url 'terminal:statistics' %}?periode={{ kind }}&ref={{ prev_ref|date:'Y-m-d' }}" class="btn-admin rounded-lg"><svg class="portal-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>Précédent</a>
+        <a href="{% url 'terminal:statistics' %}?periode={{ kind }}&ref={{ today|date:'Y-m-d' }}" class="btn-admin rounded-lg">Aujourd'hui</a>
+        <a href="{% url 'terminal:statistics' %}?periode={{ kind }}&ref={{ next_ref|date:'Y-m-d' }}" class="btn-admin rounded-lg">Suivant<svg class="portal-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></a>
+      {% endif %}
+
+      <a href="?periode={{ kind }}&ref={{ ref|date:'Y-m-d' }}&du={{ start|date:'Y-m-d' }}&au={{ end|date:'Y-m-d' }}&export=csv" class="btn-admin btn-admin-slate rounded-lg">
+        Excel (CSV)
+      </a>
+    </div>
+  </div>
+
+  <!-- Plage personnalisée -->
+  <form action="{% url 'terminal:statistics' %}" method="get" class="flex flex-wrap items-end gap-3">
+    <input type="hidden" name="periode" value="perso">
+    <div class="form-field mb-0">
+      <label for="stat-du" class="text-xs">Du</label>
+      <input type="date" id="stat-du" name="du" value="{{ start|date:'Y-m-d' }}" required class="border border-slate-200/80 rounded-lg px-3 py-1.5 min-h-[40px] text-sm bg-white">
+    </div>
+    <div class="form-field mb-0">
+      <label for="stat-au" class="text-xs">Au</label>
+      <input type="date" id="stat-au" name="au" value="{{ end|date:'Y-m-d' }}" required class="border border-slate-200/80 rounded-lg px-3 py-1.5 min-h-[40px] text-sm bg-white">
+    </div>
+    <button type="submit" class="btn-admin rounded-lg">Afficher cette plage</button>
+  </form>
+
+  <!-- Indicateurs de la période -->
+  <div class="kpi-grid">
+    <div class="kpi-card rounded-xl border border-slate-200/80 shadow-xs">
+      <div class="kpi-label">Programmés</div>
+      <div class="kpi-value tabular-nums">{{ totals.scheduled }}</div>
+      <div class="kpi-note">{{ totals.distinct }} conteneur{{ totals.distinct|pluralize }} distinct{{ totals.distinct|pluralize }}</div>
+    </div>
+    <div class="kpi-card rounded-xl border border-slate-200/80 shadow-xs">
+      <div class="kpi-label">Confirmés</div>
+      <div class="kpi-value tabular-nums text-[#008751]">{{ totals.confirmed }}</div>
+      <div class="kpi-note">disponibles à la RAMPE</div>
+    </div>
+    <div class="kpi-card rounded-xl border border-slate-200/80 shadow-xs">
+      <div class="kpi-label">Vérifiés</div>
+      <div class="kpi-value tabular-nums text-[#008751]">{{ totals.verified }}</div>
+      <div class="kpi-note">
+        {% if totals.rate is not None %}{{ totals.rate }} % des confirmés{% else %}aucun confirmé sur la période{% endif %}
+      </div>
+    </div>
+    <div class="kpi-card rounded-xl border border-slate-200/80 shadow-xs">
+      <div class="kpi-label">Non vérifiés</div>
+      <div class="kpi-value tabular-nums text-[#8a5300]">{{ totals.not_verified }}</div>
+      <div class="kpi-note">+ {{ totals.to_verify }} confirmé{{ totals.to_verify|pluralize }} non marqué{{ totals.to_verify|pluralize }}</div>
+    </div>
+    <div class="kpi-card rounded-xl border border-slate-200/80 shadow-xs">
+      <div class="kpi-label">Repris</div>
+      <div class="kpi-value tabular-nums text-[#3498db]">{{ totals.carried }}</div>
+      <div class="kpi-note">reportés sur une liste suivante</div>
+    </div>
+    <div class="kpi-card rounded-xl border border-slate-200/80 shadow-xs">
+      <div class="kpi-label">Rejetés</div>
+      <div class="kpi-value tabular-nums text-[#e74c3c]">{{ totals.rejected }}</div>
+      <div class="kpi-note">sortis du suivi sans vérification</div>
+    </div>
+    <div class="kpi-card rounded-xl border border-slate-200/80 shadow-xs">
+      <div class="kpi-label">Délai moyen</div>
+      <div class="kpi-value tabular-nums">{% if avg_delay is not None %}{{ avg_delay }} j{% else %}—{% endif %}</div>
+      <div class="kpi-note">de la première programmation à la vérification</div>
+    </div>
+    <a href="{% url 'terminal:carryover' %}" class="kpi-card rounded-xl border border-slate-200/80 shadow-xs hover:border-[#3498db] transition block">
+      <div class="kpi-label">Non vérifiés des séances passées</div>
+      <div class="kpi-value tabular-nums">{{ backlog.total }}</div>
+      <div class="kpi-note">
+        {% if oldest %}le plus ancien : {{ oldest.days_since_first_scheduled }} j · voir la liste{% else %}aucun conteneur en attente{% endif %}
+      </div>
+    </a>
+  </div>
+
+  <!-- Détail par jour ou par semaine -->
+  <section aria-labelledby="stat-detail-caption" class="bg-white rounded-xl border border-slate-200/80 shadow-xs overflow-hidden">
+    <div class="bg-[#f8fafc] border-b border-slate-200/80 px-5 py-3 flex flex-wrap items-center justify-between gap-3">
+      <h2 id="stat-detail-caption" class="font-heading text-xs font-extrabold text-[#2c3741] uppercase tracking-wider m-0">
+        Détail {% if by_week %}par semaine{% else %}par jour{% endif %}
+      </h2>
+      <div class="flex items-center gap-4 text-xs text-[#666666]">
+        <span class="inline-flex items-center gap-1.5"><span class="inline-block w-3 h-3 rounded-sm bg-[#b9c2c9]"></span>Programmés</span>
+        <span class="inline-flex items-center gap-1.5"><span class="inline-block w-3 h-3 rounded-sm bg-[#008751]"></span>Vérifiés</span>
+      </div>
+    </div>
+    <div tabindex="0" role="region" aria-labelledby="stat-detail-caption" class="table-wrapper border-0 rounded-none">
+      <table class="ctsa-table" style="--label-2: 'Programmés / vérifiés'; --label-3: 'Programmés'; --label-4: 'Confirmés'; --label-5: 'Vérifiés'; --label-6: 'Non vérifiés'; --label-7: 'Taux';">
+        <thead>
+          <tr>
+            <th scope="col">Période</th>
+            <th scope="col">Programmés / vérifiés</th>
+            <th scope="col">Programmés</th>
+            <th scope="col">Confirmés</th>
+            <th scope="col">Vérifiés</th>
+            <th scope="col">Non vérifiés</th>
+            <th scope="col">Taux</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for b in buckets %}
+            <tr>
+              <th scope="row" class="!font-sans !text-sm">
+                {% if by_week %}
+                  {{ b.label }}
+                {% else %}
+                  <a href="{% url 'terminal:containers' %}?date={{ b.start|date:'Y-m-d' }}" class="underline hover:text-[#3498db]">{{ b.start|date:"D d/m" }}</a>
+                {% endif %}
+              </th>
+              <td>
+                <div class="stat-bar" aria-hidden="true">
+                  <span class="stat-bar-scheduled" style="inline-size: {{ b.bar_scheduled }}%"></span>
+                  <span class="stat-bar-verified" style="inline-size: {{ b.bar_verified }}%"></span>
+                </div>
+              </td>
+              <td>{{ b.scheduled }}</td>
+              <td>{{ b.confirmed }}</td>
+              <td class="font-bold text-[#006b3f]">{{ b.verified }}</td>
+              <td>{{ b.not_verified|add:b.to_verify }}</td>
+              <td>{% if b.rate is not None %}{{ b.rate }} %{% else %}—{% endif %}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- Répartition par ligne maritime -->
+  <section aria-labelledby="stat-lines-caption" class="bg-white rounded-lg border border-[#dadada] shadow-sm overflow-hidden">
+    <div class="bg-[#f4f4f4] border-b border-[#dadada] px-5 py-3">
+      <h2 id="stat-lines-caption" class="font-heading text-sm font-extrabold text-[#2c3741] uppercase tracking-wider m-0">
+        Par ligne maritime
+      </h2>
+    </div>
+    <div tabindex="0" role="region" aria-labelledby="stat-lines-caption" class="table-wrapper border-0 rounded-none">
+      <table class="ctsa-table" style="--label-2: 'Programmés'; --label-3: 'Confirmés'; --label-4: 'Vérifiés'; --label-5: 'Non vérifiés'; --label-6: 'Taux';">
+        <thead>
+          <tr>
+            <th scope="col">Ligne maritime</th>
+            <th scope="col">Programmés</th>
+            <th scope="col">Confirmés</th>
+            <th scope="col">Vérifiés</th>
+            <th scope="col">Non vérifiés</th>
+            <th scope="col">Taux</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in lines %}
+            <tr>
+              <th scope="row" class="!font-sans !text-sm">{{ row.name }}</th>
+              <td>{{ row.scheduled }}</td>
+              <td>{{ row.confirmed }}</td>
+              <td class="font-bold text-[#006b3f]">{{ row.verified }}</td>
+              <td>{{ row.not_verified|add:row.to_verify }}</td>
+              <td>{% if row.rate is not None %}{{ row.rate }} %{% else %}—{% endif %}</td>
+            </tr>
+          {% empty %}
+            <tr>
+              <th scope="row">—</th>
+              <td colspan="5" class="text-center py-8 text-[#666666]">Aucun conteneur programmé sur cette période.</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <p class="text-xs text-[#666666] m-0">
+    « Programmés » compte chaque inscription sur une liste : un conteneur repris sur trois séances compte trois fois, mais une seule fois dans « distincts ».
+    Le taux de vérification rapporte les vérifiés aux confirmés.
+  </p>
+</div>
+{% endblock %}

@@ -1,0 +1,16 @@
+{% for message in messages %}
+  <div class="flex items-center gap-3 px-4 py-3 rounded-xl border text-sm font-semibold shadow-xs
+    {% if message.tags == 'error' %}bg-ctsa-red-bg border-ctsa-red/40 text-[#b82c1f]
+    {% elif message.tags == 'warning' %}bg-ctsa-info-bg border-ctsa-blue/40 text-[#1d6fa5]
+    {% elif message.tags == 'success' %}bg-ctsa-green-bg border-ctsa-green/40 text-[#006b3f]
+    {% else %}bg-white border-ctsa-border text-ctsa-slate{% endif %}">
+    {% if message.tags == 'error' %}
+      <svg class="portal-icon shrink-0" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>
+    {% elif message.tags == 'success' %}
+      <svg class="portal-icon shrink-0" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>
+    {% else %}
+      <svg class="portal-icon shrink-0" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+    {% endif %}
+    <span>{{ message }}</span>
+  </div>
+{% endfor %}

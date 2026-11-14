@@ -14,6 +14,7 @@ db.sqlite3
 db.sqlite3-journal
 .env
 .env.*
+!.env.example
 
 # Médias et fichiers statiques collectés
 staticfiles/
@@ -26,3 +27,6 @@ media/
 *.swo
 .DS_Store
 Thumbs.db
+
+# Dependances Node (compilation Tailwind, voir package.json)
+node_modules/

@@ -5,7 +5,6 @@ from accounts.models import User
 from terminal.models import (
     ShippingLine,
     ContainerPrefix,
-    UnavailabilityReason,
     Container,
     ContainerStatusLog,
 )
@@ -18,18 +17,12 @@ class CTSAPortalBusinessTests(TestCase):
         self.client_http = Client()
         self.cma = ShippingLine.objects.create(name='CMA CGM', code='CMA')
         self.antillean = ShippingLine.objects.create(name='Antillean Marine', code='ANT')
-        self.reason_stacker = UnavailabilityReason.objects.create(
-            code='panne-reach-stacker', label='Panne reach stacker'
-        )
 
         self.admin_user = User.objects.create_user(
             username='admin_test', password='Password123!', role=User.Role.ADMIN
         )
-        self.evening_sup = User.objects.create_user(
-            username='evening_test', password='Password123!', role=User.Role.EVENING_SUPERVISOR
-        )
-        self.morning_sup = User.objects.create_user(
-            username='morning_test', password='Password123!', role=User.Role.MORNING_SUPERVISOR
+        self.supervisor = User.objects.create_user(
+            username='sup_test', password='Password123!', role=User.Role.SUPERVISOR
         )
         self.client_user = User.objects.create_user(
             username='client_test', password='Password123!', role=User.Role.CLIENT
@@ -43,15 +36,14 @@ class CTSAPortalBusinessTests(TestCase):
             scheduled_date=timezone.localdate(),
             status=Container.Status.PENDING,
         )
-        c.save(acting_user=self.evening_sup)
+        c.save(acting_user=self.supervisor)
 
         self.assertEqual(c.container_number, 'AMLU4052450')
         self.assertEqual(c.shipping_line, self.antillean)
         self.assertEqual(ContainerStatusLog.objects.filter(container=c).count(), 1)
 
-        # Change status to Unavailable with reason
+        # Change status to Unavailable with reason note
         c.status = Container.Status.UNAVAILABLE
-        c.unavailability_reason = self.reason_stacker
         c.unavailability_note = 'Intervention en cours'
         c.save(acting_user=self.admin_user)
 
@@ -59,10 +51,10 @@ class CTSAPortalBusinessTests(TestCase):
         self.assertEqual(len(logs), 2)
         self.assertEqual(logs[1].old_status, Container.Status.PENDING)
         self.assertEqual(logs[1].new_status, Container.Status.UNAVAILABLE)
-        self.assertIn('Panne reach stacker', logs[1].reason_text)
+        self.assertIn('Intervention en cours', logs[1].reason_text)
 
-    def test_morning_supervisor_forced_to_pending_status_and_cannot_delete(self):
-        self.client_http.login(username='morning_test', password='Password123!')
+    def test_supervisor_forced_to_pending_on_add_and_has_compiled_rights(self):
+        self.client_http.login(username='sup_test', password='Password123!')
         response = self.client_http.post(
             reverse('terminal:container_add_single'),
             {
@@ -77,11 +69,19 @@ class CTSAPortalBusinessTests(TestCase):
         self.assertEqual(c.status, Container.Status.PENDING)
         self.assertEqual(c.shipping_line, self.cma)
 
+        # Le superviseur unifié peut confirmer un conteneur arrivé sur la rampe et supprimer si besoin.
+        self.client_http.post(
+            reverse('terminal:container_update_status', args=[c.pk]),
+            {'status': Container.Status.CONFIRMED},
+        )
+        c.refresh_from_db()
+        self.assertEqual(c.status, Container.Status.CONFIRMED)
+
         del_resp = self.client_http.post(
             reverse('terminal:container_delete', args=[c.pk])
         )
         self.assertEqual(del_resp.status_code, 302)
-        self.assertTrue(Container.objects.filter(pk=c.pk).exists())
+        self.assertFalse(Container.objects.filter(pk=c.pk).exists())
 
     def test_public_verification_search_and_pdf_export(self):
         c = Container(
@@ -90,7 +90,7 @@ class CTSAPortalBusinessTests(TestCase):
             scheduled_date=timezone.localdate(),
             status=Container.Status.CONFIRMED,
         )
-        c.save(acting_user=self.evening_sup)
+        c.save(acting_user=self.supervisor)
 
         response = self.client_http.get(
             reverse('terminal:verification'), {'q': 'cmau-4052450'}
@@ -101,7 +101,7 @@ class CTSAPortalBusinessTests(TestCase):
         self.assertContains(response, 'CMA CGM')
 
         # Test PDF export for confirmed containers
-        self.client_http.login(username='evening_test', password='Password123!')
+        self.client_http.login(username='sup_test', password='Password123!')
         pdf_resp = self.client_http.get(
             reverse('terminal:container_export_pdf'),
             {'date': timezone.localdate().isoformat(), 'status': 'confirmed'},
@@ -109,6 +109,63 @@ class CTSAPortalBusinessTests(TestCase):
         self.assertEqual(pdf_resp.status_code, 200)
         self.assertEqual(pdf_resp['Content-Type'], 'application/pdf')
         self.assertTrue(pdf_resp.content.startswith(b'%PDF'))
+
+    def test_past_confirmed_schedule_is_not_shown_as_valid_today(self):
+        import datetime
+        today = timezone.localdate()
+        Container.objects.create(
+            container_number='CMAU4052450',
+            shipping_line=self.cma,
+            scheduled_date=today - datetime.timedelta(days=7),
+            status=Container.Status.CONFIRMED,
+        )
+        response = self.client_http.get(reverse('terminal:verification'), {'q': 'CMAU4052450'})
+        self.assertEqual(response.context['result'].timing, 'past')
+        self.assertContains(response, "Non programmé aujourd'hui")
+        self.assertNotContains(response, 'Déplacement autorisé')
+        self.assertNotContains(response, 'Vous pouvez vous présenter')
+        self.assertNotContains(response, 'status-confirmed')
+
+        # La liste « Mes conteneurs » ne doit pas non plus afficher le badge vert
+        self.client_http.login(username='client_test', password='Password123!')
+        self.client_http.post(
+            reverse('terminal:client_watchlist'), {'container_number': 'CMAU4052450'}
+        )
+        wl = self.client_http.get(reverse('terminal:client_watchlist'))
+        self.assertContains(wl, "Non programmé aujourd'hui")
+        self.assertNotContains(wl, 'status-confirmed')
+
+    def test_schedule_priority_today_then_next_upcoming_then_last_past(self):
+        import datetime
+        today = timezone.localdate()
+        for offset, status in (
+            (-3, Container.Status.CONFIRMED),
+            (1, Container.Status.PENDING),
+            (5, Container.Status.PENDING),
+        ):
+            Container.objects.create(
+                container_number='CMAU4052450',
+                shipping_line=self.cma,
+                scheduled_date=today + datetime.timedelta(days=offset),
+                status=status,
+            )
+        url = reverse('terminal:verification')
+        response = self.client_http.get(url, {'q': 'CMAU4052450'})
+        result = response.context['result']
+        self.assertEqual(result.timing, 'upcoming')
+        self.assertEqual(result.scheduled_date, today + datetime.timedelta(days=1))
+        self.assertContains(response, "Ne pas se déplacer aujourd'hui")
+        self.assertNotContains(response, 'status-pending')
+
+        Container.objects.create(
+            container_number='CMAU4052450',
+            shipping_line=self.cma,
+            scheduled_date=today,
+            status=Container.Status.CONFIRMED,
+        )
+        response = self.client_http.get(url, {'q': 'CMAU4052450'})
+        self.assertEqual(response.context['result'].timing, 'today')
+        self.assertContains(response, 'Déplacement autorisé')
 
     def test_shipping_lines_add_rename_delete_and_dashboard_quick_actions(self):
         self.client_http.login(username='admin_test', password='Password123!')
@@ -152,5 +209,49 @@ class CTSAPortalBusinessTests(TestCase):
         c.refresh_from_db()
         self.assertEqual(c.status, Container.Status.CONFIRMED)
         self.assertEqual(c.shipping_line, accordia)
+
+    def test_bulk_status_update_and_confirm_all_pending(self):
+        self.client_http.login(username='sup_test', password='Password123!')
+        today = timezone.localdate()
+        c1 = Container.objects.create(
+            container_number='CMAU1111111',
+            shipping_line=self.cma,
+            scheduled_date=today,
+            status=Container.Status.PENDING,
+        )
+        c2 = Container.objects.create(
+            container_number='CMAU2222222',
+            shipping_line=self.cma,
+            scheduled_date=today,
+            status=Container.Status.PENDING,
+        )
+        # 1. Confirm all pending of the day in one click
+        resp_all = self.client_http.post(
+            reverse('terminal:container_status_bulk'),
+            {'date': today.isoformat(), 'scope': 'all_pending', 'status': Container.Status.CONFIRMED},
+        )
+        self.assertEqual(resp_all.status_code, 302)
+        c1.refresh_from_db()
+        c2.refresh_from_db()
+        self.assertEqual(c1.status, Container.Status.CONFIRMED)
+        self.assertEqual(c2.status, Container.Status.CONFIRMED)
+
+        # 2. Mark selected container as unavailable with reason note
+        resp_unavail = self.client_http.post(
+            reverse('terminal:container_status_bulk'),
+            {
+                'date': today.isoformat(),
+                'ids': [str(c1.pk)],
+                'status': Container.Status.UNAVAILABLE,
+                'unavailability_note': 'En maintenance',
+            },
+        )
+        self.assertEqual(resp_unavail.status_code, 302)
+        c1.refresh_from_db()
+        c2.refresh_from_db()
+        self.assertEqual(c1.status, Container.Status.UNAVAILABLE)
+        self.assertEqual(c1.unavailability_note, 'En maintenance')
+        self.assertEqual(c2.status, Container.Status.CONFIRMED)
+
 
 

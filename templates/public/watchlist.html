@@ -3,147 +3,186 @@
 {% block title %}Mes Conteneurs — Cap Terminal S.A.{% endblock %}
 
 {% block content %}
-<div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8">
-  <div>
-    <h1 class="font-heading text-2xl font-extrabold text-[#2c3741]">
-      Mes conteneurs suivis
-    </h1>
-    <p class="text-sm text-[#59626a]">
-      Enregistrez vos numéros de conteneurs pour consulter leur statut à la RAMPE en un coup d'œil.
-    </p>
-  </div>
+<section class="bg-[#f4f4f4] border-b border-[#dadada] py-10">
+  <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
+    <div>
+      <div class="text-xs font-heading uppercase tracking-widest text-[#3498db] font-bold mb-1">
+        Espace Client — Cap Terminal S.A.
+      </div>
+      <h1 class="font-heading text-2xl sm:text-3xl font-extrabold text-[#2c3741]">
+        Mes conteneurs suivis
+      </h1>
+      <p class="text-sm text-[#666666] mt-1">
+        Enregistrez vos numéros de conteneurs pour consulter leur statut douanier à la RAMPE en un coup d'œil.
+      </p>
+    </div>
 
-  <div class="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
-    <h2 id="watchlist-add-title" class="font-heading text-base font-bold text-[#2c3741] mb-4">
-      Ajouter un conteneur à ma liste
-    </h2>
-    <form action="{% url 'terminal:client_watchlist' %}" method="post" aria-labelledby="watchlist-add-title" class="grid grid-cols-1 md:grid-cols-12 gap-4 items-start">
-      {% csrf_token %}
-      <div class="md:col-span-4 form-field mb-0">
-        <label for="wl-number">Numéro du conteneur</label>
-        <input
-          type="text"
-          id="wl-number"
-          name="container_number"
-          required
-          pattern="[A-Za-z]{4}[\s\-]?[0-9]{7}"
-          autocorrect="off"
-          autocapitalize="characters"
-          spellcheck="false"
-          placeholder="4 lettres et 7 chiffres"
-          data-error="wl-num-error"
-          class="form-control font-mono uppercase"
-        >
-        <div id="wl-num-error" class="error-msg">
-          Saisissez 4 lettres et 7 chiffres.
+    <div class="bg-white rounded-lg p-6 border border-[#dadada] border-t-4 border-t-[#3498db] shadow-sm">
+      <h2 id="watchlist-add-title" class="font-heading text-base font-extrabold text-[#2c3741] mb-4">
+        Ajouter un conteneur à ma liste de suivi
+      </h2>
+      <form action="{% url 'terminal:client_watchlist' %}" method="post" aria-labelledby="watchlist-add-title" class="grid grid-cols-1 md:grid-cols-12 gap-4 items-start">
+        {% csrf_token %}
+        <div class="md:col-span-4 form-field mb-0">
+          <label for="wl-number">Numéro du conteneur <span aria-hidden="true" class="text-[#e74c3c]">*</span></label>
+          <input
+            type="text"
+            id="wl-number"
+            name="container_number"
+            required
+            pattern="\s*[A-Za-z]{4}(?:[\s-]*[0-9]){7}\s*"
+            autocorrect="off"
+            autocapitalize="characters"
+            spellcheck="false"
+            placeholder="ex. CMAU4052450"
+            data-error="wl-num-error"
+            class="form-control font-mono uppercase"
+          >
+          <div id="wl-num-error" class="error-msg">
+            Saisissez 4 lettres et 7 chiffres.
+          </div>
         </div>
-      </div>
 
-      <div class="md:col-span-5 form-field mb-0">
-        <label for="wl-label">Référence ou note personnelle (optionnel)</label>
-        <input
-          type="text"
-          id="wl-label"
-          name="label"
-          maxlength="120"
-          placeholder="Ex. Dossier d'importation"
-          class="form-control"
-        >
-      </div>
+        <div class="md:col-span-5 form-field mb-0">
+          <label for="wl-label">Référence ou dossier (optionnel)</label>
+          <input
+            type="text"
+            id="wl-label"
+            name="label"
+            maxlength="120"
+            placeholder="Ex. Dossier d'importation"
+            class="form-control"
+          >
+        </div>
 
-      <div class="md:col-span-3 md:pt-7">
-        <button type="submit" class="btn-ctsa btn-ctsa-filled w-full">
-          Ajouter à ma liste
-        </button>
-      </div>
-    </form>
+        <div class="md:col-span-3 md:pt-7">
+          <button type="submit" class="btn-ctsa btn-ctsa-filled w-full">
+            Ajouter à ma liste
+          </button>
+        </div>
+      </form>
+    </div>
   </div>
+</section>
 
-  <div tabindex="0" role="region" aria-labelledby="watchlist-table-caption" class="table-wrapper shadow-sm">
-    <table class="ctsa-table" style="--label-2: 'Ligne maritime'; --label-3: 'Date programmée'; --label-4: 'Statut'; --label-5: 'Référence / Motif'; --label-6: 'Mise à jour'; --label-7: 'Action';">
-      <caption id="watchlist-table-caption" class="p-4 text-left font-heading font-bold text-[#2c3741] bg-gray-50 border-b border-gray-200">
-        Conteneurs suivis ({{ watchlist|length }})
-      </caption>
-      <thead>
-        <tr>
-          <th scope="col">Conteneur</th>
-          <th scope="col">Ligne maritime</th>
-          <th scope="col">Date programmée</th>
-          <th scope="col">Statut</th>
-          <th scope="col">Référence / Motif</th>
-          <th scope="col">Mise à jour</th>
-          <th scope="col">Action</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for item in watchlist %}
+<section class="bg-white py-10">
+  <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+    {% if watchlist %}
+      <!-- Actualisation automatique : ctsa.js recharge la liste dès qu'un statut change -->
+      <p class="mt-0 mb-4 text-sm text-[#4a535b]"
+         data-refresh-url="{% url 'terminal:client_watchlist_state' %}"
+         data-refresh-signature="{{ refresh_signature }}"
+         aria-live="polite">
+        Cette liste se met à jour toute seule.
+        <span data-refresh-status>Dernière actualisation à <time data-refresh-time>{% now "H:i" %}</time>.</span>
+      </p>
+    {% endif %}
+    <div tabindex="0" role="region" aria-labelledby="watchlist-table-caption" class="table-wrapper">
+      <table class="ctsa-table" style="--label-2: 'Ligne maritime'; --label-3: 'Séance'; --label-4: 'Statut'; --label-5: 'Référence / Motif'; --label-6: 'Mise à jour'; --label-7: 'Action';">
+        <caption id="watchlist-table-caption" class="p-4 text-left font-heading font-bold text-[#2c3741] bg-[#f4f4f4] border-b border-[#dadada]">
+          Conteneurs suivis ({{ watchlist|length }})
+        </caption>
+        <thead>
           <tr>
-            <th scope="row">
-              <a href="{% url 'terminal:verification' %}?q={{ item.saved.container_number }}" class="hover:text-[#3498db] underline">
-                {{ item.saved.container_number }}
-              </a>
-            </th>
-            <td>
-              {% if item.container and item.container.shipping_line %}
-                {{ item.container.shipping_line.name }}
-              {% else %}
-                <span class="text-gray-400">—</span>
-              {% endif %}
-            </td>
-            <td>
-              {% if item.container %}
-                <span class="font-semibold">{{ item.container.scheduled_date|date:"d/m/Y" }}</span>
-              {% else %}
-                <span class="text-xs text-gray-500">Non programmé</span>
-              {% endif %}
-            </td>
-            <td>
-              {% if item.container %}
-                {% if item.container.status == 'confirmed' %}
-                  <span class="status-badge status-confirmed">Confirmé</span>
-                {% elif item.container.status == 'pending' %}
-                  <span class="status-badge status-pending">En attente</span>
+            <th scope="col">Conteneur</th>
+            <th scope="col">Ligne maritime</th>
+            <th scope="col">Séance</th>
+            <th scope="col">Statut</th>
+            <th scope="col">Référence / Motif</th>
+            <th scope="col">Mise à jour</th>
+            <th scope="col">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in watchlist %}
+            <tr>
+              <th scope="row">
+                <a href="{% url 'terminal:verification' %}?q={{ item.saved.container_number }}" class="hover:text-[#3498db] underline">
+                  {{ item.saved.container_number }}
+                </a>
+              </th>
+              <td>
+                {% if item.container and item.container.shipping_line %}
+                  {{ item.container.shipping_line.name }}
                 {% else %}
-                  <span class="status-badge status-unavailable">Indisponible</span>
+                  <span class="text-[#666666]">—</span>
                 {% endif %}
-              {% else %}
-                <span class="text-xs text-gray-500">En attente de programmation</span>
-              {% endif %}
-            </td>
-            <td class="text-sm">
-              {% if item.saved.label %}
-                <div class="font-semibold text-[#2c3741]">{{ item.saved.label }}</div>
-              {% endif %}
-              {% if item.container and item.container.status == 'unavailable' %}
-                <div class="text-xs text-[#991b1b] font-semibold">{{ item.container.full_reason_display }}</div>
-              {% endif %}
-            </td>
-            <td class="text-xs text-[#59626a]">
-              {% if item.container %}
-                {{ item.container.updated_at|date:"d/m/Y H:i" }}
-              {% else %}
-                —
-              {% endif %}
-            </td>
-            <td>
-              <form action="{% url 'terminal:client_watchlist_remove' item.saved.pk %}" method="post" class="inline">
-                {% csrf_token %}
-                <button type="submit" class="text-xs font-bold text-[#e74c3c] hover:underline">
-                  Retirer
-                </button>
-              </form>
-            </td>
-          </tr>
-        {% empty %}
-          <tr>
-            <th scope="row">—</th>
-            <td colspan="6" class="text-center py-6 text-[#59626a]">
-              Aucun conteneur enregistré dans votre liste de suivi.
-            </td>
-          </tr>
-        {% endfor %}
-      </tbody>
-    </table>
+              </td>
+              <td>
+                {% if item.container %}
+                  <span class="font-semibold">{{ item.container.scheduled_date|date:"d/m/Y" }}</span>
+                {% else %}
+                  <span class="text-xs text-[#666666]">Non programmé</span>
+                {% endif %}
+              </td>
+              <td>
+                {% if item.container and item.container.is_verified and item.container.timing != 'upcoming' %}
+                  <span class="status-badge status-verified">Vérifié</span>
+                {% elif item.container and item.container.timing == 'upcoming' %}
+                  <span class="status-badge status-neutral">Séance à venir</span>
+                {% elif item.container and item.container.timing == 'past' %}
+                  <span class="status-badge status-neutral">Non programmé aujourd'hui</span>
+                {% elif item.container %}
+                  {% if item.container.status == 'confirmed' %}
+                    <span class="status-badge status-confirmed">Confirmé</span>
+                  {% elif item.container.status == 'pending' %}
+                    <span class="status-badge status-pending">En attente</span>
+                  {% else %}
+                    <span class="status-badge status-unavailable">Indisponible</span>
+                  {% endif %}
+                {% else %}
+                  <span class="text-xs text-[#666666]">En attente de programmation</span>
+                {% endif %}
+              </td>
+              <td class="text-sm">
+                {% if item.saved.label %}
+                  <div class="font-semibold text-[#2c3741]">{{ item.saved.label }}</div>
+                {% endif %}
+                {% if item.container and item.container.is_verified and item.container.timing != 'upcoming' %}
+                  <div class="text-xs text-[#006b3f] font-semibold">Vérification douanière effectuée</div>
+                {% elif item.container and item.container.timing == 'past' %}
+                  <div class="text-xs text-[#666666]">Dernier statut connu : {{ item.container.get_status_display }}</div>
+                {% elif item.container and item.container.status == 'unavailable' %}
+                  <div class="text-xs text-[#b82c1f] font-semibold">{{ item.container.full_reason_display }}</div>
+                {% endif %}
+              </td>
+              <td class="text-xs text-[#666666]">
+                {% if item.container %}
+                  {{ item.container.updated_at|date:"d/m/Y H:i" }}
+                {% else %}
+                  —
+                {% endif %}
+              </td>
+              <td>
+                <div class="flex items-center gap-3">
+                  <a href="{% url 'terminal:verification' %}?q={{ item.saved.container_number }}" class="text-xs font-bold text-[#3498db] hover:underline">
+                    Voir la fiche
+                  </a>
+                  <form action="{% url 'terminal:client_watchlist_remove' item.saved.pk %}" method="post" class="inline">
+                    {% csrf_token %}
+                    <button type="submit"
+                            data-confirm-title="Retirer ce conteneur de votre liste ?"
+                            data-confirm="{{ item.saved.container_number }} ne sera plus suivi dans « Mes conteneurs ». Vous pourrez l'ajouter à nouveau à tout moment."
+                            data-confirm-label="Retirer"
+                            data-confirm-tone="danger"
+                            class="text-xs font-bold text-[#b82c1f] hover:underline">
+                      Retirer
+                    </button>
+                  </form>
+                </div>
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <th scope="row">—</th>
+              <td colspan="6" class="text-center py-8 text-[#666666]">
+                Aucun conteneur enregistré dans votre liste de suivi. Utilisez le formulaire ci-dessus pour ajouter un conteneur.
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
   </div>
-</div>
+</section>
 {% endblock %}
