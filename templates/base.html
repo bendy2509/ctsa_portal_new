@@ -11,126 +11,152 @@
   <link rel="stylesheet" href="{% static 'css/ctsa.css' %}">
   <link rel="stylesheet" href="{% static 'css/output.css' %}">
 </head>
-<body class="min-h-screen flex flex-col bg-white text-[#333333] {% block body_class %}{% endblock %}">
+<body class="min-h-screen flex flex-col bg-slate-50 text-slate-800 {% block body_class %}{% endblock %}">
 
   {% block chrome_top %}
-  <!-- En-tête officiel Cap Terminal S.A. (.top-bar #2c3741) -->
-  <header class="bg-[#2c3741] text-white sticky top-0 z-30 shadow-sm">
-    <!-- Barre utilitaire supérieure (.utility-menu de capterminal.com) -->
-    <div class="border-b border-white/10">
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2.5 flex flex-wrap items-center justify-between gap-3">
-        <div class="flex flex-wrap items-center gap-4 font-heading tracking-wider uppercase text-xs font-bold text-white/90">
-          <span class="hidden sm:inline">Port du Cap-Haïtien</span>
-          <span class="hidden sm:inline text-white/30">·</span>
-          <a href="mailto:info@capterminal.com" class="hidden sm:inline normal-case hover:text-white underline-offset-2 hover:underline">info@capterminal.com</a>
-          <span class="hidden md:inline text-white/30">·</span>
-          <a href="tel:+13056350938" class="hidden md:inline hover:text-white underline-offset-2 hover:underline">305-635-0938</a>
+  <header class="bg-[#222b35] text-white sticky top-0 z-30 border-b border-white/10 shadow-sm">
+    <!-- Bandeau utilitaire desktop uniquement (libère la hauteur sur mobile) -->
+    <div class="hidden lg:block bg-[#1a222b] border-b border-white/10">
+      <div class="max-w-7xl mx-auto px-6 lg:px-8 h-9 flex items-center justify-between gap-4 text-xs text-slate-300">
+        <div class="flex items-center gap-3 font-medium">
+          <span class="font-semibold text-white/90">Port du Cap-Haïtien</span>
+          <span class="text-white/25" aria-hidden="true">·</span>
+          <a href="mailto:info@capterminal.com" class="hover:text-white transition no-underline text-slate-300">info@capterminal.com</a>
+          <span class="text-white/25" aria-hidden="true">·</span>
+          <a href="tel:+13056350938" class="hover:text-white transition no-underline text-slate-300 tabular-nums">305-635-0938</a>
         </div>
 
-        <div class="flex flex-wrap items-center justify-end gap-2.5 ml-auto min-w-0">
+        <div class="flex items-center gap-3">
           {% if user.is_authenticated %}
-            <span class="text-xs text-white/90 truncate max-w-[200px] sm:max-w-none mr-1">
-              {{ user.display_name }} <span class="text-[#3498db] font-semibold">({{ user.get_role_display }})</span>
+            <span class="text-slate-300">
+              <strong class="text-white font-semibold">{{ user.display_name }}</strong>
+              <span class="text-sky-300">({{ user.get_role_display }})</span>
             </span>
-            <a href="{% url 'accounts:profile' %}"
-               class="px-4 py-1.5 rounded-[25px] border-2 border-[#3498db] text-[#3498db] hover:bg-[#3498db] hover:text-white transition font-heading uppercase text-xs font-bold tracking-wider">
-              Mon profil
-            </a>
+            <span class="text-white/20" aria-hidden="true">|</span>
+            <a href="{% url 'accounts:profile' %}" class="text-slate-200 hover:text-white font-semibold no-underline">Mon profil</a>
             <form action="{% url 'accounts:logout' %}" method="post" class="inline">
               {% csrf_token %}
-              <button type="submit"
-                      class="px-4 py-1.5 rounded-[25px] bg-[#3498db] border-2 border-[#3498db] text-white hover:bg-[#217dbb] hover:border-[#217dbb] transition font-heading uppercase text-xs font-bold tracking-wider">
+              <button type="submit" class="text-slate-300 hover:text-red-300 font-semibold bg-transparent border-0 cursor-pointer p-0 text-xs">
                 Déconnexion
               </button>
             </form>
           {% else %}
-            <a href="{% url 'accounts:login' %}"
-               class="px-4 py-1.5 rounded-[25px] border-2 border-[#3498db] text-[#3498db] hover:bg-[#3498db] hover:text-white transition font-heading uppercase text-xs font-bold tracking-wider">
-              Connexion
-            </a>
-            <a href="{% url 'accounts:register' %}"
-               class="px-4 py-1.5 rounded-[25px] bg-[#3498db] border-2 border-[#3498db] text-white hover:bg-[#217dbb] hover:border-[#217dbb] transition font-heading uppercase text-xs font-bold tracking-wider">
-              Inscription
-            </a>
+            <a href="{% url 'accounts:login' %}" class="text-slate-200 hover:text-white font-semibold no-underline">Connexion</a>
+            <span class="text-white/20" aria-hidden="true">·</span>
+            <a href="{% url 'accounts:register' %}" class="text-sky-300 hover:text-white font-semibold no-underline">Créer un compte</a>
           {% endif %}
         </div>
       </div>
     </div>
 
-    <!-- Barre de navigation principale (.nav-menu de capterminal.com) -->
+    <!-- Barre principale compacte -->
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div class="h-16 sm:h-20 flex items-center justify-between gap-6">
-        <a href="{% url 'terminal:home' %}" class="flex items-center gap-3.5 shrink-0">
+      <div class="h-16 flex items-center justify-between gap-4">
+        <a href="{% url 'terminal:home' %}" class="flex items-center gap-2.5 sm:gap-3 min-w-0 no-underline text-white">
           <img src="{% static 'img/cap-terminal-logo.png' %}"
                alt="Cap Terminal S.A."
-               class="h-11 sm:h-12 w-auto object-contain"
-               onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-          <div style="display:none" class="flex-col leading-none bg-[#ededed] px-2.5 py-1 rounded">
-            <span class="font-heading font-extrabold text-2xl tracking-tight text-[#008751]">CTSA</span>
-            <span class="bg-[#008751] text-white font-heading font-bold text-[9px] px-1.5 py-0.5 uppercase">Cap Terminal S.A.</span>
-          </div>
-          <div class="hidden sm:block border-l border-white/15 pl-3.5">
-            <div class="font-heading font-bold text-xs uppercase tracking-widest text-white">Portail RAMPE</div>
-            <div class="text-xs text-white/70">Vérification douanière des conteneurs</div>
+               class="h-8 sm:h-10 w-auto object-contain shrink-0"
+               onerror="this.style.display='none'; this.nextElementSibling.style.display='inline-flex';">
+          <span style="display:none" class="portal-brand-mark shrink-0">CTSA</span>
+          <div class="min-w-0 border-l border-white/15 pl-2.5 sm:pl-3">
+            <div class="font-heading font-extrabold text-xs sm:text-sm tracking-wide uppercase text-white truncate">Portail RAMPE</div>
+            <div class="text-[11px] text-slate-300 truncate hidden sm:block">Vérification douanière des conteneurs</div>
           </div>
         </a>
 
-        <!-- Bouton menu mobile -->
-        <button type="button"
-                id="mobile-menu-toggle"
-                aria-expanded="false"
-                aria-controls="primary-nav-links"
-                class="md:hidden inline-flex items-center justify-center px-4 py-2 rounded-[25px] border-2 border-[#3498db] text-xs font-heading font-bold uppercase tracking-wider text-white hover:bg-[#3498db]">
-          Menu
-        </button>
-
-        <!-- Liens de navigation desktop (style .menu li a de capterminal.com) -->
-        <nav aria-label="Navigation principale" class="hidden md:flex items-center gap-6">
+        <!-- Navigation desktop -->
+        <nav aria-label="Navigation principale" class="hidden lg:flex items-center gap-1">
           <a href="{% url 'terminal:home' %}"
              {% if request.resolver_match.url_name == 'home' %}aria-current="page"{% endif %}
-             class="py-2 font-heading text-[13px] font-bold uppercase tracking-wider transition border-b-2 {% if request.resolver_match.url_name == 'home' %}border-[#3498db] text-white{% else %}border-transparent text-white/85 hover:text-white{% endif %}">
+             class="px-3.5 py-2 rounded-lg text-sm font-semibold transition no-underline {% if request.resolver_match.url_name == 'home' %}bg-white/12 text-white{% else %}text-slate-200 hover:text-white hover:bg-white/8{% endif %}">
             Accueil
           </a>
           <a href="{% url 'terminal:verification' %}"
              {% if request.resolver_match.url_name == 'verification' %}aria-current="page"{% endif %}
-             class="py-2 font-heading text-[13px] font-bold uppercase tracking-wider transition border-b-2 {% if request.resolver_match.url_name == 'verification' %}border-[#3498db] text-white{% else %}border-transparent text-white/85 hover:text-white{% endif %}">
+             class="px-3.5 py-2 rounded-lg text-sm font-semibold transition no-underline {% if request.resolver_match.url_name == 'verification' %}bg-white/12 text-white{% else %}text-slate-200 hover:text-white hover:bg-white/8{% endif %}">
             Vérifier un conteneur
           </a>
           {% if user.is_authenticated %}
             <a href="{% url 'terminal:client_watchlist' %}"
                {% if request.resolver_match.url_name == 'client_watchlist' %}aria-current="page"{% endif %}
-               class="py-2 font-heading text-[13px] font-bold uppercase tracking-wider transition border-b-2 {% if request.resolver_match.url_name == 'client_watchlist' %}border-[#3498db] text-white{% else %}border-transparent text-white/85 hover:text-white{% endif %}">
+               class="px-3.5 py-2 rounded-lg text-sm font-semibold transition no-underline {% if request.resolver_match.url_name == 'client_watchlist' %}bg-white/12 text-white{% else %}text-slate-200 hover:text-white hover:bg-white/8{% endif %}">
               Mes conteneurs
             </a>
           {% endif %}
           {% if user.is_authenticated and user.is_staff_member %}
             <a href="{% url 'terminal:dashboard' %}"
-               {% if request.resolver_match.url_name == 'dashboard' %}aria-current="page"{% endif %}
-               class="px-5 py-2 rounded-[25px] bg-[#3498db] text-white font-heading text-xs font-bold uppercase tracking-wider hover:bg-[#217dbb] transition">
+               class="ml-2 inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-[#3498db] hover:bg-[#217dbb] text-white text-sm font-bold transition no-underline shadow-xs">
               Exploitation RAMPE
             </a>
           {% endif %}
         </nav>
+
+        <!-- Bouton menu mobile & tablette -->
+        <button type="button"
+                id="mobile-menu-toggle"
+                aria-expanded="false"
+                aria-controls="primary-nav-links"
+                class="lg:hidden inline-flex items-center gap-2 min-h-[42px] px-3.5 py-2 rounded-lg border border-white/20 bg-white/8 text-sm font-semibold text-white hover:bg-white/15 transition cursor-pointer">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="18" y2="18"/></svg>
+          <span>Menu</span>
+        </button>
       </div>
 
       <!-- Menu déroulant mobile -->
-      <nav id="primary-nav-links" aria-label="Navigation mobile" hidden class="md:hidden pb-4 pt-2 border-t border-white/10 space-y-1">
-        <a href="{% url 'terminal:home' %}" class="block px-3 py-2.5 rounded font-heading text-xs font-bold uppercase tracking-wider text-white hover:bg-white/10">Accueil</a>
-        <a href="{% url 'terminal:verification' %}" class="block px-3 py-2.5 rounded font-heading text-xs font-bold uppercase tracking-wider text-white hover:bg-white/10">Vérifier un conteneur</a>
+      <nav id="primary-nav-links" aria-label="Navigation mobile" hidden class="lg:hidden pb-4 pt-3 border-t border-white/10 space-y-1.5">
+        <a href="{% url 'terminal:home' %}"
+           class="flex items-center min-h-[44px] px-3.5 py-2 rounded-lg text-sm font-semibold no-underline {% if request.resolver_match.url_name == 'home' %}bg-white/15 text-white{% else %}text-slate-200 hover:bg-white/8{% endif %}">
+          Accueil
+        </a>
+        <a href="{% url 'terminal:verification' %}"
+           class="flex items-center min-h-[44px] px-3.5 py-2 rounded-lg text-sm font-semibold no-underline {% if request.resolver_match.url_name == 'verification' %}bg-white/15 text-white{% else %}text-slate-200 hover:bg-white/8{% endif %}">
+          Vérifier un conteneur
+        </a>
         {% if user.is_authenticated %}
-          <a href="{% url 'terminal:client_watchlist' %}" class="block px-3 py-2.5 rounded font-heading text-xs font-bold uppercase tracking-wider text-white hover:bg-white/10">Mes conteneurs</a>
+          <a href="{% url 'terminal:client_watchlist' %}"
+             class="flex items-center min-h-[44px] px-3.5 py-2 rounded-lg text-sm font-semibold no-underline {% if request.resolver_match.url_name == 'client_watchlist' %}bg-white/15 text-white{% else %}text-slate-200 hover:bg-white/8{% endif %}">
+            Mes conteneurs
+          </a>
         {% endif %}
         {% if user.is_authenticated and user.is_staff_member %}
-          <a href="{% url 'terminal:dashboard' %}" class="block px-3 py-2.5 rounded font-heading text-xs font-bold uppercase tracking-wider bg-[#3498db] text-white">Exploitation RAMPE</a>
+          <a href="{% url 'terminal:dashboard' %}"
+             class="flex items-center min-h-[44px] px-3.5 py-2 rounded-lg text-sm font-bold bg-[#3498db] text-white no-underline">
+            Exploitation RAMPE
+          </a>
         {% endif %}
+
+        <div class="pt-2.5 mt-2.5 border-t border-white/10 space-y-1.5">
+          {% if user.is_authenticated %}
+            <div class="px-3.5 py-1.5 text-xs text-slate-300">
+              Connecté : <strong class="text-white">{{ user.display_name }}</strong> ({{ user.get_role_display }})
+            </div>
+            <a href="{% url 'accounts:profile' %}" class="flex items-center min-h-[44px] px-3.5 py-2 rounded-lg text-sm font-semibold text-slate-200 hover:bg-white/8 no-underline">
+              Mon profil
+            </a>
+            <form action="{% url 'accounts:logout' %}" method="post">
+              {% csrf_token %}
+              <button type="submit" class="w-full text-left flex items-center min-h-[44px] px-3.5 py-2 rounded-lg text-sm font-semibold text-red-200 hover:bg-red-500/15 bg-transparent border-0 cursor-pointer">
+                Déconnexion
+              </button>
+            </form>
+          {% else %}
+            <div class="grid grid-cols-2 gap-2 pt-1">
+              <a href="{% url 'accounts:login' %}" class="flex items-center justify-center min-h-[44px] px-3 py-2 rounded-lg border border-white/25 text-sm font-semibold text-white hover:bg-white/10 no-underline">
+                Connexion
+              </a>
+              <a href="{% url 'accounts:register' %}" class="flex items-center justify-center min-h-[44px] px-3 py-2 rounded-lg bg-[#3498db] text-sm font-bold text-white hover:bg-[#217dbb] no-underline">
+                Inscription
+              </a>
+            </div>
+          {% endif %}
+        </div>
       </nav>
     </div>
-
   </header>
 
   {% if messages %}
-    <div class="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 mt-5 space-y-2" role="status" aria-live="polite">
-      {% include 'partials/messages.html' %}
+    <div class="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 mt-4" role="status" aria-live="polite">
+      {% include 'components/messages.html' %}
     </div>
   {% endif %}
   {% endblock chrome_top %}
@@ -142,32 +168,48 @@
   {% endblock main %}
 
   {% block chrome_bottom %}
-  <!-- Pied de page officiel Cap Terminal S.A. (footer.dark #2c3741) -->
-  <footer class="bg-[#2c3741] text-white mt-16 border-t border-white/10">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 grid grid-cols-1 md:grid-cols-12 gap-10">
-      <div class="md:col-span-7">
-        <img src="{% static 'img/cap-terminal-logo.png' %}"
-             alt="Cap Terminal S.A."
-             class="h-12 w-auto mb-5"
-             onerror="this.style.display='none'">
-        <p class="text-white/90 text-sm leading-relaxed max-w-xl">
-          Cap Terminal S.A. (CTSA) opère le terminal à conteneurs du Port du Cap-Haïtien depuis 1998. Le port est accrédité par l'OMI (Organisation Maritime Internationale) et certifié ISPS.
+  <footer class="bg-[#222b35] text-white mt-auto border-t border-white/10">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 grid grid-cols-1 md:grid-cols-12 gap-8">
+      <div class="md:col-span-5 space-y-3">
+        <div class="flex items-center gap-3">
+          <img src="{% static 'img/cap-terminal-logo.png' %}"
+               alt="Cap Terminal S.A."
+               class="h-10 w-auto object-contain"
+               onerror="this.style.display='none';">
+          <span class="font-heading font-bold text-sm text-white">Cap Terminal S.A.</span>
+        </div>
+        <p class="text-slate-300 text-sm leading-relaxed m-0 max-w-md">
+          Opérateur du terminal à conteneurs du Port du Cap-Haïtien depuis 1998. Port accrédité par l'OMI et certifié ISPS.
         </p>
       </div>
-      <div class="md:col-span-5">
-        <h2 class="font-heading text-white text-base font-bold mb-3">Contact</h2>
-        <p class="text-white/90 text-sm leading-relaxed">
-          Cap Terminal S.A.<br>
+
+      <div class="md:col-span-3 space-y-2.5">
+        <h2 class="font-heading text-xs font-bold uppercase tracking-wider text-slate-400 m-0">Accès rapide</h2>
+        <ul class="list-none p-0 m-0 space-y-2 text-sm">
+          <li><a href="{% url 'terminal:home' %}" class="text-slate-200 hover:text-white no-underline">Accueil</a></li>
+          <li><a href="{% url 'terminal:verification' %}" class="text-slate-200 hover:text-white no-underline">Vérifier un conteneur</a></li>
+          {% if user.is_authenticated %}
+            <li><a href="{% url 'terminal:client_watchlist' %}" class="text-slate-200 hover:text-white no-underline">Mes conteneurs</a></li>
+          {% else %}
+            <li><a href="{% url 'accounts:login' %}" class="text-slate-200 hover:text-white no-underline">Espace client</a></li>
+          {% endif %}
+        </ul>
+      </div>
+
+      <div class="md:col-span-4 space-y-2.5">
+        <h2 class="font-heading text-xs font-bold uppercase tracking-wider text-slate-400 m-0">Contact</h2>
+        <p class="text-slate-300 text-sm leading-relaxed m-0">
           Port du Cap-Haïtien, Département du Nord, Haïti<br>
-          Téléphone : <a href="tel:+13056350938" class="underline underline-offset-2 hover:text-white">305-635-0938</a>, poste 3003<br>
-          Téléphone États-Unis : <a href="tel:+13053650938" class="underline underline-offset-2 hover:text-white">305-365-0938</a>, poste 3001<br>
-          <a href="mailto:info@capterminal.com" class="underline underline-offset-2 hover:text-white">info@capterminal.com</a>
+          Tél. : <a href="tel:+13056350938" class="text-white hover:underline tabular-nums">305-635-0938</a>, poste 3003<br>
+          Tél. USA : <a href="tel:+13053650938" class="text-white hover:underline tabular-nums">305-365-0938</a>, poste 3001<br>
+          <a href="mailto:info@capterminal.com" class="text-sky-300 hover:underline">info@capterminal.com</a>
         </p>
       </div>
     </div>
-    <div class="border-t border-white/10 py-5">
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-xs text-white/80">
-        © {% now "Y" %} <strong>Cap Terminal S.A.</strong> — Tous droits réservés.
+    <div class="border-t border-white/10 py-4 bg-[#1a222b]">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-xs text-slate-400 flex flex-wrap items-center justify-between gap-2">
+        <span>© {% now "Y" %} <strong class="text-slate-200">Cap Terminal S.A.</strong> — Tous droits réservés.</span>
+        <span>Portail RAMPE · Cap-Haïtien</span>
       </div>
     </div>
   </footer>
