@@ -132,25 +132,27 @@
       </div>
 
       <search>
-        <form action="{% url 'terminal:containers' %}" method="get" class="flex flex-wrap sm:flex-nowrap items-center gap-2">
+        <form action="{% url 'terminal:containers' %}" method="get" class="flex flex-col sm:flex-row sm:items-center gap-2">
           <input type="hidden" name="date" value="{{ selected_date|date:'Y-m-d' }}">
           {% if status_filter %}<input type="hidden" name="status" value="{{ status_filter }}">{% endif %}
 
           <label for="filter-line" class="visually-hidden">Ligne maritime</label>
-          <select id="filter-line" name="line" data-auto-submit-select class="border border-slate-200/80 rounded-lg px-3 py-1.5 min-h-[36px] text-xs font-semibold bg-white text-ctsa-slate">
+          <select id="filter-line" name="line" data-auto-submit-select class="w-full sm:w-auto border border-slate-200/80 rounded-lg px-3 py-1.5 min-h-[36px] text-xs font-semibold bg-white text-ctsa-slate">
             <option value="">Toutes les lignes</option>
             {% for line in shipping_lines %}
               <option value="{{ line.id }}" {% if line_filter == line.id|stringformat:"s" %}selected{% endif %}>{{ line.name }}</option>
             {% endfor %}
           </select>
 
-          <label for="filter-q" class="visually-hidden">Rechercher un numéro</label>
-          <input type="search" id="filter-q" name="q" value="{{ search_q }}" placeholder="Rechercher..." autocorrect="off" spellcheck="false" class="border border-slate-200/80 rounded-lg px-3 py-1.5 min-h-[36px] text-xs font-mono uppercase bg-white w-full sm:w-auto sm:min-w-[170px]">
+          <div class="flex items-center gap-2 w-full sm:w-auto">
+            <label for="filter-q" class="visually-hidden">Rechercher un numéro</label>
+            <input type="search" id="filter-q" name="q" value="{{ search_q }}" placeholder="Rechercher..." autocorrect="off" spellcheck="false" class="flex-1 sm:flex-initial border border-slate-200/80 rounded-lg px-3 py-1.5 min-h-[36px] text-xs font-mono uppercase bg-white min-w-0 sm:min-w-[170px]">
 
-          <button type="submit" class="btn-admin btn-admin-primary rounded-lg min-h-[36px] py-1 w-full sm:w-auto">
-            <svg class="portal-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-            <span>Filtrer</span>
-          </button>
+            <button type="submit" class="btn-admin btn-admin-primary rounded-lg min-h-[36px] py-1 shrink-0">
+              <svg class="portal-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+              <span>Filtrer</span>
+            </button>
+          </div>
         </form>
       </search>
     </div>
@@ -198,17 +200,17 @@
               <td>
                 <div class="flex flex-wrap items-center gap-1.5">
                   {% if c.status == 'confirmed' %}
-                    <span class="status-badge status-confirmed rounded-full">
+                    <span class="status-badge status-confirmed rounded-full {% if user.can_edit_or_delete_containers %}hidden sm:inline-flex{% endif %}">
                       <span class="status-seg-dot dot-confirmed" aria-hidden="true"></span>
                       <span>Confirmé</span>
                     </span>
                   {% elif c.status == 'pending' %}
-                    <span class="status-badge status-pending rounded-full">
+                    <span class="status-badge status-pending rounded-full {% if user.can_edit_or_delete_containers %}hidden sm:inline-flex{% endif %}">
                       <span class="status-seg-dot dot-pending" aria-hidden="true"></span>
                       <span>En attente</span>
                     </span>
                   {% else %}
-                    <span class="status-badge status-unavailable rounded-full">
+                    <span class="status-badge status-unavailable rounded-full {% if user.can_edit_or_delete_containers %}hidden sm:inline-flex{% endif %}">
                       <span class="status-seg-dot dot-unavailable" aria-hidden="true"></span>
                       <span>Indisponible</span>
                     </span>
