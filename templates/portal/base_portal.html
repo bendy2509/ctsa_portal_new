@@ -124,9 +124,12 @@
     </nav>
 
     <div class="portal-sidebar-foot space-y-1">
-      <div class="px-3 py-2 text-xs text-slate-300 border-b border-white/10 mb-1">
-        <div class="font-bold text-white truncate">{{ user.display_name }}</div>
-        <div class="text-[11px] text-slate-300/80">{{ user.get_role_display }}</div>
+      <div class="portal-user-card">
+        <span class="portal-user-avatar" aria-hidden="true">{{ user.display_name|slice:":1"|upper }}</span>
+        <div class="min-w-0 flex-1">
+          <div class="text-[13px] font-bold text-white truncate leading-tight">{{ user.display_name }}</div>
+          <div class="text-[11px] text-slate-300/85 truncate mt-0.5">{{ user.get_role_display }}</div>
+        </div>
       </div>
 
       <a href="{% url 'accounts:profile' %}"
@@ -144,7 +147,7 @@
 
       <form action="{% url 'accounts:logout' %}" method="post">
         {% csrf_token %}
-        <button type="submit" class="portal-nav-link w-full text-left border-0 bg-transparent cursor-pointer">
+        <button type="submit" class="portal-nav-link portal-nav-link-logout w-full text-left border-0 bg-transparent cursor-pointer">
           <svg class="portal-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>
           <span>Déconnexion</span>
         </button>
