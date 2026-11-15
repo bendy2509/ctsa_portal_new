@@ -37,4 +37,5 @@ urlpatterns = [
     path('admin/lignes-maritimes/nouveau/', views.shipping_line_create_view, name='shipping_line_create'),
     path('admin/lignes-maritimes/<int:pk>/modifier/', views.shipping_line_edit_view, name='shipping_line_edit'),
     path('admin/lignes-maritimes/<int:pk>/supprimer/', views.shipping_line_delete_view, name='shipping_line_delete'),
+    path('admin/parametres-site/', views.site_settings_view, name='site_settings'),
 ]

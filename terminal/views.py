@@ -2,6 +2,7 @@ import csv
 import datetime
 import hashlib
 import re
+from django import forms
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
@@ -20,6 +21,7 @@ from .models import (
     Container,
     ContainerStatusLog,
     SavedContainer,
+    SiteSettings,
     normalize_container_number,
     CONTAINER_NUMBER_REGEX,
 )
@@ -1722,4 +1724,67 @@ def shipping_line_delete_view(request, pk):
     line.delete()
     messages.info(request, f"Ligne maritime « {name} » supprimée.")
     return redirect('terminal:shipping_lines')
+
+
+class SiteSettingsForm(forms.ModelForm):
+    class Meta:
+        model = SiteSettings
+        fields = [
+            'company_name',
+            'portal_title',
+            'portal_subtitle',
+            'location_label',
+            'address_line',
+            'contact_email',
+            'contact_phone_primary',
+            'contact_phone_secondary',
+            'footer_about',
+            'hero_badge',
+            'hero_title',
+            'hero_subtitle',
+            'search_note',
+            'status_guide_title',
+            'status_guide_subtitle',
+            'confirmed_instruction',
+            'pending_instruction',
+            'unavailable_instruction',
+            'client_cta_title',
+            'client_cta_subtitle',
+        ]
+        widgets = {
+            'footer_about': forms.Textarea(attrs={'rows': 3}),
+            'hero_subtitle': forms.Textarea(attrs={'rows': 3}),
+            'status_guide_subtitle': forms.Textarea(attrs={'rows': 2}),
+            'client_cta_subtitle': forms.Textarea(attrs={'rows': 2}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field in self.fields.values():
+            field.widget.attrs.setdefault('class', 'form-control')
+
+
+@login_required
+def site_settings_view(request):
+    """Espace d'édition des textes et coordonnées publiques du portail."""
+    if not request.user.is_portal_admin:
+        messages.error(request, "Accès réservé aux administrateurs.")
+        return redirect('terminal:dashboard')
+
+    instance = SiteSettings.get_solo()
+    if request.method == 'POST':
+        form = SiteSettingsForm(request.POST, instance=instance)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Les informations et textes publics ont été mis à jour.")
+            return redirect('terminal:site_settings')
+        messages.error(request, "Veuillez corriger les champs signalés ci-dessous.")
+    else:
+        form = SiteSettingsForm(instance=instance)
+
+    return render(request, 'portal/site_settings.html', {
+        'form': form,
+        'site_obj': instance,
+    })
+
 

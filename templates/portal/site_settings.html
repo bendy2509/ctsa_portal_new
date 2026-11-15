@@ -1,0 +1,154 @@
+{% extends 'portal/base_portal.html' %}
+
+{% block title %}Textes &amp; Coordonnées — Administration CTSA{% endblock %}
+{% block body_class %}portal-has-form-actions{% endblock %}
+{% block portal_header_title %}Textes &amp; Coordonnées{% endblock %}
+
+{% block portal_content %}
+<div class="max-w-3xl mx-auto space-y-5">
+  <a href="{% url 'terminal:dashboard' %}"
+     class="inline-flex items-center gap-1.5 text-sm font-semibold text-slate-600 hover:text-ctsa-bluehover no-underline">
+    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
+    Retour au tableau de bord
+  </a>
+
+  {% include 'components/page_header.html' with title='Textes & Coordonnées du site public' subtitle='Modifiez les coordonnées de contact et les textes affichés sur le portail public.' %}
+
+  <form method="post" action="{% url 'terminal:site_settings' %}" class="space-y-5">
+    {% csrf_token %}
+
+    <!-- Section 1 : Identité & Coordonnées -->
+    <section class="bg-white rounded-xl border border-slate-200/80 shadow-xs p-4 sm:p-6 space-y-4">
+      <div>
+        <h2 class="text-base font-heading font-extrabold text-ctsa-slate m-0">Identité &amp; Coordonnées</h2>
+        <p class="text-xs text-slate-500 mt-0.5 mb-0">Affichées dans l'en-tête, le pied de page et les fiches de vérification.</p>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div class="form-field mb-0">
+          <label for="{{ form.company_name.id_for_label }}">{{ form.company_name.label }}</label>
+          {{ form.company_name }}
+          {% if form.company_name.errors %}<p class="text-xs text-red-700 font-semibold mt-1 mb-0">{{ form.company_name.errors.0 }}</p>{% endif %}
+        </div>
+        <div class="form-field mb-0">
+          <label for="{{ form.portal_title.id_for_label }}">{{ form.portal_title.label }}</label>
+          {{ form.portal_title }}
+          {% if form.portal_title.errors %}<p class="text-xs text-red-700 font-semibold mt-1 mb-0">{{ form.portal_title.errors.0 }}</p>{% endif %}
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div class="form-field mb-0">
+          <label for="{{ form.portal_subtitle.id_for_label }}">{{ form.portal_subtitle.label }}</label>
+          {{ form.portal_subtitle }}
+        </div>
+        <div class="form-field mb-0">
+          <label for="{{ form.location_label.id_for_label }}">{{ form.location_label.label }}</label>
+          {{ form.location_label }}
+        </div>
+      </div>
+
+      <div class="form-field mb-0">
+        <label for="{{ form.address_line.id_for_label }}">{{ form.address_line.label }}</label>
+        {{ form.address_line }}
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div class="form-field mb-0">
+          <label for="{{ form.contact_email.id_for_label }}">{{ form.contact_email.label }}</label>
+          {{ form.contact_email }}
+          {% if form.contact_email.errors %}<p class="text-xs text-red-700 font-semibold mt-1 mb-0">{{ form.contact_email.errors.0 }}</p>{% endif %}
+        </div>
+        <div class="form-field mb-0">
+          <label for="{{ form.contact_phone_primary.id_for_label }}">{{ form.contact_phone_primary.label }}</label>
+          {{ form.contact_phone_primary }}
+        </div>
+        <div class="form-field mb-0">
+          <label for="{{ form.contact_phone_secondary.id_for_label }}">{{ form.contact_phone_secondary.label }}</label>
+          {{ form.contact_phone_secondary }}
+        </div>
+      </div>
+
+      <div class="form-field mb-0">
+        <label for="{{ form.footer_about.id_for_label }}">{{ form.footer_about.label }}</label>
+        {{ form.footer_about }}
+      </div>
+    </section>
+
+    <!-- Section 2 : Page d'accueil -->
+    <section class="bg-white rounded-xl border border-slate-200/80 shadow-xs p-4 sm:p-6 space-y-4">
+      <div>
+        <h2 class="text-base font-heading font-extrabold text-ctsa-slate m-0">Page d'accueil</h2>
+        <p class="text-xs text-slate-500 mt-0.5 mb-0">Textes d'accroche et bandeau d'invitation à l'espace client.</p>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div class="form-field mb-0">
+          <label for="{{ form.hero_badge.id_for_label }}">{{ form.hero_badge.label }}</label>
+          {{ form.hero_badge }}
+        </div>
+        <div class="form-field mb-0">
+          <label for="{{ form.search_note.id_for_label }}">{{ form.search_note.label }}</label>
+          {{ form.search_note }}
+        </div>
+      </div>
+
+      <div class="form-field mb-0">
+        <label for="{{ form.hero_title.id_for_label }}">{{ form.hero_title.label }}</label>
+        {{ form.hero_title }}
+      </div>
+
+      <div class="form-field mb-0">
+        <label for="{{ form.hero_subtitle.id_for_label }}">{{ form.hero_subtitle.label }}</label>
+        {{ form.hero_subtitle }}
+      </div>
+
+      <div class="form-field mb-0">
+        <label for="{{ form.client_cta_title.id_for_label }}">{{ form.client_cta_title.label }}</label>
+        {{ form.client_cta_title }}
+      </div>
+
+      <div class="form-field mb-0">
+        <label for="{{ form.client_cta_subtitle.id_for_label }}">{{ form.client_cta_subtitle.label }}</label>
+        {{ form.client_cta_subtitle }}
+      </div>
+    </section>
+
+    <!-- Section 3 : Guide des statuts & consignes -->
+    <section class="bg-white rounded-xl border border-slate-200/80 shadow-xs p-4 sm:p-6 space-y-4">
+      <div>
+        <h2 class="text-base font-heading font-extrabold text-ctsa-slate m-0">Guide des statuts &amp; consignes</h2>
+        <p class="text-xs text-slate-500 mt-0.5 mb-0">Explications affichées aux clients selon l'état du conteneur.</p>
+      </div>
+
+      <div class="form-field mb-0">
+        <label for="{{ form.status_guide_title.id_for_label }}">{{ form.status_guide_title.label }}</label>
+        {{ form.status_guide_title }}
+      </div>
+
+      <div class="form-field mb-0">
+        <label for="{{ form.status_guide_subtitle.id_for_label }}">{{ form.status_guide_subtitle.label }}</label>
+        {{ form.status_guide_subtitle }}
+      </div>
+
+      <div class="form-field mb-0">
+        <label for="{{ form.confirmed_instruction.id_for_label }}">{{ form.confirmed_instruction.label }}</label>
+        {{ form.confirmed_instruction }}
+      </div>
+
+      <div class="form-field mb-0">
+        <label for="{{ form.pending_instruction.id_for_label }}">{{ form.pending_instruction.label }}</label>
+        {{ form.pending_instruction }}
+      </div>
+
+      <div class="form-field mb-0">
+        <label for="{{ form.unavailable_instruction.id_for_label }}">{{ form.unavailable_instruction.label }}</label>
+        {{ form.unavailable_instruction }}
+      </div>
+    </section>
+
+    {% url 'terminal:dashboard' as cancel_url %}
+    {% include 'components/form_actions.html' with cancel_url=cancel_url submit_label='Enregistrer les paramètres' %}
+  </form>
+</div>
+{% endblock %}

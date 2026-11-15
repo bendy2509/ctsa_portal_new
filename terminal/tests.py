@@ -443,6 +443,55 @@ class ShippingLinesAndStatisticsTests(TestCase):
         self.assertEqual(resp_with_line.status_code, 200)
         self.assertTrue(resp_with_line.context['show_lines'])
 
+    def test_site_settings_edit_and_public_rendering(self):
+        # Non-admin cannot access site settings
+        self.client_http.force_login(self.client_user)
+        resp_forbidden = self.client_http.get(reverse('terminal:site_settings'))
+        self.assertIn(resp_forbidden.status_code, (302, 403))
+
+        # Admin views and updates site settings
+        self.client_http.force_login(self.admin_user)
+        get_resp = self.client_http.get(reverse('terminal:site_settings'))
+        self.assertEqual(get_resp.status_code, 200)
+        self.assertContains(get_resp, 'contact@bendyservilus.com')
+        self.assertContains(get_resp, '+50941705257')
+
+        post_resp = self.client_http.post(
+            reverse('terminal:site_settings'),
+            {
+                'company_name': 'Cap Terminal S.A.',
+                'portal_title': 'Portail RAMPE',
+                'portal_subtitle': 'Vérification douanière des conteneurs',
+                'location_label': 'Port du Cap-Haïtien',
+                'address_line': 'Boulevard du Port, Cap-Haïtien',
+                'contact_email': 'rampe@bendyservilus.com',
+                'contact_phone_primary': '+50941705257',
+                'contact_phone_secondary': '',
+                'footer_about': 'Terminal certifié ISPS.',
+                'hero_badge': 'Cap-Haïtien · RAMPE',
+                'hero_title': 'Titre personnalisé RAMPE',
+                'hero_subtitle': 'Sous-titre personnalisé.',
+                'search_note': 'Mise à jour quotidienne.',
+                'status_guide_title': 'Statuts RAMPE',
+                'status_guide_subtitle': 'Explication des statuts.',
+                'confirmed_instruction': 'Venez avec vos documents.',
+                'pending_instruction': 'Patientez.',
+                'unavailable_instruction': 'Contactez votre transitaire.',
+                'client_cta_title': 'Suivi multi-conteneurs',
+                'client_cta_subtitle': 'Créez un compte client.',
+            },
+        )
+        self.assertRedirects(post_resp, reverse('terminal:site_settings'))
+
+        # Public home renders the updated settings
+        self.client_http.logout()
+        home_resp = self.client_http.get(reverse('terminal:home'))
+        self.assertEqual(home_resp.status_code, 200)
+        self.assertContains(home_resp, 'rampe@bendyservilus.com')
+        self.assertContains(home_resp, '+50941705257')
+        self.assertContains(home_resp, 'Titre personnalisé RAMPE')
+
+
 
 
 
