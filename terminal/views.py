@@ -30,8 +30,13 @@ from .models import (
 def _parse_date(date_str: str, default_date: datetime.date) -> datetime.date:
     if not date_str:
         return default_date
+    raw = date_str.strip()
     try:
-        return datetime.date.fromisoformat(date_str)
+        return datetime.date.fromisoformat(raw)
+    except ValueError:
+        pass
+    try:
+        return datetime.datetime.strptime(raw, '%d/%m/%Y').date()
     except ValueError:
         return default_date
 
@@ -1337,15 +1342,17 @@ def statistics_view(request):
         response.write('﻿')
         writer = csv.writer(response, delimiter=';')
         writer.writerow([
-            'Periode', 'Programmes', 'Confirmes', 'Verifies', 'Non verifies',
-            'Confirmes non marques', 'Repris', 'Rejetes', 'Taux de verification (%)',
+            'Periode', 'Programmes', 'Confirmes', 'Verifies', 'Restent a verifier',
+            'Repris', 'Rejetes', 'Taux de verification (%)',
         ])
         for b in buckets + [{'label': 'TOTAL', **totals}]:
             writer.writerow([
-                b['label'], b['scheduled'], b['confirmed'], b['verified'], b['not_verified'],
+                b['label'], b['scheduled'], b['confirmed'], b['verified'],
                 b['to_verify'], b['carried'], b['rejected'], '' if b['rate'] is None else b['rate'],
             ])
         return response
+
+    show_lines = len(lines) > 1 or (len(lines) == 1 and lines[0]['shipping_line__name'] is not None)
 
     return render(request, 'portal/statistics.html', {
         'today': today,
@@ -1359,6 +1366,7 @@ def statistics_view(request):
         'buckets': buckets,
         'by_week': by_week,
         'lines': lines,
+        'show_lines': show_lines,
         'avg_delay': avg_delay,
         'verified_with_delay': len(delays),
         'backlog': backlog,
@@ -1641,4 +1649,77 @@ def shipping_lines_view(request):
     return render(request, 'portal/shipping_lines.html', {
         'lines': lines,
     })
+
+
+@login_required
+def shipping_line_create_view(request):
+    """Page dédiée de création d'une ligne maritime."""
+    if not request.user.is_portal_admin:
+        messages.error(request, "Accès réservé aux administrateurs.")
+        return redirect('terminal:dashboard')
+
+    error = ''
+    name = ''
+    if request.method == 'POST':
+        from django.utils.text import slugify
+        name = (request.POST.get('name') or '').strip()
+        if not name:
+            error = "Le nom de la ligne maritime est obligatoire."
+        elif ShippingLine.objects.filter(name__iexact=name).exists():
+            error = f"La ligne maritime « {name} » existe déjà."
+        else:
+            ShippingLine.objects.create(name=name, code=slugify(name)[:20].upper())
+            messages.success(request, f"Ligne maritime « {name} » ajoutée.")
+            return redirect('terminal:shipping_lines')
+
+    return render(request, 'portal/shipping_line_form.html', {
+        'line': None,
+        'name': name,
+        'error': error,
+    })
+
+
+@login_required
+def shipping_line_edit_view(request, pk):
+    """Page dédiée de modification d'une ligne maritime."""
+    if not request.user.is_portal_admin:
+        messages.error(request, "Accès réservé aux administrateurs.")
+        return redirect('terminal:dashboard')
+
+    line = get_object_or_404(ShippingLine, pk=pk)
+    error = ''
+    name = line.name
+    if request.method == 'POST':
+        from django.utils.text import slugify
+        name = (request.POST.get('name') or '').strip()
+        if not name:
+            error = "Le nom de la ligne maritime est obligatoire."
+        elif ShippingLine.objects.filter(name__iexact=name).exclude(pk=line.pk).exists():
+            error = f"Une ligne maritime nommée « {name} » existe déjà."
+        else:
+            line.name = name
+            line.code = slugify(name)[:20].upper()
+            line.save()
+            messages.success(request, f"Ligne maritime renommée en « {name} ».")
+            return redirect('terminal:shipping_lines')
+
+    return render(request, 'portal/shipping_line_form.html', {
+        'line': line,
+        'name': name,
+        'error': error,
+    })
+
+
+@login_required
+@require_POST
+def shipping_line_delete_view(request, pk):
+    if not request.user.is_portal_admin:
+        messages.error(request, "Accès réservé aux administrateurs.")
+        return redirect('terminal:dashboard')
+
+    line = get_object_or_404(ShippingLine, pk=pk)
+    name = line.name
+    line.delete()
+    messages.info(request, f"Ligne maritime « {name} » supprimée.")
+    return redirect('terminal:shipping_lines')
 

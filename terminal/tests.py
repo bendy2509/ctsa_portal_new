@@ -346,5 +346,104 @@ class CTSAPortalBusinessTests(TestCase):
         self.assertFalse(Container.objects.filter(container_number='MSCU7777777').exists())
 
 
+class ShippingLinesAndStatisticsTests(TestCase):
+    def setUp(self):
+        self.client_http = Client()
+        self.admin_user = User.objects.create_user(
+            username='sl_admin', password='Password123!', role=User.Role.ADMIN
+        )
+        self.client_user = User.objects.create_user(
+            username='sl_client', password='Password123!', role=User.Role.CLIENT
+        )
+
+    def test_shipping_line_create_edit_delete_and_permissions(self):
+        # Non-admin cannot access create/edit/delete
+        self.client_http.force_login(self.client_user)
+        resp_forbidden = self.client_http.get(reverse('terminal:shipping_line_create'))
+        self.assertIn(resp_forbidden.status_code, (302, 403))
+
+        # Admin creates a shipping line
+        self.client_http.force_login(self.admin_user)
+        create_resp = self.client_http.post(
+            reverse('terminal:shipping_line_create'),
+            {'name': 'Maersk Line', 'code': 'MSK', 'is_active': 'on'},
+        )
+        self.assertRedirects(create_resp, reverse('terminal:shipping_lines'))
+        line = ShippingLine.objects.get(name='Maersk Line')
+        self.assertEqual(line.code, 'MAERSK-LINE')
+        self.assertTrue(line.is_active)
+
+        # Non-admin cannot edit or delete existing line
+        self.client_http.force_login(self.client_user)
+        self.assertIn(
+            self.client_http.get(reverse('terminal:shipping_line_edit', args=[line.pk])).status_code,
+            (302, 403),
+        )
+        self.assertIn(
+            self.client_http.post(reverse('terminal:shipping_line_delete', args=[line.pk])).status_code,
+            (302, 403),
+        )
+        self.assertTrue(ShippingLine.objects.filter(pk=line.pk).exists())
+
+        # Admin edits and deletes the shipping line
+        self.client_http.force_login(self.admin_user)
+        edit_resp = self.client_http.post(
+            reverse('terminal:shipping_line_edit', args=[line.pk]),
+            {'name': 'Maersk Haiti'},
+        )
+        self.assertRedirects(edit_resp, reverse('terminal:shipping_lines'))
+        line.refresh_from_db()
+        self.assertEqual(line.name, 'Maersk Haiti')
+        self.assertEqual(line.code, 'MAERSK-HAITI')
+
+        del_resp = self.client_http.post(reverse('terminal:shipping_line_delete', args=[line.pk]))
+        self.assertRedirects(del_resp, reverse('terminal:shipping_lines'))
+        self.assertFalse(ShippingLine.objects.filter(pk=line.pk).exists())
+
+    def test_statistics_french_dates_csv_and_show_lines(self):
+        today = timezone.localdate()
+        Container.objects.create(
+            container_number='CMAU1111111',
+            scheduled_date=today,
+            status=Container.Status.CONFIRMED,
+            created_by=self.admin_user,
+        )
+        self.client_http.force_login(self.admin_user)
+
+        # Only unnamed container -> show_lines is False
+        du_fr = today.strftime('%d/%m/%Y')
+        resp = self.client_http.get(
+            reverse('terminal:statistics'),
+            {'periode': 'perso', 'du': du_fr, 'au': du_fr},
+        )
+        self.assertEqual(resp.status_code, 200)
+        self.assertFalse(resp.context['show_lines'])
+
+        # CSV export uses unified "Restent a verifier" header
+        csv_resp = self.client_http.get(
+            reverse('terminal:statistics'),
+            {'periode': 'perso', 'du': du_fr, 'au': du_fr, 'export': 'csv'},
+        )
+        self.assertEqual(csv_resp.status_code, 200)
+        self.assertIn('Restent a verifier', csv_resp.content.decode('utf-8-sig'))
+
+        # Adding a container with a shipping line turns show_lines True
+        cma = ShippingLine.objects.create(name='CMA CGM', code='CMA')
+        Container.objects.create(
+            container_number='CMAU2222222',
+            scheduled_date=today,
+            shipping_line=cma,
+            status=Container.Status.CONFIRMED,
+            created_by=self.admin_user,
+        )
+        resp_with_line = self.client_http.get(
+            reverse('terminal:statistics'),
+            {'periode': 'perso', 'du': du_fr, 'au': du_fr},
+        )
+        self.assertEqual(resp_with_line.status_code, 200)
+        self.assertTrue(resp_with_line.context['show_lines'])
+
+
+
 
 

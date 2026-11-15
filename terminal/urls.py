@@ -34,4 +34,7 @@ urlpatterns = [
     path('admin/containers/export-csv/', views.container_export_csv_view, name='container_export_csv'),
     path('admin/historique/', views.status_logs_view, name='status_logs'),
     path('admin/lignes-maritimes/', views.shipping_lines_view, name='shipping_lines'),
+    path('admin/lignes-maritimes/nouveau/', views.shipping_line_create_view, name='shipping_line_create'),
+    path('admin/lignes-maritimes/<int:pk>/modifier/', views.shipping_line_edit_view, name='shipping_line_edit'),
+    path('admin/lignes-maritimes/<int:pk>/supprimer/', views.shipping_line_delete_view, name='shipping_line_delete'),
 ]

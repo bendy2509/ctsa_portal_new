@@ -969,55 +969,6 @@ html {
   position: relative;
 }
 
-.portal-dropdown > summary {
-  list-style: none;
-}
-
-.portal-dropdown > summary::-webkit-details-marker {
-  display: none;
-}
-
-details.portal-dropdown[open] {
-  position: relative;
-  z-index: 50;
-}
-
-.portal-dropdown-menu {
-  position: absolute;
-  inset-inline-end: 0;
-  inset-block-start: calc(100% + 0.35rem);
-  z-index: 55;
-  min-inline-size: 13.5rem;
-  padding: 0.35rem;
-  border: 1px solid var(--ctsa-border);
-  border-radius: 0.5rem;
-  background-color: #ffffff;
-  box-shadow: 0 10px 25px rgba(44, 55, 65, 0.14);
-}
-
-.portal-dropdown.open-up .portal-dropdown-menu {
-  inset-block-start: auto;
-  inset-block-end: calc(100% + 0.35rem);
-}
-
-.portal-dropdown-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
-  padding: 0.5rem 0.75rem;
-  border-radius: 0.375rem;
-  font-size: 0.8125rem;
-  font-weight: 600;
-  color: var(--ctsa-slate);
-  text-decoration: none;
-}
-
-.portal-dropdown-item:hover {
-  background-color: #f3f5f6;
-  color: var(--ctsa-blue-hover);
-}
-
 .portal-sidebar a:focus-visible {
   outline-color: #ffffff;
 }

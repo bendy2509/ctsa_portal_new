@@ -1,114 +1,112 @@
 {% extends 'portal/base_portal.html' %}
 
 {% block title %}Historique des Statuts — Cap Terminal S.A.{% endblock %}
+{% block page_title %}Historique{% endblock %}
 
 {% block portal_content %}
-<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-5">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 space-y-5">
 
-  <!-- En-tête de page sobre et aligné -->
-  <div class="pb-4 border-b border-slate-200/80">
-    <h1 class="text-xl sm:text-2xl font-heading font-extrabold text-[#2c3741] m-0">
-      Historique des modifications de statut
-    </h1>
-    <p class="text-sm text-[#64748b] m-0 mt-0.5">
-      Suivi chronologique des inscriptions et des changements de statut effectués par les superviseurs et administrateurs.
-    </p>
-  </div>
+  {% include 'components/page_header.html' with title="Historique des statuts" subtitle="Suivi chronologique des inscriptions et des modifications." count=page.paginator.count %}
 
-  <!-- Cadre unique avec barre de recherche intégrée et tableau chronologique -->
-  <section aria-labelledby="logs-caption" class="bg-white rounded-xl border border-slate-200/80 shadow-xs overflow-hidden">
-    <div class="bg-[#f8fafc] border-b border-slate-200/80 p-4 sm:px-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-      <div id="logs-caption" class="text-xs font-heading font-bold uppercase tracking-wider text-[#2c3741] tabular-nums">
-        {{ page.paginator.count }} opération{{ page.paginator.count|pluralize }} enregistrée{{ page.paginator.count|pluralize }}
-        {% if q %}
-          <a href="{% url 'terminal:status_logs' %}" class="ml-2 text-[#3498db] hover:underline">Réinitialiser</a>
-        {% endif %}
-      </div>
-
-      <search class="w-full sm:w-auto">
-        <form action="{% url 'terminal:status_logs' %}" method="get" class="flex flex-wrap sm:flex-nowrap items-center gap-2">
-          <label for="log-q" class="visually-hidden">Rechercher dans l'historique</label>
-          <input type="search" id="log-q" name="q" value="{{ q }}" placeholder="Conteneur, opérateur, motif..." class="border border-slate-200/80 rounded-lg px-3 py-1.5 min-h-[38px] text-xs bg-white flex-1 min-w-0 sm:min-w-[230px]">
-          <button type="submit" class="btn-admin btn-admin-primary min-h-[38px] rounded-lg shrink-0">
-            Rechercher
-          </button>
-        </form>
-      </search>
-    </div>
-
-    <div tabindex="0" role="region" aria-labelledby="logs-caption" class="table-wrapper border-0 rounded-none">
-      <table class="ctsa-table" style="--label-2: 'Ligne maritime'; --label-3: 'Date programmée'; --label-4: 'Modification'; --label-5: 'Motif'; --label-6: 'Date et heure'; --label-7: 'Effectué par';">
-        <thead class="sticky top-0 z-10 bg-slate-50/95 backdrop-blur-xs">
-          <tr>
-            <th scope="col">Conteneur</th>
-            <th scope="col">Ligne maritime</th>
-            <th scope="col">Date programmée</th>
-            <th scope="col">Modification effectuée</th>
-            <th scope="col">Motif</th>
-            <th scope="col">Date et heure</th>
-            <th scope="col">Opérateur</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for log in logs %}
-            <tr>
-              <th scope="row">
-                <span class="font-mono text-sm font-bold tracking-wide text-[#2c3741] tabular-nums">{{ log.container.container_number }}</span>
-              </th>
-              <td>{{ log.container.shipping_line.name|default:"—" }}</td>
-              <td class="tabular-nums">{{ log.container.scheduled_date|date:"d/m/Y" }}</td>
-              <td>
-                {% if log.action == 'verified' %}
-                  <span class="status-badge status-verified inline-flex items-center gap-1.5 rounded-full">
-                    <span class="status-seg-dot dot-confirmed"></span>Vérifié
-                  </span>
-                {% elif log.action == 'not_verified' %}
-                  <span class="status-badge status-not-verified inline-flex items-center gap-1.5 rounded-full">
-                    <span class="status-seg-dot dot-pending"></span>Non vérifié
-                  </span>
-                {% elif log.action != 'status_change' %}
-                  <span class="status-badge status-neutral rounded-full">{{ log.get_action_display }}</span>
-                {% else %}
-                <span class="text-xs font-semibold text-[#64748b]">
-                  {% if log.old_status %}{{ log.get_old_status_display }}{% else %}Inscription initiale{% endif %}
-                </span>
-                <svg class="portal-icon inline-block align-middle mx-1 text-[#64748b]" viewBox="0 0 24 24" role="img" aria-label="devient"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
-                {% if log.new_status == 'confirmed' %}
-                  <span class="status-badge status-confirmed inline-flex items-center gap-1.5 rounded-full">
-                    <span class="status-seg-dot dot-confirmed"></span>Confirmé
-                  </span>
-                {% elif log.new_status == 'pending' %}
-                  <span class="status-badge status-pending inline-flex items-center gap-1.5 rounded-full">
-                    <span class="status-seg-dot dot-pending"></span>En attente
-                  </span>
-                {% else %}
-                  <span class="status-badge status-unavailable inline-flex items-center gap-1.5 rounded-full">
-                    <span class="status-seg-dot dot-unavailable"></span>Indisponible
-                  </span>
-                {% endif %}
-                {% endif %}
-              </td>
-              <td class="text-xs {% if log.action == 'status_change' %}text-[#b82c1f]{% else %}text-[#2c3741]{% endif %} font-semibold">{{ log.reason_text|default:"—" }}</td>
-              <td class="text-xs font-mono text-[#666666]">{{ log.changed_at|date:"d/m/Y H:i" }}</td>
-              <td class="text-xs font-semibold text-[#2c3741]">
-                {% if log.changed_by %}
-                  {{ log.changed_by.display_name }} <span class="text-[#666666] font-normal">({{ log.changed_by.get_role_display }})</span>
-                {% else %}
-                  Système
-                {% endif %}
-              </td>
-            </tr>
-          {% empty %}
-            <tr>
-              <th scope="row">—</th>
-              <td colspan="6" class="text-center py-8 text-[#666666]">Aucune modification enregistrée.</td>
-            </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
-    {% include 'partials/pagination.html' %}
+  <!-- Recherche -->
+  <section aria-label="Rechercher dans l'historique" class="bg-white rounded-xl border border-slate-200/80 shadow-xs p-3.5 sm:p-4">
+    <search>
+      <form action="{% url 'terminal:status_logs' %}" method="get" class="flex flex-col sm:flex-row sm:items-center gap-2">
+        <label for="log-q" class="visually-hidden">Rechercher dans l'historique</label>
+        <input type="search"
+               id="log-q"
+               name="q"
+               value="{{ q }}"
+               placeholder="Conteneur, opérateur, motif..."
+               class="flex-1 min-h-[42px] border border-slate-200 rounded-lg px-3 py-1.5 text-sm bg-white text-ctsa-slate">
+        <div class="flex items-center gap-2">
+          <button type="submit" class="ui-btn ui-btn-secondary min-h-[42px] flex-1 sm:flex-initial">Rechercher</button>
+          {% if q %}
+            <a href="{% url 'terminal:status_logs' %}" class="text-xs font-bold text-ctsa-bluehover hover:underline px-2">Réinitialiser</a>
+          {% endif %}
+        </div>
+      </form>
+    </search>
   </section>
+
+  {% if logs %}
+    <!-- Mobile : cartes 2 lignes cliquables vers fiche conteneur -->
+    <div class="lg:hidden space-y-3" aria-label="Liste mobile de l'historique">
+      {% for log in logs %}
+        <a href="{% url 'terminal:container_detail' log.container.pk %}"
+           class="block bg-white rounded-xl border border-slate-200/80 shadow-xs p-3.5 no-underline hover:border-slate-300 transition space-y-1.5">
+          <div class="flex items-center justify-between gap-2">
+            <span class="font-mono text-sm font-bold text-ctsa-slate tabular-nums">{{ log.container.container_number }}</span>
+            {% if log.action == 'verified' %}
+              {% include 'components/badge.html' with variant='verified' label='Vérifié' %}
+            {% elif log.action == 'not_verified' %}
+              {% include 'components/badge.html' with variant='not_verified' label='Non vérifié' %}
+            {% elif log.action != 'status_change' %}
+              {% include 'components/badge.html' with variant='neutral' label=log.get_action_display %}
+            {% else %}
+              {% include 'components/badge.html' with variant=log.new_status label=log.get_new_status_display %}
+            {% endif %}
+          </div>
+          <p class="text-xs text-slate-500 m-0 tabular-nums truncate">
+            {{ log.changed_at|date:"d/m/Y H:i" }} · {% if log.changed_by %}{{ log.changed_by.display_name }}{% else %}Système{% endif %}{% if log.reason_text %} · {{ log.reason_text }}{% endif %}
+          </p>
+        </a>
+      {% endfor %}
+    </div>
+
+    <!-- Desktop : tableau -->
+    <section class="hidden lg:block bg-white rounded-xl border border-slate-200/80 shadow-xs overflow-hidden" aria-label="Tableau de l'historique">
+      <div class="overflow-x-auto">
+        <table class="ctsa-table w-full">
+          <thead class="bg-slate-50/95">
+            <tr>
+              <th scope="col">Conteneur</th>
+              <th scope="col">Séance</th>
+              <th scope="col">Modification</th>
+              <th scope="col">Motif</th>
+              <th scope="col">Date et heure</th>
+              <th scope="col">Opérateur</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for log in logs %}
+              <tr>
+                <th scope="row">
+                  <a href="{% url 'terminal:container_detail' log.container.pk %}" class="font-mono text-sm font-bold text-ctsa-slate hover:text-ctsa-bluehover no-underline tabular-nums">
+                    {{ log.container.container_number }}
+                  </a>
+                </th>
+                <td class="tabular-nums text-sm">{{ log.container.scheduled_date|date:"d/m/Y" }}</td>
+                <td>
+                  {% if log.action == 'verified' %}
+                    {% include 'components/badge.html' with variant='verified' label='Vérifié' %}
+                  {% elif log.action == 'not_verified' %}
+                    {% include 'components/badge.html' with variant='not_verified' label='Non vérifié' %}
+                  {% elif log.action != 'status_change' %}
+                    {% include 'components/badge.html' with variant='neutral' label=log.get_action_display %}
+                  {% else %}
+                    <span class="text-xs text-slate-500 mr-1">
+                      {% if log.old_status %}{{ log.get_old_status_display }}{% else %}Initial{% endif %} →
+                    </span>
+                    {% include 'components/badge.html' with variant=log.new_status label=log.get_new_status_display %}
+                  {% endif %}
+                </td>
+                <td class="text-xs text-slate-600">{{ log.reason_text|default:"—" }}</td>
+                <td class="text-xs font-mono text-slate-500 tabular-nums">{{ log.changed_at|date:"d/m/Y H:i" }}</td>
+                <td class="text-xs font-semibold text-ctsa-slate">
+                  {% if log.changed_by %}{{ log.changed_by.display_name }}{% else %}Système{% endif %}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    {% include 'components/pagination.html' %}
+  {% else %}
+    {% include 'components/empty_state.html' with title="Aucune opération trouvée" description="Aucune modification de statut ne correspond à cette recherche." %}
+  {% endif %}
 
 </div>
 {% endblock %}

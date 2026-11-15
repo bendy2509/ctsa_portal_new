@@ -104,14 +104,22 @@
           <li class="py-3 first:pt-0 last:pb-0 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1.5">
             <div class="space-y-0.5">
               <div class="text-sm font-semibold text-ctsa-slate">
-                {% if log.from_status %}
-                  <span>{{ log.get_from_status_display }}</span>
-                  <span class="text-slate-400 mx-1" aria-hidden="true">→</span>
+                {% if log.action == 'verified' %}
+                  <span>Vérifié</span>
+                {% elif log.action == 'not_verified' %}
+                  <span>Non vérifié</span>
+                {% elif log.action != 'status_change' %}
+                  <span>{{ log.get_action_display }}</span>
+                {% else %}
+                  {% if log.old_status %}
+                    <span>{{ log.get_old_status_display }}</span>
+                    <span class="text-slate-400 mx-1" aria-hidden="true">→</span>
+                  {% endif %}
+                  <span>{{ log.get_new_status_display }}</span>
                 {% endif %}
-                <span>{{ log.get_to_status_display }}</span>
               </div>
-              {% if log.note %}
-                <p class="text-xs text-slate-600 m-0">{{ log.note }}</p>
+              {% if log.reason_text %}
+                <p class="text-xs text-slate-600 m-0">{{ log.reason_text }}</p>
               {% endif %}
             </div>
             <div class="text-xs text-slate-500 tabular-nums shrink-0">

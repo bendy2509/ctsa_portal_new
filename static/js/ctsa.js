@@ -337,38 +337,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // Fermer les menus déroulants (.portal-dropdown) au clic extérieur ou sur Échap
-  // et les ouvrir vers le haut s'ils risquent d'être coupés en bas de l'écran.
-  document.querySelectorAll('details.portal-dropdown').forEach((dd) => {
-    dd.addEventListener('toggle', () => {
-      if (!dd.open) {
-        dd.classList.remove('open-up');
-        return;
-      }
-      const menu = dd.querySelector('.portal-dropdown-menu');
-      if (!menu) return;
-      dd.classList.remove('open-up');
-      const rect = menu.getBoundingClientRect();
-      const bottomLimit = window.innerWidth < 1024 ? window.innerHeight - 68 : window.innerHeight - 12;
-      if (rect.bottom > bottomLimit) {
-        dd.classList.add('open-up');
-      }
-    });
-  });
-
-  document.addEventListener('click', (e) => {
-    document.querySelectorAll('details.portal-dropdown[open]').forEach((dd) => {
-      if (!dd.contains(e.target)) dd.open = false;
-    });
-  });
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') {
-      document.querySelectorAll('details.portal-dropdown[open]').forEach((dd) => {
-        dd.open = false;
-      });
-    }
-  });
-
   // 8 ter (suite). Barre de sélection : visible seulement quand au moins une case est cochée.
   document.querySelectorAll('[data-selection-bar]').forEach((bar) => {
     const group = bar.dataset.selectionBar;
@@ -515,17 +483,6 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!document.hidden) check();
     });
   });
-
-  // 9. Panneau dépliable "Nouvel utilisateur"
-  const createUserBtn = document.getElementById('toggle-create-user-btn');
-  const createUserPanel = document.getElementById('create-user-panel');
-  if (createUserBtn && createUserPanel) {
-    createUserBtn.addEventListener('click', () => {
-      const isHidden = createUserPanel.hidden;
-      createUserPanel.hidden = !isHidden;
-      createUserBtn.setAttribute('aria-expanded', String(isHidden));
-    });
-  }
 
   // 10. Bouton d'impression de la fiche bordereau RAMPE sur /verification/
   document.querySelectorAll('[data-print-slip]').forEach((btn) => {
