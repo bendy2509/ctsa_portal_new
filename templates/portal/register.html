@@ -1,170 +1,168 @@
 {% extends 'portal/base_portal.html' %}
 
 {% block title %}Registre des vérifications — Cap Terminal S.A.{% endblock %}
+{% block page_title %}Registre{% endblock %}
 
 {% block portal_content %}
-<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-5">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 space-y-5">
 
-  <div class="pb-5 border-b border-[#dadada]">
-    <h1 class="mb-1">Registre des vérifications</h1>
-    <p class="text-sm text-[#5b656d] m-0 max-w-3xl">
-      Toutes les programmations et leur résultat, séance par séance. Recherchez un conteneur pour savoir à quelle date il a été vérifié, ou choisissez un intervalle pour en connaître les quantités.
-    </p>
-  </div>
+  {% include 'components/page_header.html' with title="Registre des vérifications" subtitle="Historique de toutes les programmations et résultats d'inspection." count=page.paginator.count %}
 
-  <!-- Recherche + intervalle -->
-  <search>
-    <form action="{% url 'terminal:register' %}" method="get" class="bg-white rounded-xl border border-slate-200/80 shadow-xs p-4 sm:p-5 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-12 gap-3 items-end">
-      <div class="xl:col-span-3 form-field mb-0">
-        <label for="reg-q" class="text-xs">Numéro de conteneur</label>
-        <input type="search" id="reg-q" name="q" value="{{ search_q }}" placeholder="ex. CMAU4052450" autocorrect="off" spellcheck="false"
-               class="border border-slate-200/80 rounded-lg px-3 py-1.5 min-h-[40px] text-sm font-mono uppercase bg-white">
-      </div>
-      <div class="xl:col-span-2 form-field mb-0">
-        <label for="reg-du" class="text-xs">Du</label>
-        <input type="date" id="reg-du" name="du" value="{{ start|date:'Y-m-d' }}" class="border border-slate-200/80 rounded-lg px-3 py-1.5 min-h-[40px] text-sm bg-white">
-      </div>
-      <div class="xl:col-span-2 form-field mb-0">
-        <label for="reg-au" class="text-xs">Au</label>
-        <input type="date" id="reg-au" name="au" value="{{ end|date:'Y-m-d' }}" class="border border-slate-200/80 rounded-lg px-3 py-1.5 min-h-[40px] text-sm bg-white">
-      </div>
-      <div class="xl:col-span-2 form-field mb-0">
-        <label for="reg-result" class="text-xs">Résultat</label>
-        <select id="reg-result" name="resultat" class="border border-slate-200/80 rounded-lg px-3 py-1.5 min-h-[40px] text-sm bg-white text-[#2c3741]">
-          <option value="">Tous</option>
-          <option value="verified" {% if result_filter == 'verified' %}selected{% endif %}>Vérifiés</option>
-          <option value="not_verified" {% if result_filter == 'not_verified' %}selected{% endif %}>Non vérifiés</option>
-          <option value="to_verify" {% if result_filter == 'to_verify' %}selected{% endif %}>Confirmés non marqués</option>
-        </select>
-      </div>
-      <div class="xl:col-span-2 form-field mb-0">
-        <label for="reg-line" class="text-xs">Ligne maritime</label>
-        <select id="reg-line" name="line" class="border border-slate-200/80 rounded-lg px-3 py-1.5 min-h-[40px] text-sm bg-white text-[#2c3741]">
-          <option value="">Toutes</option>
-          {% for line in shipping_lines %}
-            <option value="{{ line.id }}" {% if line_filter == line.id|stringformat:"s" %}selected{% endif %}>{{ line.name }}</option>
-          {% endfor %}
-        </select>
-      </div>
-      <div class="sm:col-span-2 xl:col-span-1">
-        <button type="submit" class="btn-admin btn-admin-primary w-full min-h-[40px] rounded-lg">Chercher</button>
-      </div>
-    </form>
-  </search>
+  <!-- Recherche & filtres -->
+  <section aria-label="Recherche et filtres" class="bg-white rounded-xl border border-slate-200/80 shadow-xs p-4 space-y-3">
+    <search>
+      <form action="{% url 'terminal:register' %}" method="get" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3 items-end">
+        <div>
+          <label for="reg-q" class="block text-xs font-bold text-slate-600 mb-1">Numéro de conteneur</label>
+          <input type="search" id="reg-q" name="q" value="{{ search_q }}" placeholder="ex. CMAU4052450" autocorrect="off" spellcheck="false"
+                 class="w-full min-h-[42px] border border-slate-200 rounded-lg px-3 py-1.5 text-sm font-mono uppercase bg-white">
+        </div>
+        <div>
+          <label for="reg-du" class="block text-xs font-bold text-slate-600 mb-1">Du</label>
+          <input type="date" id="reg-du" name="du" value="{{ start|date:'Y-m-d' }}"
+                 class="w-full min-h-[42px] border border-slate-200 rounded-lg px-3 py-1.5 text-sm bg-white">
+        </div>
+        <div>
+          <label for="reg-au" class="block text-xs font-bold text-slate-600 mb-1">Au</label>
+          <input type="date" id="reg-au" name="au" value="{{ end|date:'Y-m-d' }}"
+                 class="w-full min-h-[42px] border border-slate-200 rounded-lg px-3 py-1.5 text-sm bg-white">
+        </div>
+        <div>
+          <label for="reg-result" class="block text-xs font-bold text-slate-600 mb-1">Résultat</label>
+          <select id="reg-result" name="resultat" class="w-full min-h-[42px] border border-slate-200 rounded-lg px-3 py-1.5 text-sm bg-white text-ctsa-slate">
+            <option value="">Tous</option>
+            <option value="verified" {% if result_filter == 'verified' %}selected{% endif %}>Vérifiés</option>
+            <option value="not_verified" {% if result_filter == 'not_verified' %}selected{% endif %}>Non vérifiés</option>
+            <option value="to_verify" {% if result_filter == 'to_verify' %}selected{% endif %}>Confirmés non marqués</option>
+          </select>
+        </div>
+        <div>
+          <label for="reg-line" class="block text-xs font-bold text-slate-600 mb-1">Ligne maritime</label>
+          <select id="reg-line" name="line" class="w-full min-h-[42px] border border-slate-200 rounded-lg px-3 py-1.5 text-sm bg-white text-ctsa-slate">
+            <option value="">Toutes</option>
+            {% for line in shipping_lines %}
+              <option value="{{ line.id }}" {% if line_filter == line.id|stringformat:"s" %}selected{% endif %}>{{ line.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="flex items-center gap-2">
+          <button type="submit" class="ui-btn ui-btn-primary flex-1 min-h-[42px]">Chercher</button>
+          <a href="?{% if page_query %}{{ page_query }}&amp;{% endif %}export=csv"
+             class="ui-btn ui-btn-secondary min-h-[42px] px-3"
+             aria-label="Exporter en CSV"
+             title="Exporter en CSV">
+            CSV
+          </a>
+        </div>
+      </form>
+    </search>
 
-  <p class="text-sm text-[#2c3741] m-0">
-    {% if start %}
-      Période du <strong>{{ start|date:"d/m/Y" }}</strong> au <strong>{{ end|date:"d/m/Y" }}</strong>{% if search_q %}, numéro contenant « {{ search_q }} »{% endif %}.
-    {% else %}
-      Recherche de « {{ search_q }} » sur <strong>tout l'historique</strong>. Ajoutez des dates pour limiter la période.
-    {% endif %}
-    {% if search_q or result_filter or line_filter or request.GET.du or request.GET.au %}
-      <a href="{% url 'terminal:register' %}" class="ml-1 font-semibold text-[#217dbb] underline">Réinitialiser</a>
-    {% endif %}
-  </p>
-
-  <!-- Quantités de la sélection -->
-  <div class="kpi-grid">
-    <div class="kpi-card rounded-xl border border-slate-200/80 shadow-xs">
-      <div class="kpi-label">Programmations</div>
-      <div class="kpi-value tabular-nums">{{ totals.scheduled }}</div>
-      <div class="kpi-note">{{ totals.distinct }} conteneur{{ totals.distinct|pluralize }} distinct{{ totals.distinct|pluralize }}</div>
+    <div class="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-600 pt-1">
+      <span>
+        {% if start %}
+          Période du <strong>{{ start|date:"d/m/Y" }}</strong> au <strong>{{ end|date:"d/m/Y" }}</strong>{% if search_q %} · « {{ search_q }} »{% endif %}
+        {% else %}
+          Recherche de « {{ search_q }} » sur tout l'historique
+        {% endif %}
+      </span>
+      {% if search_q or result_filter or line_filter or request.GET.du or request.GET.au %}
+        <a href="{% url 'terminal:register' %}" class="font-bold text-ctsa-bluehover hover:underline">Réinitialiser</a>
+      {% endif %}
     </div>
-    <div class="kpi-card rounded-xl border border-slate-200/80 shadow-xs">
-      <div class="kpi-label">Confirmés</div>
-      <div class="kpi-value tabular-nums text-[#008751]">{{ totals.confirmed }}</div>
-      <div class="kpi-note">disponibles à la RAMPE</div>
-    </div>
-    <div class="kpi-card rounded-xl border border-slate-200/80 shadow-xs">
-      <div class="kpi-label">Vérifiés</div>
-      <div class="kpi-value tabular-nums text-[#008751]">{{ totals.verified }}</div>
-      <div class="kpi-note">{% if totals.rate is not None %}{{ totals.rate }} % des confirmés{% else %}aucun confirmé{% endif %}</div>
-    </div>
-    <div class="kpi-card rounded-xl border border-slate-200/80 shadow-xs">
-      <div class="kpi-label">Non vérifiés</div>
-      <div class="kpi-value tabular-nums text-[#8a5300]">{{ totals.not_verified }}</div>
-      <div class="kpi-note">+ {{ totals.to_verify }} confirmé{{ totals.to_verify|pluralize }} non marqué{{ totals.to_verify|pluralize }}</div>
-    </div>
-    <div class="kpi-card rounded-xl border border-slate-200/80 shadow-xs">
-      <div class="kpi-label">Repris</div>
-      <div class="kpi-value tabular-nums text-[#3498db]">{{ totals.carried }}</div>
-      <div class="kpi-note">reportés sur une liste suivante</div>
-    </div>
-    <div class="kpi-card rounded-xl border border-slate-200/80 shadow-xs">
-      <div class="kpi-label">Rejetés</div>
-      <div class="kpi-value tabular-nums text-[#e74c3c]">{{ totals.rejected }}</div>
-      <div class="kpi-note">sortis du suivi</div>
-    </div>
-  </div>
-
-  <section aria-labelledby="register-caption" class="bg-white rounded-xl border border-slate-200/80 shadow-xs overflow-hidden">
-    <div class="px-4 sm:px-5 py-3 border-b border-slate-200/80 flex flex-wrap items-center justify-between gap-3 bg-[#f8fafc]">
-      <h2 id="register-caption" class="text-sm font-bold text-[#2c3741] m-0">
-        {{ page.paginator.count }} ligne{{ page.paginator.count|pluralize }}{% if result_filter %} pour ce résultat{% endif %}
-      </h2>
-      <a href="?{% if page_query %}{{ page_query }}&amp;{% endif %}export=csv" class="btn-admin btn-admin-slate rounded-lg">Excel (CSV)</a>
-    </div>
-
-    <div tabindex="0" role="region" aria-labelledby="register-caption" class="table-wrapper border-0 rounded-none">
-      <table class="ctsa-table" style="--label-2: 'Séance'; --label-3: 'Ligne maritime'; --label-4: 'Statut'; --label-5: 'Vérifié le'; --label-6: 'Marquer';">
-        <thead class="sticky top-0 z-10 bg-slate-50/95 backdrop-blur-xs">
-          <tr>
-            <th scope="col">Conteneur</th>
-            <th scope="col">Séance</th>
-            <th scope="col">Ligne maritime</th>
-            <th scope="col">Statut</th>
-            <th scope="col">Vérifié le</th>
-            <th scope="col">Marquer</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for c in rows %}
-            <tr>
-              <th scope="row">
-                <a href="{% url 'terminal:register' %}?q={{ c.container_number }}" class="text-base font-bold text-[#2c3741] underline decoration-[#b9c2c9] underline-offset-2 hover:text-[#217dbb]">{{ c.container_number }}</a>
-                {% if c.first_scheduled_date and c.first_scheduled_date != c.scheduled_date %}
-                  <div class="text-xs font-sans font-normal text-[#5b656d] mt-0.5">programmé depuis le {{ c.first_scheduled_date|date:"d/m/Y" }}</div>
-                {% endif %}
-              </th>
-              <td>
-                <a href="{% url 'terminal:inspection' %}?date={{ c.scheduled_date|date:'Y-m-d' }}" class="font-semibold text-[#2c3741] hover:text-[#217dbb] hover:underline">{{ c.scheduled_date|date:"d/m/Y" }}</a>
-              </td>
-              <td>{{ c.shipping_line.name|default:"Non renseignée" }}</td>
-              <td>
-                {% include 'partials/status_actions.html' %}
-                {% if c.carry_decision %}
-                  <div class="text-xs text-[#5b656d] mt-1">{{ c.get_carry_decision_display }}</div>
-                {% endif %}
-              </td>
-              <td class="text-sm">
-                {% if c.verification_result == 'verified' %}
-                  <span class="font-bold text-[#006b3f]">{{ c.verified_at|date:"d/m/Y à H:i" }}</span>
-                  <div class="text-xs text-[#5b656d]">par {{ c.verified_by.display_name|default:"—" }}</div>
-                {% elif c.verification_result == 'not_verified' %}
-                  <span class="font-semibold text-[#2c3741]">Non vérifié</span>
-                  <div class="text-xs text-[#5b656d]">marqué le {{ c.verified_at|date:"d/m/Y à H:i" }}{% if c.verification_note %} · {{ c.verification_note }}{% endif %}</div>
-                {% else %}
-                  <span class="text-[#5b656d]">—</span>
-                {% endif %}
-              </td>
-              <td>{% include 'partials/verification_actions.html' %}</td>
-            </tr>
-          {% empty %}
-            <tr>
-              <th scope="row">—</th>
-              <td colspan="5" class="text-center py-10 text-[#5b656d]">
-                {% if search_q %}
-                  Aucune programmation trouvée pour « {{ search_q }} »{% if start %} sur cette période{% endif %}.
-                {% else %}
-                  Aucun conteneur programmé sur cette période.
-                {% endif %}
-              </td>
-            </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
-    {% include 'partials/pagination.html' %}
   </section>
+
+  <!-- 4 KPI synthétiques en grille 2x2 -->
+  <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+    <div class="bg-white rounded-xl border border-slate-200/80 shadow-xs p-3.5">
+      <div class="text-xs font-bold uppercase tracking-wider text-slate-500">Programmations</div>
+      <div class="text-2xl font-heading font-extrabold text-ctsa-slate tabular-nums mt-1">{{ totals.scheduled }}</div>
+      <div class="text-xs text-slate-500 mt-0.5">{{ totals.distinct }} distinct{{ totals.distinct|pluralize }}</div>
+    </div>
+    <div class="bg-white rounded-xl border border-slate-200/80 shadow-xs p-3.5">
+      <div class="text-xs font-bold uppercase tracking-wider text-slate-500">Confirmés</div>
+      <div class="text-2xl font-heading font-extrabold text-ctsa-green tabular-nums mt-1">{{ totals.confirmed }}</div>
+      <div class="text-xs text-slate-500 mt-0.5">sur la rampe</div>
+    </div>
+    <div class="bg-white rounded-xl border border-slate-200/80 shadow-xs p-3.5">
+      <div class="text-xs font-bold uppercase tracking-wider text-slate-500">Vérifiés</div>
+      <div class="text-2xl font-heading font-extrabold text-[#006b3f] tabular-nums mt-1">{{ totals.verified }}</div>
+      <div class="text-xs text-slate-500 mt-0.5">{% if totals.rate is not None %}{{ totals.rate }} % des confirmés{% else %}—{% endif %}</div>
+    </div>
+    <div class="bg-white rounded-xl border border-slate-200/80 shadow-xs p-3.5">
+      <div class="text-xs font-bold uppercase tracking-wider text-slate-500">Restent à vérifier</div>
+      <div class="text-2xl font-heading font-extrabold text-ctsa-pending-text tabular-nums mt-1">{{ totals.to_verify }}</div>
+      <div class="text-xs text-slate-500 mt-0.5">{{ totals.not_verified }} non vérifié{{ totals.not_verified|pluralize }}</div>
+    </div>
+  </div>
+
+  {% if rows %}
+    <!-- Mobile : cartes -->
+    <div class="lg:hidden space-y-3" aria-label="Liste mobile du registre">
+      {% for c in rows %}
+        <article class="bg-white rounded-xl border border-slate-200/80 shadow-xs p-3.5 space-y-2.5">
+          <a href="{% url 'terminal:container_detail' c.pk %}" class="block no-underline group">
+            <div class="flex items-center justify-between gap-2">
+              <span class="text-base font-bold font-mono tabular-nums text-ctsa-slate group-hover:text-ctsa-bluehover">{{ c.container_number }}</span>
+              {% if c.verification_result == 'verified' %}
+                {% include 'components/badge.html' with variant='verified' label='Vérifié' %}
+              {% elif c.verification_result == 'not_verified' %}
+                {% include 'components/badge.html' with variant='not_verified' label='Non vérifié' %}
+              {% else %}
+                {% include 'components/badge.html' with variant=c.status label=c.get_status_display %}
+              {% endif %}
+            </div>
+            <p class="text-xs text-slate-500 mt-1 mb-0 tabular-nums">
+              Séance {{ c.scheduled_date|date:"d/m/Y" }} · {{ c.shipping_line.name|default:"Ligne non renseignée" }}
+            </p>
+          </a>
+        </article>
+      {% endfor %}
+    </div>
+
+    <!-- Desktop : tableau -->
+    <section class="hidden lg:block bg-white rounded-xl border border-slate-200/80 shadow-xs overflow-hidden" aria-label="Tableau du registre">
+      <div class="overflow-x-auto">
+        <table class="ctsa-table w-full">
+          <thead class="bg-slate-50/95">
+            <tr>
+              <th scope="col">Conteneur</th>
+              <th scope="col">Séance</th>
+              <th scope="col">Ligne maritime</th>
+              <th scope="col">Statut</th>
+              <th scope="col">Vérification</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for c in rows %}
+              <tr>
+                <th scope="row">
+                  <a href="{% url 'terminal:container_detail' c.pk %}" class="font-mono text-sm font-bold text-ctsa-slate hover:text-ctsa-bluehover no-underline tabular-nums">{{ c.container_number }}</a>
+                </th>
+                <td class="tabular-nums">{{ c.scheduled_date|date:"d/m/Y" }}</td>
+                <td>{{ c.shipping_line.name|default:"Non renseignée" }}</td>
+                <td>{% include 'components/badge.html' with variant=c.status label=c.get_status_display %}</td>
+                <td>
+                  {% if c.verification_result == 'verified' %}
+                    {% include 'components/badge.html' with variant='verified' label='Vérifié' %}
+                    <div class="text-xs text-slate-500 mt-0.5 tabular-nums">{{ c.verified_at|date:"d/m/Y H:i" }}</div>
+                  {% elif c.verification_result == 'not_verified' %}
+                    {% include 'components/badge.html' with variant='not_verified' label='Non vérifié' %}
+                    {% if c.verification_note %}<div class="text-xs text-slate-500 mt-0.5">{{ c.verification_note }}</div>{% endif %}
+                  {% else %}
+                    <span class="text-xs text-slate-500">—</span>
+                  {% endif %}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    {% include 'components/pagination.html' %}
+  {% else %}
+    {% include 'components/empty_state.html' with title="Aucun résultat dans le registre" description="Aucune programmation ne correspond aux critères sélectionnés." %}
+  {% endif %}
+
 </div>
 {% endblock %}

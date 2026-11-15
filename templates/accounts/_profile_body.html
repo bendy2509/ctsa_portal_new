@@ -1,0 +1,96 @@
+<div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-5 space-y-5">
+
+  <header class="pb-4 border-b border-slate-200/80">
+    <h1 class="text-xl sm:text-2xl font-heading font-extrabold text-ctsa-slate m-0">Mon profil</h1>
+    <p class="text-sm text-slate-500 mt-1 mb-0">
+      Identifiant : <strong class="font-mono text-ctsa-slate">{{ user.username }}</strong> ·
+      {% include 'components/badge.html' with variant=user.role label=user.get_role_display %}
+    </p>
+  </header>
+
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-5 items-start">
+    <section aria-labelledby="profile-info-heading" class="bg-white rounded-xl border border-slate-200/80 shadow-xs p-4 sm:p-6 space-y-4">
+      <div class="pb-3 border-b border-slate-100">
+        <h2 id="profile-info-heading" class="text-base font-heading font-extrabold text-ctsa-slate m-0">
+          Informations personnelles
+        </h2>
+      </div>
+      <form action="{% url 'accounts:profile' %}" method="post" aria-labelledby="profile-info-heading" class="space-y-4">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="update_profile">
+
+        <div class="space-y-1.5">
+          <label for="prof-fullname" class="block text-sm font-bold text-ctsa-slate">Nom complet</label>
+          <input type="text" id="prof-fullname" name="full_name" value="{{ profile_form.full_name.value|default:'' }}" autocomplete="name"
+                 class="w-full min-h-[44px] rounded-lg border border-slate-300 px-3.5 py-2 text-sm text-ctsa-slate bg-white">
+        </div>
+
+        <div class="space-y-1.5">
+          <label for="prof-email" class="block text-sm font-bold text-ctsa-slate">Adresse courriel</label>
+          <input type="email" id="prof-email" name="email" value="{{ profile_form.email.value|default:'' }}" autocomplete="email"
+                 class="w-full min-h-[44px] rounded-lg border border-slate-300 px-3.5 py-2 text-sm text-ctsa-slate bg-white">
+        </div>
+
+        <div class="space-y-1.5">
+          <label for="prof-company" class="block text-sm font-bold text-ctsa-slate">Entreprise / Service</label>
+          <input type="text" id="prof-company" name="company_name" value="{{ profile_form.company_name.value|default:'' }}" autocomplete="organization"
+                 class="w-full min-h-[44px] rounded-lg border border-slate-300 px-3.5 py-2 text-sm text-ctsa-slate bg-white">
+        </div>
+
+        <div class="space-y-1.5">
+          <label for="prof-phone" class="block text-sm font-bold text-ctsa-slate">Téléphone</label>
+          <input type="tel" id="prof-phone" name="phone" value="{{ profile_form.phone.value|default:'' }}" autocomplete="tel"
+                 class="w-full min-h-[44px] rounded-lg border border-slate-300 px-3.5 py-2 text-sm text-ctsa-slate bg-white">
+        </div>
+
+        <button type="submit" data-submit-guard class="ui-btn ui-btn-primary w-full">
+          Enregistrer mes informations
+        </button>
+      </form>
+    </section>
+
+    <section aria-labelledby="profile-pwd-heading" class="bg-white rounded-xl border border-slate-200/80 shadow-xs p-4 sm:p-6 space-y-4">
+      <div class="pb-3 border-b border-slate-100">
+        <h2 id="profile-pwd-heading" class="text-base font-heading font-extrabold text-ctsa-slate m-0">
+          Modifier mon mot de passe
+        </h2>
+      </div>
+      <form action="{% url 'accounts:profile' %}" method="post" aria-labelledby="profile-pwd-heading" class="space-y-4">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="change_password">
+
+        <div class="space-y-1.5">
+          <label for="id_old_password" class="block text-sm font-bold text-ctsa-slate">Mot de passe actuel</label>
+          <input type="password" id="id_old_password" name="old_password" required autocomplete="current-password"
+                 class="w-full min-h-[44px] rounded-lg border {% if password_form.old_password.errors %}border-ctsa-red{% else %}border-slate-300{% endif %} px-3.5 py-2 text-sm text-ctsa-slate bg-white">
+          {% if password_form.old_password.errors %}
+            <p class="text-xs font-semibold text-ctsa-red-text m-0" role="alert">{{ password_form.old_password.errors.0 }}</p>
+          {% endif %}
+        </div>
+
+        <div class="space-y-1.5">
+          <label for="id_new_password1" class="block text-sm font-bold text-ctsa-slate">Nouveau mot de passe (min. 8 car.)</label>
+          <input type="password" id="id_new_password1" name="new_password1" required minlength="8" autocomplete="new-password"
+                 class="w-full min-h-[44px] rounded-lg border {% if password_form.new_password1.errors %}border-ctsa-red{% else %}border-slate-300{% endif %} px-3.5 py-2 text-sm text-ctsa-slate bg-white">
+          {% if password_form.new_password1.errors %}
+            <p class="text-xs font-semibold text-ctsa-red-text m-0" role="alert">{{ password_form.new_password1.errors.0 }}</p>
+          {% endif %}
+        </div>
+
+        <div class="space-y-1.5">
+          <label for="id_new_password2" class="block text-sm font-bold text-ctsa-slate">Confirmer le nouveau mot de passe</label>
+          <input type="password" id="id_new_password2" name="new_password2" required minlength="8" autocomplete="new-password"
+                 class="w-full min-h-[44px] rounded-lg border {% if password_form.new_password2.errors %}border-ctsa-red{% else %}border-slate-300{% endif %} px-3.5 py-2 text-sm text-ctsa-slate bg-white">
+          {% if password_form.new_password2.errors %}
+            <p class="text-xs font-semibold text-ctsa-red-text m-0" role="alert">{{ password_form.new_password2.errors.0 }}</p>
+          {% endif %}
+        </div>
+
+        <button type="submit" data-submit-guard class="ui-btn ui-btn-secondary w-full">
+          Mettre à jour le mot de passe
+        </button>
+      </form>
+    </section>
+  </div>
+
+</div>

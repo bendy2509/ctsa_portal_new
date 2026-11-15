@@ -1,0 +1,10 @@
+{# Composant data_table : enveloppe accessible pour tableaux desktop. #}
+<div tabindex="0"
+     role="region"
+     aria-labelledby="{{ caption_id }}"
+     class="overflow-x-auto bg-white rounded-xl border border-slate-200/80 shadow-xs">
+  <table class="w-full border-collapse text-left text-sm">
+    <caption id="{{ caption_id }}" class="visually-hidden">{{ caption }}</caption>
+    {{ content }}
+  </table>
+</div>

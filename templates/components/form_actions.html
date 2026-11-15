@@ -1,0 +1,11 @@
+{# Composant form_actions : barre sticky en bas des formulaires (Enregistrer + Annuler). #}
+<div class="ui-form-actions">
+  {% if cancel_url %}
+    <a href="{{ cancel_url }}" class="ui-btn ui-btn-secondary flex-1 sm:flex-initial min-w-0">
+      {{ cancel_label|default:"Annuler" }}
+    </a>
+  {% endif %}
+  <button type="submit" data-submit-guard class="ui-btn ui-btn-primary flex-1 sm:flex-initial min-w-0">
+    {{ submit_label|default:"Enregistrer" }}
+  </button>
+</div>

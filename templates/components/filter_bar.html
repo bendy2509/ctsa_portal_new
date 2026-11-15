@@ -1,0 +1,39 @@
+{# Composant filter_bar : recherche + filtres repliables sur mobile + export secondaire éventuel. #}
+<search>
+  <form action="{{ action_url }}" method="get" class="bg-white rounded-xl border border-slate-200/80 p-3 sm:p-4 shadow-xs space-y-3">
+    {% if hidden_fields %}{{ hidden_fields }}{% endif %}
+    <div class="flex flex-wrap items-center gap-2">
+      <div class="flex-1 min-w-[180px]">
+        <label for="{{ search_id|default:'filter-q' }}" class="visually-hidden">{{ search_label|default:'Rechercher' }}</label>
+        <input type="search"
+               id="{{ search_id|default:'filter-q' }}"
+               name="{{ search_name|default:'q' }}"
+               value="{{ search_value }}"
+               placeholder="{{ search_placeholder|default:'Rechercher...' }}"
+               autocorrect="off"
+               spellcheck="false"
+               class="form-control min-h-[44px] text-sm">
+      </div>
+      <button type="submit" class="ui-btn ui-btn-primary shrink-0">
+        <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+        <span class="hidden sm:inline">Filtrer</span>
+      </button>
+      {% if export_url %}
+        <a href="{{ export_url }}" class="ui-btn ui-btn-secondary shrink-0" aria-label="{{ export_label|default:'Exporter' }}" title="{{ export_label|default:'Exporter' }}">
+          <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
+          <span class="hidden sm:inline">{{ export_label|default:'Exporter' }}</span>
+        </a>
+      {% endif %}
+    </div>
+    {% if extra_filters %}
+      <details class="group" {% if filters_open %}open{% endif %}>
+        <summary class="text-xs font-heading font-bold uppercase tracking-wider text-slate-600 cursor-pointer select-none py-1">
+          Filtres avancés
+        </summary>
+        <div class="pt-2 grid grid-cols-1 sm:grid-cols-3 gap-3">
+          {{ extra_filters }}
+        </div>
+      </details>
+    {% endif %}
+  </form>
+</search>

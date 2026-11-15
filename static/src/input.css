@@ -8,7 +8,7 @@
   --font-heading: "Raleway", "Open Sans", Arial, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 
-  /* Palette officielle CTSA & tokens sémantiques */
+  /* Palette officielle CTSA */
   --color-ctsa-slate: #2c3741;
   --color-ctsa-slatedark: #232c34;
   --color-ctsa-secondary: #2c3e50;
@@ -29,7 +29,26 @@
   --color-ctsa-bgalt: #f4f4f4;
   --color-ctsa-border: #dadada;
 
-  /* Rayons & ombres « Industrial Precision » */
+  /* Tokens sémantiques du système de design */
+  --color-primary: #217dbb;
+  --color-primary-hover: #1a6394;
+  --color-success: #008751;
+  --color-success-surface: #eef8f3;
+  --color-warning: #8a5300;
+  --color-warning-surface: #fff6e0;
+  --color-danger: #b82c1f;
+  --color-danger-surface: #fdf2f1;
+  --color-neutral: #475569;
+  --color-neutral-surface: #f1f5f9;
+
+  /* Échelle d'espacement (4 / 8 / 12 / 16 / 24) */
+  --spacing-1: 0.25rem;
+  --spacing-2: 0.5rem;
+  --spacing-3: 0.75rem;
+  --spacing-4: 1rem;
+  --spacing-6: 1.5rem;
+
+  /* Rayons & ombres */
   --radius-card: 0.75rem;
   --radius-control: 0.5rem;
   --shadow-card: 0 1px 2px rgba(44, 55, 65, 0.04), 0 1px 3px rgba(44, 55, 65, 0.03);

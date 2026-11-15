@@ -15,6 +15,8 @@ urlpatterns = [
     # Partie interne (/admin)
     path('admin/', views.dashboard_view, name='dashboard'),
     path('admin/conteneurs/', views.container_list_view, name='containers'),
+    path('admin/conteneurs/<int:pk>/', views.container_detail_view, name='container_detail'),
+    path('admin/conteneurs/<int:pk>/modifier/', views.container_edit_view, name='container_edit'),
     path('admin/preparer/', views.prepare_view, name='prepare'),
     path('admin/containers/add/', views.container_add_single_view, name='container_add_single'),
     path('admin/containers/bulk-add/', views.container_add_bulk_view, name='container_add_bulk'),
@@ -32,4 +34,7 @@ urlpatterns = [
     path('admin/containers/export-csv/', views.container_export_csv_view, name='container_export_csv'),
     path('admin/historique/', views.status_logs_view, name='status_logs'),
     path('admin/lignes-maritimes/', views.shipping_lines_view, name='shipping_lines'),
+    path('admin/lignes-maritimes/nouveau/', views.shipping_line_create_view, name='shipping_line_create'),
+    path('admin/lignes-maritimes/<int:pk>/modifier/', views.shipping_line_edit_view, name='shipping_line_edit'),
+    path('admin/lignes-maritimes/<int:pk>/supprimer/', views.shipping_line_delete_view, name='shipping_line_delete'),
 ]

@@ -30,8 +30,13 @@ from .models import (
 def _parse_date(date_str: str, default_date: datetime.date) -> datetime.date:
     if not date_str:
         return default_date
+    raw = date_str.strip()
     try:
-        return datetime.date.fromisoformat(date_str)
+        return datetime.date.fromisoformat(raw)
+    except ValueError:
+        pass
+    try:
+        return datetime.datetime.strptime(raw, '%d/%m/%Y').date()
     except ValueError:
         return default_date
 
@@ -60,7 +65,7 @@ def _pick_relevant_schedule(containers, today: datetime.date):
     return chosen
 
 
-PAGE_SIZE = 30
+PAGE_SIZE = 15
 
 
 def _paginate(request, queryset):
@@ -550,8 +555,11 @@ def container_add_single_view(request):
         )
         return redirect(_safe_next(request, _dashboard_url(target_date)))
 
-    # La ligne maritime est facultative : elle peut être renseignée plus tard.
+    # Ligne maritime obligatoire dès qu'au moins une ligne active existe.
     line_id = int(shipping_line_id) if shipping_line_id.isdigit() else None
+    if line_id is None and ShippingLine.objects.filter(is_active=True).exists():
+        messages.error(request, "Veuillez sélectionner une ligne maritime.")
+        return redirect(_safe_next(request, _dashboard_url(target_date)))
 
     existing = Container.objects.filter(
         container_number=normalized, scheduled_date=target_date
@@ -620,6 +628,9 @@ def container_add_bulk_view(request):
     # Tout nouvel ajout dans une liste démarre « En attente » jusqu'à confirmation sur la rampe.
     default_status = Container.Status.PENDING
     resolved_line_id = int(shipping_line_id) if shipping_line_id.isdigit() else None
+    if resolved_line_id is None and ShippingLine.objects.filter(is_active=True).exists():
+        messages.error(request, "Veuillez sélectionner une ligne maritime.")
+        return redirect(_safe_next(request, _dashboard_url(target_date)))
 
     tokens = [t.strip() for t in re.split(r'[\r\n,;]+', raw_list) if t.strip()]
     if not tokens:
@@ -790,7 +801,113 @@ def container_delete_view(request, pk):
         ).update(carry_decision='', carry_decided_by=None, carry_decided_at=None)
     container.delete()
     messages.info(request, f"Le conteneur {num} a été supprimé de la liste du {scheduled.strftime('%d/%m/%Y')}.")
-    return redirect(_dashboard_url(scheduled))
+    return redirect(f"{reverse('terminal:containers')}?date={scheduled.isoformat()}")
+
+
+@login_required
+def container_detail_view(request, pk):
+    """Fiche détail d'un conteneur programmé : infos, changement de statut, suppression, historique."""
+    if not request.user.is_staff_member:
+        return redirect('terminal:client_watchlist')
+
+    container = get_object_or_404(
+        Container.objects.select_related(
+            'shipping_line', 'prefix_ref', 'created_by', 'updated_by', 'verified_by', 'carried_from'
+        ),
+        pk=pk,
+    )
+    logs = (
+        ContainerStatusLog.objects.select_related('changed_by')
+        .filter(container=container)
+        .order_by('-changed_at')
+    )
+    return render(request, 'portal/container_detail.html', {
+        'container': container,
+        'logs': logs,
+        'shipping_lines': ShippingLine.objects.filter(is_active=True),
+    })
+
+
+@login_required
+def container_edit_view(request, pk):
+    """Page dédiée de modification d'un conteneur programmé."""
+    if not request.user.can_edit_or_delete_containers:
+        messages.error(request, "Vous n'avez pas l'autorisation de modifier ce conteneur.")
+        return redirect('terminal:container_detail', pk=pk)
+
+    container = get_object_or_404(Container, pk=pk)
+    shipping_lines = ShippingLine.objects.filter(is_active=True)
+    errors = {}
+    form_values = {
+        'container_number': container.container_number,
+        'shipping_line': str(container.shipping_line_id or ''),
+        'scheduled_date': container.scheduled_date.isoformat(),
+        'status': container.status,
+        'unavailability_note': container.unavailability_note,
+    }
+
+    if request.method == 'POST':
+        raw_number = request.POST.get('container_number', '').strip()
+        normalized = normalize_container_number(raw_number)
+        raw_line = request.POST.get('shipping_line', '').strip()
+        raw_date = request.POST.get('scheduled_date', '').strip()
+        new_status = request.POST.get('status', '').strip()
+        note = request.POST.get('unavailability_note', '').strip()
+
+        form_values = {
+            'container_number': raw_number,
+            'shipping_line': raw_line,
+            'scheduled_date': raw_date,
+            'status': new_status,
+            'unavailability_note': note,
+        }
+
+        if not CONTAINER_NUMBER_REGEX.match(normalized):
+            errors['container_number'] = "Format requis : 4 lettres suivies de 7 chiffres (ex. CMAU4052450)."
+
+        try:
+            parsed_date = datetime.date.fromisoformat(raw_date)
+        except ValueError:
+            parsed_date = None
+            errors['scheduled_date'] = "Veuillez saisir une date valide."
+
+        if new_status not in dict(Container.Status.choices):
+            errors['status'] = "Statut invalide."
+
+        line_obj = None
+        if raw_line:
+            if raw_line.isdigit():
+                line_obj = ShippingLine.objects.filter(pk=int(raw_line)).first()
+            if not line_obj:
+                errors['shipping_line'] = "Ligne maritime invalide."
+
+        if (
+            not errors
+            and Container.objects.filter(container_number=normalized, scheduled_date=parsed_date)
+            .exclude(pk=container.pk)
+            .exists()
+        ):
+            errors['container_number'] = (
+                f"Le conteneur {normalized} est déjà programmé le {parsed_date.strftime('%d/%m/%Y')}."
+            )
+
+        if not errors:
+            container.container_number = normalized
+            container.shipping_line = line_obj
+            container.scheduled_date = parsed_date
+            container.status = new_status
+            container.unavailability_note = note if new_status == Container.Status.UNAVAILABLE else ''
+            container.save(acting_user=request.user)
+            messages.success(request, f"Conteneur {container.container_number} enregistré.")
+            return redirect('terminal:container_detail', pk=container.pk)
+
+    return render(request, 'portal/container_edit.html', {
+        'container': container,
+        'shipping_lines': shipping_lines,
+        'status_choices': Container.Status.choices,
+        'errors': errors,
+        'form_values': form_values,
+    })
 
 
 @login_required
@@ -1225,15 +1342,17 @@ def statistics_view(request):
         response.write('﻿')
         writer = csv.writer(response, delimiter=';')
         writer.writerow([
-            'Periode', 'Programmes', 'Confirmes', 'Verifies', 'Non verifies',
-            'Confirmes non marques', 'Repris', 'Rejetes', 'Taux de verification (%)',
+            'Periode', 'Programmes', 'Confirmes', 'Verifies', 'Restent a verifier',
+            'Repris', 'Rejetes', 'Taux de verification (%)',
         ])
         for b in buckets + [{'label': 'TOTAL', **totals}]:
             writer.writerow([
-                b['label'], b['scheduled'], b['confirmed'], b['verified'], b['not_verified'],
+                b['label'], b['scheduled'], b['confirmed'], b['verified'],
                 b['to_verify'], b['carried'], b['rejected'], '' if b['rate'] is None else b['rate'],
             ])
         return response
+
+    show_lines = len(lines) > 1 or (len(lines) == 1 and lines[0]['shipping_line__name'] is not None)
 
     return render(request, 'portal/statistics.html', {
         'today': today,
@@ -1247,6 +1366,7 @@ def statistics_view(request):
         'buckets': buckets,
         'by_week': by_week,
         'lines': lines,
+        'show_lines': show_lines,
         'avg_delay': avg_delay,
         'verified_with_delay': len(delays),
         'backlog': backlog,
@@ -1529,4 +1649,77 @@ def shipping_lines_view(request):
     return render(request, 'portal/shipping_lines.html', {
         'lines': lines,
     })
+
+
+@login_required
+def shipping_line_create_view(request):
+    """Page dédiée de création d'une ligne maritime."""
+    if not request.user.is_portal_admin:
+        messages.error(request, "Accès réservé aux administrateurs.")
+        return redirect('terminal:dashboard')
+
+    error = ''
+    name = ''
+    if request.method == 'POST':
+        from django.utils.text import slugify
+        name = (request.POST.get('name') or '').strip()
+        if not name:
+            error = "Le nom de la ligne maritime est obligatoire."
+        elif ShippingLine.objects.filter(name__iexact=name).exists():
+            error = f"La ligne maritime « {name} » existe déjà."
+        else:
+            ShippingLine.objects.create(name=name, code=slugify(name)[:20].upper())
+            messages.success(request, f"Ligne maritime « {name} » ajoutée.")
+            return redirect('terminal:shipping_lines')
+
+    return render(request, 'portal/shipping_line_form.html', {
+        'line': None,
+        'name': name,
+        'error': error,
+    })
+
+
+@login_required
+def shipping_line_edit_view(request, pk):
+    """Page dédiée de modification d'une ligne maritime."""
+    if not request.user.is_portal_admin:
+        messages.error(request, "Accès réservé aux administrateurs.")
+        return redirect('terminal:dashboard')
+
+    line = get_object_or_404(ShippingLine, pk=pk)
+    error = ''
+    name = line.name
+    if request.method == 'POST':
+        from django.utils.text import slugify
+        name = (request.POST.get('name') or '').strip()
+        if not name:
+            error = "Le nom de la ligne maritime est obligatoire."
+        elif ShippingLine.objects.filter(name__iexact=name).exclude(pk=line.pk).exists():
+            error = f"Une ligne maritime nommée « {name} » existe déjà."
+        else:
+            line.name = name
+            line.code = slugify(name)[:20].upper()
+            line.save()
+            messages.success(request, f"Ligne maritime renommée en « {name} ».")
+            return redirect('terminal:shipping_lines')
+
+    return render(request, 'portal/shipping_line_form.html', {
+        'line': line,
+        'name': name,
+        'error': error,
+    })
+
+
+@login_required
+@require_POST
+def shipping_line_delete_view(request, pk):
+    if not request.user.is_portal_admin:
+        messages.error(request, "Accès réservé aux administrateurs.")
+        return redirect('terminal:dashboard')
+
+    line = get_object_or_404(ShippingLine, pk=pk)
+    name = line.name
+    line.delete()
+    messages.info(request, f"Ligne maritime « {name} » supprimée.")
+    return redirect('terminal:shipping_lines')
 

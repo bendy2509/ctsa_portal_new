@@ -337,38 +337,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // Fermer les menus déroulants (.portal-dropdown) au clic extérieur ou sur Échap
-  // et les ouvrir vers le haut s'ils risquent d'être coupés en bas de l'écran.
-  document.querySelectorAll('details.portal-dropdown').forEach((dd) => {
-    dd.addEventListener('toggle', () => {
-      if (!dd.open) {
-        dd.classList.remove('open-up');
-        return;
-      }
-      const menu = dd.querySelector('.portal-dropdown-menu');
-      if (!menu) return;
-      dd.classList.remove('open-up');
-      const rect = menu.getBoundingClientRect();
-      const bottomLimit = window.innerWidth < 1024 ? window.innerHeight - 68 : window.innerHeight - 12;
-      if (rect.bottom > bottomLimit) {
-        dd.classList.add('open-up');
-      }
-    });
-  });
-
-  document.addEventListener('click', (e) => {
-    document.querySelectorAll('details.portal-dropdown[open]').forEach((dd) => {
-      if (!dd.contains(e.target)) dd.open = false;
-    });
-  });
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') {
-      document.querySelectorAll('details.portal-dropdown[open]').forEach((dd) => {
-        dd.open = false;
-      });
-    }
-  });
-
   // 8 ter (suite). Barre de sélection : visible seulement quand au moins une case est cochée.
   document.querySelectorAll('[data-selection-bar]').forEach((bar) => {
     const group = bar.dataset.selectionBar;
@@ -516,21 +484,83 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // 9. Panneau dépliable "Nouvel utilisateur"
-  const createUserBtn = document.getElementById('toggle-create-user-btn');
-  const createUserPanel = document.getElementById('create-user-panel');
-  if (createUserBtn && createUserPanel) {
-    createUserBtn.addEventListener('click', () => {
-      const isHidden = createUserPanel.hidden;
-      createUserPanel.hidden = !isHidden;
-      createUserBtn.setAttribute('aria-expanded', String(isHidden));
-    });
-  }
-
   // 10. Bouton d'impression de la fiche bordereau RAMPE sur /verification/
   document.querySelectorAll('[data-print-slip]').forEach((btn) => {
     btn.addEventListener('click', () => {
       window.print();
     });
   });
+
+  // 11. Protection contre le double envoi des formulaires (data-submit-guard)
+  document.querySelectorAll('form').forEach((form) => {
+    form.addEventListener('submit', () => {
+      const btn = form.querySelector('[data-submit-guard]');
+      if (!btn || btn.disabled) return;
+      btn.disabled = true;
+      btn.classList.add('is-loading');
+      btn.setAttribute('aria-busy', 'true');
+    });
+  });
+
+  // 12. Modale de confirmation générique (#ui-confirm-dialog)
+  const uiConfirmDialog = document.getElementById('ui-confirm-dialog');
+  if (uiConfirmDialog && typeof uiConfirmDialog.showModal === 'function') {
+    const titleEl = document.getElementById('ui-confirm-title');
+    const msgEl = document.getElementById('ui-confirm-message');
+    const formEl = document.getElementById('ui-confirm-form');
+    const extraEl = document.getElementById('ui-confirm-extra');
+    const submitEl = document.getElementById('ui-confirm-submit');
+
+    document.querySelectorAll('[data-confirm-modal]').forEach((trigger) => {
+      trigger.addEventListener('click', () => {
+        if (titleEl) titleEl.textContent = trigger.dataset.confirmTitle || "Confirmer l'action";
+        if (msgEl) msgEl.textContent = trigger.dataset.confirmMessage || "Êtes-vous sûr de vouloir continuer ?";
+        if (formEl) formEl.action = trigger.dataset.confirmAction || '';
+        if (submitEl) submitEl.textContent = trigger.dataset.confirmLabel || 'Supprimer';
+        if (extraEl) {
+          extraEl.innerHTML = '';
+          if (trigger.dataset.confirmPayloadName && trigger.dataset.confirmPayloadValue) {
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = trigger.dataset.confirmPayloadName;
+            input.value = trigger.dataset.confirmPayloadValue;
+            extraEl.appendChild(input);
+          }
+        }
+        uiConfirmDialog.showModal();
+      });
+    });
+
+    uiConfirmDialog.querySelector('[data-confirm-cancel]')?.addEventListener('click', () => {
+      uiConfirmDialog.close('cancel');
+    });
+
+    uiConfirmDialog.addEventListener('close', () => {
+      uiConfirmDialog.returnValue = '';
+    });
+  }
+
+  // 13. Bottom sheet pour la note d'inspection « Non vérifié »
+  const verifDialog = document.getElementById('verification-note-dialog');
+  if (verifDialog && typeof verifDialog.showModal === 'function') {
+    const verifForm = document.getElementById('verification-note-form');
+    const verifSub = document.getElementById('verification-note-subtitle');
+    const verifNext = document.getElementById('verification-note-next');
+    const verifInput = document.getElementById('verification-note-input');
+
+    document.addEventListener('click', (e) => {
+      const btn = e.target.closest('[data-verification-note-trigger]');
+      if (!btn) return;
+      if (verifForm) verifForm.action = btn.dataset.action || '';
+      if (verifSub) verifSub.textContent = btn.dataset.number || '';
+      if (verifNext) verifNext.value = btn.dataset.next || '';
+      if (verifInput) verifInput.value = btn.dataset.note || '';
+      verifDialog.showModal();
+      verifInput?.focus();
+    });
+
+    verifDialog.querySelector('[data-verification-note-cancel]')?.addEventListener('click', () => {
+      verifDialog.close('cancel');
+    });
+  }
 });

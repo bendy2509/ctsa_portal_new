@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 
-{% block body_class %}portal-body bg-[#f8fafc]{% endblock %}
+{% block body_class %}portal-body bg-[#f8fafc] {% block portal_body_extra %}{% endblock %}{% endblock %}
 
 {# L'administration a sa propre coque : pas d'en-tête ni de pied de page du site public. #}
 {% block chrome_top %}{% endblock %}
@@ -123,12 +123,35 @@
       </div>
     </nav>
 
-    <div class="portal-sidebar-foot">
+    <div class="portal-sidebar-foot space-y-1">
+      <div class="portal-user-card">
+        <span class="portal-user-avatar" aria-hidden="true">{{ user.display_name|slice:":1"|upper }}</span>
+        <div class="min-w-0 flex-1">
+          <div class="text-[13px] font-bold text-white truncate leading-tight">{{ user.display_name }}</div>
+          <div class="text-[11px] text-slate-300/85 truncate mt-0.5">{{ user.get_role_display }}</div>
+        </div>
+      </div>
+
+      <a href="{% url 'accounts:profile' %}"
+         {% if current == 'profile' %}aria-current="page"{% endif %}
+         class="portal-nav-link">
+        <svg class="portal-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        <span>Mon profil</span>
+      </a>
+
       <a href="{% url 'terminal:home' %}" class="portal-nav-link">
         <!-- Lucide: external-link -->
         <svg class="portal-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>
         <span>Portail public</span>
       </a>
+
+      <form action="{% url 'accounts:logout' %}" method="post">
+        {% csrf_token %}
+        <button type="submit" class="portal-nav-link portal-nav-link-logout w-full text-left border-0 bg-transparent cursor-pointer">
+          <svg class="portal-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>
+          <span>Déconnexion</span>
+        </button>
+      </form>
     </div>
   </aside>
 
@@ -139,6 +162,7 @@
                 id="portal-nav-toggle"
                 aria-expanded="false"
                 aria-controls="portal-nav"
+                aria-label="Ouvrir le menu"
                 class="portal-menu-btn shrink-0">
           <!-- Lucide: menu -->
           <svg class="portal-icon" viewBox="0 0 24 24" aria-hidden="true"><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="18" y2="18"/></svg>
@@ -147,15 +171,15 @@
 
         <span class="lg:hidden text-sm font-heading font-extrabold text-[#2c3741] truncate">
           {% if current == 'dashboard' %}Tableau de bord
-          {% elif current == 'containers' %}Conteneurs
+          {% elif current == 'containers' or current == 'container_detail' or current == 'container_edit' %}Conteneurs
           {% elif current == 'prepare' %}Préparer
           {% elif current == 'inspection' %}Inspection
           {% elif current == 'carryover' %}Non vérifiés
           {% elif current == 'statistics' %}Statistiques
           {% elif current == 'register' %}Registre
           {% elif current == 'status_logs' %}Historique
-          {% elif current == 'shipping_lines' %}Lignes maritimes
-          {% elif current == 'user_list' or current == 'user_edit' %}Utilisateurs
+          {% elif current == 'shipping_lines' or current == 'shipping_line_create' or current == 'shipping_line_edit' %}Lignes maritimes
+          {% elif current == 'user_list' or current == 'user_create' or current == 'user_edit' or current == 'user_detail' %}Utilisateurs
           {% elif current == 'profile' %}Mon profil
           {% else %}Exploitation RAMPE{% endif %}
         </span>
@@ -164,29 +188,11 @@
       <div class="portal-topbar-date">
         {% now "l j F Y" as today_label %}{{ today_label|capfirst }}
       </div>
-
-      <div class="portal-account">
-        <div class="portal-account-id">
-          <strong>{{ user.display_name }}</strong>
-          <span>{{ user.get_role_display }}</span>
-        </div>
-        <a href="{% url 'accounts:profile' %}" class="btn-admin" aria-label="Mon profil" title="Mon profil">
-          <svg class="portal-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-          <span class="hidden sm:inline">Mon profil</span>
-        </a>
-        <form action="{% url 'accounts:logout' %}" method="post">
-          {% csrf_token %}
-          <button type="submit" class="btn-admin" aria-label="Déconnexion" title="Déconnexion">
-            <svg class="portal-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>
-            <span class="hidden sm:inline">Déconnexion</span>
-          </button>
-        </form>
-      </div>
     </header>
 
     {% if messages %}
       <div class="portal-messages" role="status" aria-live="polite">
-        {% include 'partials/messages.html' %}
+        {% include 'components/messages.html' %}
       </div>
     {% endif %}
 
@@ -194,30 +200,42 @@
       {% block portal_content %}{% endblock %}
     </main>
 
-    <!-- Barre d'accès rapide sur mobile pour éviter de se perdre dans le menu -->
-    <nav class="portal-bottom-nav lg:hidden" aria-label="Accès rapide mobile">
-      <a href="{% url 'terminal:dashboard' %}" {% if current == 'dashboard' %}aria-current="page"{% endif %} class="portal-bottom-link">
-        <svg class="portal-icon" viewBox="0 0 24 24" aria-hidden="true"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>
-        <span>Accueil</span>
-      </a>
-      <a href="{% url 'terminal:containers' %}" {% if current == 'containers' %}aria-current="page"{% endif %} class="portal-bottom-link">
-        <svg class="portal-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 6h13"/><path d="M8 12h13"/><path d="M8 18h13"/><path d="M3 6h.01"/><path d="M3 12h.01"/><path d="M3 18h.01"/></svg>
-        <span>Conteneurs</span>
-      </a>
-      <a href="{% url 'terminal:prepare' %}" {% if current == 'prepare' %}aria-current="page"{% endif %} class="portal-bottom-link">
-        <svg class="portal-icon" viewBox="0 0 24 24" aria-hidden="true"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M8 12h8"/><path d="M12 8v8"/></svg>
-        <span>Préparer</span>
-      </a>
-      <a href="{% url 'terminal:inspection' %}" {% if current == 'inspection' or current == 'carryover' %}aria-current="page"{% endif %} class="portal-bottom-link">
-        <span class="relative inline-flex">
-          <svg class="portal-icon" viewBox="0 0 24 24" aria-hidden="true"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="m9 14 2 2 4-4"/></svg>
-          {% if portal_unverified_count %}
-            <span class="portal-bottom-badge tabular-nums">{{ portal_unverified_count }}</span>
-          {% endif %}
-        </span>
-        <span>Inspection</span>
-      </a>
-    </nav>
+    {% include 'components/bottom_nav.html' %}
+    {% include 'components/confirm_modal.html' %}
+
+    <!-- Bottom sheet réutilisable pour la note d'inspection « Non vérifié » -->
+    <dialog id="verification-note-dialog" class="ui-dialog ui-bottom-sheet" closedby="any" aria-labelledby="verification-note-title">
+      <form id="verification-note-form" method="post" action="" class="p-5 sm:p-6 space-y-4">
+        {% csrf_token %}
+        <input type="hidden" name="result" value="not_verified">
+        <input type="hidden" name="next" id="verification-note-next" value="">
+        <div class="space-y-1">
+          <h2 id="verification-note-title" class="text-lg font-heading font-extrabold text-ctsa-slate m-0">
+            Marquer non vérifié
+          </h2>
+          <p id="verification-note-subtitle" class="text-sm font-mono font-bold text-slate-600 m-0"></p>
+        </div>
+        <div class="space-y-1.5">
+          <label for="verification-note-input" class="block text-sm font-bold text-ctsa-slate">
+            Précision (facultatif)
+          </label>
+          <input type="text"
+                 id="verification-note-input"
+                 name="verification_note"
+                 maxlength="255"
+                 placeholder="Ex. scellé absent, file fermée..."
+                 class="w-full min-h-[44px] rounded-lg border border-slate-300 px-3.5 py-2 text-sm text-ctsa-slate bg-white focus:outline-none focus:ring-2 focus:ring-ctsa-blue/30 focus:border-ctsa-blue">
+        </div>
+        <div class="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 pt-2">
+          <button type="button" data-verification-note-cancel class="ui-btn ui-btn-secondary">
+            Annuler
+          </button>
+          <button type="submit" data-submit-guard class="ui-btn ui-btn-primary">
+            Confirmer non vérifié
+          </button>
+        </div>
+      </form>
+    </dialog>
   </div>
 </div>
 {% endwith %}

@@ -1,0 +1,14 @@
+{# Composant form_section : regroupement de champs sur une colonne en mobile. #}
+<fieldset class="bg-white rounded-xl border border-slate-200/80 p-4 sm:p-6 shadow-xs space-y-4">
+  {% if title %}
+    <legend class="text-sm font-heading font-extrabold uppercase tracking-wider text-ctsa-slate px-1">
+      {{ title }}
+    </legend>
+  {% endif %}
+  {% if description %}
+    <p class="text-xs text-slate-500 m-0">{{ description }}</p>
+  {% endif %}
+  <div class="grid grid-cols-1 {{ grid_cols|default:'' }} gap-4">
+    {{ fields }}
+  </div>
+</fieldset>

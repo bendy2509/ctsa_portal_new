@@ -253,5 +253,197 @@ class CTSAPortalBusinessTests(TestCase):
         self.assertEqual(c1.unavailability_note, 'En maintenance')
         self.assertEqual(c2.status, Container.Status.CONFIRMED)
 
+    def test_container_list_detail_edit_delete_and_permissions(self):
+        from accounts.models import User
+        today = timezone.localdate()
+        c = Container.objects.create(
+            container_number='MSCU3333333',
+            shipping_line=self.cma,
+            scheduled_date=today,
+            status=Container.Status.PENDING,
+        )
+        c_dup = Container.objects.create(
+            container_number='MSCU4444444',
+            shipping_line=self.cma,
+            scheduled_date=today,
+            status=Container.Status.CONFIRMED,
+        )
+
+        # Non-staff user is redirected away from container detail & edit
+        client_user = User.objects.create_user(
+            username='client_only',
+            password='Password123!',
+            role=User.Role.CLIENT if hasattr(User, 'Role') else 'client',
+        )
+        self.client_http.login(username='client_only', password='Password123!')
+        self.assertEqual(
+            self.client_http.get(reverse('terminal:container_detail', args=[c.pk])).status_code,
+            302,
+        )
+        self.assertEqual(
+            self.client_http.get(reverse('terminal:container_edit', args=[c.pk])).status_code,
+            302,
+        )
+
+        # Staff user can view list without portal-dropdown, view detail, edit, and delete
+        self.client_http.login(username='sup_test', password='Password123!')
+        list_resp = self.client_http.get(reverse('terminal:containers'))
+        self.assertEqual(list_resp.status_code, 200)
+        self.assertContains(list_resp, 'MSCU3333333')
+        self.assertNotContains(list_resp, 'portal-dropdown')
+
+        detail_resp = self.client_http.get(reverse('terminal:container_detail', args=[c.pk]))
+        self.assertEqual(detail_resp.status_code, 200)
+        self.assertContains(detail_resp, 'MSCU3333333')
+
+        edit_get = self.client_http.get(reverse('terminal:container_edit', args=[c.pk]))
+        self.assertEqual(edit_get.status_code, 200)
+        self.assertContains(edit_get, 'portal-has-form-actions')
+
+        # Duplicate container_number on same date returns 200 with error
+        edit_dup = self.client_http.post(
+            reverse('terminal:container_edit', args=[c.pk]),
+            {
+                'container_number': 'MSCU4444444',
+                'scheduled_date': today.isoformat(),
+                'shipping_line': str(self.cma.pk),
+                'status': Container.Status.CONFIRMED,
+                'unavailability_note': '',
+            },
+        )
+        self.assertEqual(edit_dup.status_code, 200)
+        c.refresh_from_db()
+        self.assertEqual(c.container_number, 'MSCU3333333')
+
+        # Valid edit updates container and redirects to detail
+        edit_ok = self.client_http.post(
+            reverse('terminal:container_edit', args=[c.pk]),
+            {
+                'container_number': 'MSCU-5555555',
+                'scheduled_date': today.isoformat(),
+                'shipping_line': str(self.cma.pk),
+                'status': Container.Status.UNAVAILABLE,
+                'unavailability_note': 'Bloqué douane',
+            },
+        )
+        self.assertRedirects(edit_ok, reverse('terminal:container_detail', args=[c.pk]))
+        c.refresh_from_db()
+        self.assertEqual(c.container_number, 'MSCU5555555')
+        self.assertEqual(c.status, Container.Status.UNAVAILABLE)
+        self.assertEqual(c.unavailability_note, 'Bloqué douane')
+
+        # Delete removes container and redirects to containers list
+        del_resp = self.client_http.post(reverse('terminal:container_delete', args=[c.pk]))
+        self.assertEqual(del_resp.status_code, 302)
+        self.assertFalse(Container.objects.filter(pk=c.pk).exists())
+
+        # Adding without shipping_line is rejected when active shipping lines exist
+        no_line_resp = self.client_http.post(
+            reverse('terminal:container_add_single'),
+            {'container_number': 'MSCU7777777', 'scheduled_date': today.isoformat()},
+        )
+        self.assertEqual(no_line_resp.status_code, 302)
+        self.assertFalse(Container.objects.filter(container_number='MSCU7777777').exists())
+
+
+class ShippingLinesAndStatisticsTests(TestCase):
+    def setUp(self):
+        self.client_http = Client()
+        self.admin_user = User.objects.create_user(
+            username='sl_admin', password='Password123!', role=User.Role.ADMIN
+        )
+        self.client_user = User.objects.create_user(
+            username='sl_client', password='Password123!', role=User.Role.CLIENT
+        )
+
+    def test_shipping_line_create_edit_delete_and_permissions(self):
+        # Non-admin cannot access create/edit/delete
+        self.client_http.force_login(self.client_user)
+        resp_forbidden = self.client_http.get(reverse('terminal:shipping_line_create'))
+        self.assertIn(resp_forbidden.status_code, (302, 403))
+
+        # Admin creates a shipping line
+        self.client_http.force_login(self.admin_user)
+        create_resp = self.client_http.post(
+            reverse('terminal:shipping_line_create'),
+            {'name': 'Maersk Line', 'code': 'MSK', 'is_active': 'on'},
+        )
+        self.assertRedirects(create_resp, reverse('terminal:shipping_lines'))
+        line = ShippingLine.objects.get(name='Maersk Line')
+        self.assertEqual(line.code, 'MAERSK-LINE')
+        self.assertTrue(line.is_active)
+
+        # Non-admin cannot edit or delete existing line
+        self.client_http.force_login(self.client_user)
+        self.assertIn(
+            self.client_http.get(reverse('terminal:shipping_line_edit', args=[line.pk])).status_code,
+            (302, 403),
+        )
+        self.assertIn(
+            self.client_http.post(reverse('terminal:shipping_line_delete', args=[line.pk])).status_code,
+            (302, 403),
+        )
+        self.assertTrue(ShippingLine.objects.filter(pk=line.pk).exists())
+
+        # Admin edits and deletes the shipping line
+        self.client_http.force_login(self.admin_user)
+        edit_resp = self.client_http.post(
+            reverse('terminal:shipping_line_edit', args=[line.pk]),
+            {'name': 'Maersk Haiti'},
+        )
+        self.assertRedirects(edit_resp, reverse('terminal:shipping_lines'))
+        line.refresh_from_db()
+        self.assertEqual(line.name, 'Maersk Haiti')
+        self.assertEqual(line.code, 'MAERSK-HAITI')
+
+        del_resp = self.client_http.post(reverse('terminal:shipping_line_delete', args=[line.pk]))
+        self.assertRedirects(del_resp, reverse('terminal:shipping_lines'))
+        self.assertFalse(ShippingLine.objects.filter(pk=line.pk).exists())
+
+    def test_statistics_french_dates_csv_and_show_lines(self):
+        today = timezone.localdate()
+        Container.objects.create(
+            container_number='CMAU1111111',
+            scheduled_date=today,
+            status=Container.Status.CONFIRMED,
+            created_by=self.admin_user,
+        )
+        self.client_http.force_login(self.admin_user)
+
+        # Only unnamed container -> show_lines is False
+        du_fr = today.strftime('%d/%m/%Y')
+        resp = self.client_http.get(
+            reverse('terminal:statistics'),
+            {'periode': 'perso', 'du': du_fr, 'au': du_fr},
+        )
+        self.assertEqual(resp.status_code, 200)
+        self.assertFalse(resp.context['show_lines'])
+
+        # CSV export uses unified "Restent a verifier" header
+        csv_resp = self.client_http.get(
+            reverse('terminal:statistics'),
+            {'periode': 'perso', 'du': du_fr, 'au': du_fr, 'export': 'csv'},
+        )
+        self.assertEqual(csv_resp.status_code, 200)
+        self.assertIn('Restent a verifier', csv_resp.content.decode('utf-8-sig'))
+
+        # Adding a container with a shipping line turns show_lines True
+        cma = ShippingLine.objects.create(name='CMA CGM', code='CMA')
+        Container.objects.create(
+            container_number='CMAU2222222',
+            scheduled_date=today,
+            shipping_line=cma,
+            status=Container.Status.CONFIRMED,
+            created_by=self.admin_user,
+        )
+        resp_with_line = self.client_http.get(
+            reverse('terminal:statistics'),
+            {'periode': 'perso', 'du': du_fr, 'au': du_fr},
+        )
+        self.assertEqual(resp_with_line.status_code, 200)
+        self.assertTrue(resp_with_line.context['show_lines'])
+
+
+
 
 

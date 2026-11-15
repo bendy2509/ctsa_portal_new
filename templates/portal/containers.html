@@ -1,90 +1,42 @@
 {% extends 'portal/base_portal.html' %}
 
-{% block title %}Conteneurs du jour — Cap Terminal S.A.{% endblock %}
+{% block title %}Conteneurs — Cap Terminal S.A.{% endblock %}
+{% block page_title %}Conteneurs{% endblock %}
 
 {% block portal_content %}
 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 space-y-4">
 
-  <!-- 1. En-tête compact : Titre + Sélecteur de date + Préparer + Exporter -->
-  <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 pb-4 border-b border-slate-200/80">
-    <div>
-      <h1 class="mb-0 flex flex-wrap items-center gap-2.5 text-ctsa-slate font-heading">
-        <span>Conteneurs du {{ selected_date|date:"d/m/Y" }}</span>
-        {% if selected_date == today %}
-          <span class="inline-flex items-center gap-1.5 text-xs px-2.5 py-0.5 rounded-full bg-ctsa-green-bg text-ctsa-green border border-[#99d5bc] font-bold">
-            <span class="status-seg-dot dot-confirmed" aria-hidden="true"></span>
-            <span>Aujourd'hui</span>
-          </span>
-        {% elif selected_date == tomorrow %}
-          <span class="inline-flex items-center gap-1.5 text-xs px-2.5 py-0.5 rounded-full bg-ctsa-info-bg text-[#1d6fa5] border border-[#93c9ed] font-bold">
-            <span>Demain</span>
-          </span>
-        {% endif %}
-      </h1>
-      <p class="text-sm text-slate-500 mt-0.5 mb-0">{{ selected_date|date:"l j F Y"|capfirst }}</p>
-    </div>
+  {% url 'terminal:prepare' as prepare_url %}
+  {% with date_iso=selected_date|date:"Y-m-d" date_fr=selected_date|date:"d/m/Y" subtitle_str=selected_date|date:"l j F Y"|capfirst %}
+    {% include 'components/page_header.html' with title="Conteneurs du "|add:date_fr subtitle=subtitle_str count=stats.total primary_url=prepare_url|add:"?date="|add:date_iso primary_label="Ajouter" primary_icon="plus" %}
+  {% endwith %}
 
-    <div class="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2">
-      <div class="col-span-2 sm:col-auto flex flex-wrap items-center gap-2">
-        <div class="inline-flex rounded-lg border border-slate-200/80 bg-white overflow-hidden shadow-xs">
-          <a href="{% url 'terminal:containers' %}?date={{ today|date:'Y-m-d' }}"
-             class="px-3.5 py-2 text-xs font-bold border-r border-slate-200/80 transition {% if selected_date == today %}bg-ctsa-slate text-white{% else %}text-ctsa-slate hover:bg-slate-50{% endif %}">
-            Aujourd'hui
-          </a>
-          <a href="{% url 'terminal:containers' %}?date={{ tomorrow|date:'Y-m-d' }}"
-             class="px-3.5 py-2 text-xs font-bold transition {% if selected_date == tomorrow %}bg-ctsa-slate text-white{% else %}text-ctsa-slate hover:bg-slate-50{% endif %}">
-            Demain
-          </a>
-        </div>
-
-        <form action="{% url 'terminal:containers' %}" method="get" class="inline-flex items-center gap-1.5 flex-1 sm:flex-initial">
-          <label for="quick-date-picker" class="visually-hidden">Choisir une date</label>
-          <input type="date"
-                 id="quick-date-picker"
-                 name="date"
-                 value="{{ selected_date|date:'Y-m-d' }}"
-                 data-auto-submit-date
-                 class="w-full sm:w-auto border border-slate-200/80 rounded-lg px-3 py-1.5 min-h-[38px] text-xs font-semibold text-ctsa-slate bg-white shadow-xs">
-          <noscript><button type="submit" class="btn-admin rounded-lg">Afficher</button></noscript>
-        </form>
-      </div>
-
-      <a href="{% url 'terminal:prepare' %}?date={{ selected_date|date:'Y-m-d' }}"
-         class="btn-admin btn-admin-primary rounded-lg justify-center">
-        <!-- Lucide: plus -->
-        <svg class="portal-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
-        <span>Préparer / Ajouter</span>
+  <!-- Sélecteur de séance (Aujourd'hui / Demain / Date) -->
+  <div class="flex flex-wrap items-center justify-between gap-2">
+    <div class="inline-flex rounded-lg border border-slate-200/80 bg-white overflow-hidden shadow-xs">
+      <a href="{% url 'terminal:containers' %}?date={{ today|date:'Y-m-d' }}"
+         class="px-3.5 py-2 min-h-[40px] inline-flex items-center text-xs font-bold border-r border-slate-200/80 transition no-underline {% if selected_date == today %}bg-ctsa-slate text-white{% else %}text-ctsa-slate hover:bg-slate-50{% endif %}">
+        Aujourd'hui
       </a>
-
-      <details class="portal-dropdown">
-        <summary class="btn-admin btn-admin-slate rounded-lg cursor-pointer w-full justify-center">
-          <!-- Lucide: download -->
-          <svg class="portal-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
-          <span>Exporter</span>
-          <svg class="portal-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
-        </summary>
-        <div class="portal-dropdown-menu" role="menu">
-          <a href="{% url 'terminal:container_export_pdf' %}?date={{ selected_date|date:'Y-m-d' }}&status=confirmed" class="portal-dropdown-item" role="menuitem">
-            <span>PDF Confirmés</span>
-            <span class="text-xs font-bold tabular-nums text-ctsa-green">{{ stats.confirmed }}</span>
-          </a>
-          <a href="{% url 'terminal:container_export_pdf' %}?date={{ selected_date|date:'Y-m-d' }}&status=pending" class="portal-dropdown-item" role="menuitem">
-            <span>PDF En attente</span>
-            <span class="text-xs font-bold tabular-nums text-ctsa-pending-text">{{ stats.pending }}</span>
-          </a>
-          <a href="{% url 'terminal:container_export_pdf' %}?date={{ selected_date|date:'Y-m-d' }}" class="portal-dropdown-item" role="menuitem">
-            <span>PDF Complet</span>
-            <span class="text-xs font-bold tabular-nums text-slate-500">{{ stats.total }}</span>
-          </a>
-          <a href="{% url 'terminal:container_export_csv' %}?date={{ selected_date|date:'Y-m-d' }}{% if status_filter %}&status={{ status_filter }}{% endif %}" class="portal-dropdown-item border-t border-slate-200/80 mt-1 pt-2" role="menuitem">
-            <span>Excel (CSV)</span>
-          </a>
-        </div>
-      </details>
+      <a href="{% url 'terminal:containers' %}?date={{ tomorrow|date:'Y-m-d' }}"
+         class="px-3.5 py-2 min-h-[40px] inline-flex items-center text-xs font-bold transition no-underline {% if selected_date == tomorrow %}bg-ctsa-slate text-white{% else %}text-ctsa-slate hover:bg-slate-50{% endif %}">
+        Demain
+      </a>
     </div>
+
+    <form action="{% url 'terminal:containers' %}" method="get" class="inline-flex items-center gap-1.5">
+      <label for="quick-date-picker" class="visually-hidden">Choisir une date</label>
+      <input type="date"
+             id="quick-date-picker"
+             name="date"
+             value="{{ selected_date|date:'Y-m-d' }}"
+             data-auto-submit-date
+             class="border border-slate-200/80 rounded-lg px-3 py-1.5 min-h-[40px] text-xs font-semibold text-ctsa-slate bg-white shadow-xs">
+      <noscript><button type="submit" class="ui-btn ui-btn-secondary">Afficher</button></noscript>
+    </form>
   </div>
 
-  <!-- 2. Filtre par statut : une simple rangée d'onglets, le résumé est sur le tableau de bord -->
+  <!-- Onglets de statut -->
   <nav class="list-tabs bg-white rounded-xl border border-slate-200/80 shadow-xs" aria-label="Filtrer par statut">
     <a href="{% url 'terminal:containers' %}?date={{ selected_date|date:'Y-m-d' }}{% if line_filter %}&line={{ line_filter }}{% endif %}" class="list-tab" {% if not status_filter and not verification_filter %}aria-current="true"{% endif %}>
       Tous <span class="list-tab-count">{{ stats.total }}</span>
@@ -98,17 +50,14 @@
     <a href="{% url 'terminal:containers' %}?date={{ selected_date|date:'Y-m-d' }}&status=unavailable{% if line_filter %}&line={{ line_filter }}{% endif %}" class="list-tab" {% if status_filter == 'unavailable' %}aria-current="true"{% endif %}>
       Indisponibles <span class="list-tab-count">{{ stats.unavailable }}</span>
     </a>
-    <a href="{% url 'terminal:dashboard' %}?date={{ selected_date|date:'Y-m-d' }}" class="list-tabs-aside">Résumé du jour</a>
   </nav>
 
-  <!-- 3. Carte principale : Recherche + Tableau haute densité -->
-  <section id="liste-conteneurs-jour" aria-label="Liste des conteneurs" class="bg-white rounded-xl border border-slate-200/80 shadow-xs">
-
-    <!-- Barre compacte : compteur + action rapide + recherche -->
-    <div class="px-4 py-3 sm:px-5 bg-white border-b border-slate-200/80 flex flex-col xl:flex-row xl:items-center xl:justify-between gap-2.5">
+  <!-- Barre de recherche, filtres repliables sur mobile et export secondaire -->
+  <section aria-label="Recherche et filtres" class="bg-white rounded-xl border border-slate-200/80 shadow-xs p-3.5 sm:p-4 space-y-3">
+    <div class="flex flex-wrap items-center justify-between gap-2">
       <div class="flex flex-wrap items-center gap-2">
-        <span class="text-xs font-semibold text-slate-500 tabular-nums">
-          {{ containers|length }} conteneur{{ containers|length|pluralize }}
+        <span class="text-xs font-semibold text-slate-600 tabular-nums">
+          {{ page.paginator.count }} conteneur{{ page.paginator.count|pluralize }}
         </span>
 
         {% if user.can_edit_or_delete_containers and stats.pending %}
@@ -118,227 +67,206 @@
             <input type="hidden" name="scope" value="all_pending">
             <input type="hidden" name="status" value="confirmed">
             <input type="hidden" name="next" value="{{ request.get_full_path }}">
-            <button type="submit" class="btn-admin btn-admin-primary rounded-lg min-h-[34px] py-1 tabular-nums">
+            <button type="submit" class="ui-btn ui-btn-secondary min-h-[36px] px-3 py-1.5 text-xs tabular-nums">
               Confirmer les {{ stats.pending }} en attente
             </button>
           </form>
         {% endif %}
 
-        {% if status_filter or line_filter or search_q or verification_filter %}
-          <a href="{% url 'terminal:containers' %}?date={{ selected_date|date:'Y-m-d' }}" class="text-xs text-ctsa-bluehover hover:underline font-bold ml-1">
+        {% if filtered %}
+          <a href="{% url 'terminal:containers' %}?date={{ selected_date|date:'Y-m-d' }}" class="text-xs font-bold text-ctsa-bluehover hover:underline">
             Réinitialiser
           </a>
         {% endif %}
       </div>
 
-      <search>
-        <form action="{% url 'terminal:containers' %}" method="get" class="flex flex-col sm:flex-row sm:items-center gap-2">
-          <input type="hidden" name="date" value="{{ selected_date|date:'Y-m-d' }}">
-          {% if status_filter %}<input type="hidden" name="status" value="{{ status_filter }}">{% endif %}
+      <!-- Actions secondaires d'export (sans menu déroulant) -->
+      <div class="flex items-center gap-1.5">
+        <a href="{% url 'terminal:container_export_pdf' %}?date={{ selected_date|date:'Y-m-d' }}{% if status_filter %}&status={{ status_filter }}{% endif %}"
+           class="ui-btn ui-btn-ghost min-h-[36px] px-2.5 py-1.5 text-xs"
+           aria-label="Exporter la liste en PDF"
+           title="Exporter en PDF">
+          <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
+          <span>PDF</span>
+        </a>
+        <a href="{% url 'terminal:container_export_csv' %}?date={{ selected_date|date:'Y-m-d' }}{% if status_filter %}&status={{ status_filter }}{% endif %}"
+           class="ui-btn ui-btn-ghost min-h-[36px] px-2.5 py-1.5 text-xs"
+           aria-label="Exporter la liste en CSV"
+           title="Exporter en CSV">
+          <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          <span>CSV</span>
+        </a>
+      </div>
+    </div>
 
+    <search>
+      <form action="{% url 'terminal:containers' %}" method="get" class="grid grid-cols-1 sm:grid-cols-[1fr_auto_auto] gap-2">
+        <input type="hidden" name="date" value="{{ selected_date|date:'Y-m-d' }}">
+        {% if status_filter %}<input type="hidden" name="status" value="{{ status_filter }}">{% endif %}
+
+        <div>
+          <label for="filter-q" class="visually-hidden">Rechercher un numéro</label>
+          <input type="search"
+                 id="filter-q"
+                 name="q"
+                 value="{{ search_q }}"
+                 placeholder="Rechercher un conteneur..."
+                 autocorrect="off"
+                 spellcheck="false"
+                 class="w-full min-h-[42px] border border-slate-200 rounded-lg px-3 py-2 text-sm font-mono uppercase bg-white text-ctsa-slate">
+        </div>
+
+        <div>
           <label for="filter-line" class="visually-hidden">Ligne maritime</label>
-          <select id="filter-line" name="line" data-auto-submit-select class="w-full sm:w-auto border border-slate-200/80 rounded-lg px-3 py-1.5 min-h-[36px] text-xs font-semibold bg-white text-ctsa-slate">
+          <select id="filter-line"
+                  name="line"
+                  data-auto-submit-select
+                  class="w-full sm:w-auto min-h-[42px] border border-slate-200 rounded-lg px-3 py-2 text-xs font-semibold bg-white text-ctsa-slate">
             <option value="">Toutes les lignes</option>
             {% for line in shipping_lines %}
               <option value="{{ line.id }}" {% if line_filter == line.id|stringformat:"s" %}selected{% endif %}>{{ line.name }}</option>
             {% endfor %}
           </select>
+        </div>
 
-          <div class="flex items-center gap-2 w-full sm:w-auto">
-            <label for="filter-q" class="visually-hidden">Rechercher un numéro</label>
-            <input type="search" id="filter-q" name="q" value="{{ search_q }}" placeholder="Rechercher..." autocorrect="off" spellcheck="false" class="flex-1 sm:flex-initial border border-slate-200/80 rounded-lg px-3 py-1.5 min-h-[36px] text-xs font-mono uppercase bg-white min-w-0 sm:min-w-[170px]">
-
-            <button type="submit" class="btn-admin btn-admin-primary rounded-lg min-h-[36px] py-1 shrink-0">
-              <svg class="portal-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-              <span>Filtrer</span>
-            </button>
-          </div>
-        </form>
-      </search>
-    </div>
-
-    <!-- Tableau haute densité à en-tête collant et menu d'actions -->
-    <div tabindex="0" role="region" aria-labelledby="rampe-table-caption" class="table-wrapper border-0 rounded-none">
-      <table class="ctsa-table dash-table" style="--label-2: 'Ligne maritime'; --label-3: 'Statut'; --label-4: 'Action';">
-        <caption id="rampe-table-caption" class="visually-hidden">
-          Conteneurs du {{ selected_date|date:"d/m/Y" }}
-        </caption>
-        <thead class="sticky top-0 z-10 bg-slate-50/95 backdrop-blur-xs">
-          <tr>
-            <th scope="col">
-              <label class="inline-flex items-center gap-2">
-                {% if user.can_edit_or_delete_containers and containers %}
-                  <input type="checkbox" data-check-all="dashboard" class="w-4 h-4 rounded">
-                {% endif %}
-                <span>Conteneur</span>
-              </label>
-            </th>
-            <th scope="col">Ligne maritime</th>
-            <th scope="col">Statut</th>
-            <th scope="col" class="text-right">Action</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for c in containers %}
-            <tr>
-              <th scope="row">
-                <label class="inline-flex items-center gap-2">
-                  {% if user.can_edit_or_delete_containers %}
-                    <input type="checkbox" name="ids" value="{{ c.pk }}" form="dashboard-bulk-status-form" data-check-group="dashboard" class="w-4 h-4 rounded">
-                  {% endif %}
-                  <span class="text-base font-bold font-mono tabular-nums text-ctsa-slate">{{ c.container_number }}</span>
-                </label>
-                <div class="text-xs font-sans font-normal text-slate-500 mt-0.5 tabular-nums">
-                  {{ c.updated_at|date:"H:i" }}{% if c.updated_by %} · {{ c.updated_by.display_name }}{% endif %}{% if c.carried_from %} · repris du {{ c.carried_from.scheduled_date|date:"d/m" }}{% endif %}
-                </div>
-              </th>
-
-              <td class="font-semibold text-ctsa-slate">
-                {{ c.shipping_line.name|default:"Non renseignée" }}
-              </td>
-
-              <td>
-                <div class="flex flex-wrap items-center gap-1.5">
-                  {% if c.status == 'confirmed' %}
-                    <span class="status-badge status-confirmed rounded-full {% if user.can_edit_or_delete_containers %}hidden sm:inline-flex{% endif %}">
-                      <span class="status-seg-dot dot-confirmed" aria-hidden="true"></span>
-                      <span>Confirmé</span>
-                    </span>
-                  {% elif c.status == 'pending' %}
-                    <span class="status-badge status-pending rounded-full {% if user.can_edit_or_delete_containers %}hidden sm:inline-flex{% endif %}">
-                      <span class="status-seg-dot dot-pending" aria-hidden="true"></span>
-                      <span>En attente</span>
-                    </span>
-                  {% else %}
-                    <span class="status-badge status-unavailable rounded-full {% if user.can_edit_or_delete_containers %}hidden sm:inline-flex{% endif %}">
-                      <span class="status-seg-dot dot-unavailable" aria-hidden="true"></span>
-                      <span>Indisponible</span>
-                    </span>
-                  {% endif %}
-                  {% if c.status == 'confirmed' and c.verification_result == 'verified' %}
-                    <span class="status-badge status-verified rounded-full">Vérifié</span>
-                  {% elif c.status == 'confirmed' and c.verification_result == 'not_verified' %}
-                    <span class="status-badge status-not-verified rounded-full">Non vérifié</span>
-                  {% endif %}
-                </div>
-                {% if c.status == 'unavailable' %}
-                  <div class="text-xs font-semibold text-ctsa-red-text mt-1">{{ c.full_reason_display }}</div>
-                {% endif %}
-              </td>
-
-              <td class="text-right">
-                {% if user.can_edit_or_delete_containers %}
-                  <div class="flex sm:inline-flex flex-wrap items-center justify-between sm:justify-end gap-2 w-full sm:w-auto">
-                    <div class="text-left w-full sm:w-auto">
-                      {% include 'partials/status_actions.html' %}
-                    </div>
-
-                    <details class="portal-dropdown inline-block text-left">
-                      <summary class="btn-admin rounded-lg min-h-[34px] px-2.5 py-1 cursor-pointer" aria-label="Actions pour {{ c.container_number }}">
-                        <svg class="portal-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>
-                      </summary>
-                      <div class="portal-dropdown-menu" role="menu">
-                        <button type="button"
-                                data-toggle-panel="row-edit-{{ c.pk }}"
-                                aria-expanded="false"
-                                aria-controls="row-edit-{{ c.pk }}"
-                                role="menuitem"
-                                class="w-full flex items-center gap-2 px-3 py-2 rounded-md text-xs font-semibold text-ctsa-slate hover:bg-slate-100 transition">
-                          <svg class="portal-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
-                          <span>Modifier la ligne maritime</span>
-                        </button>
-                        <a href="{% url 'terminal:register' %}?q={{ c.container_number }}" class="portal-dropdown-item" role="menuitem">
-                          <span>Historique du conteneur</span>
-                        </a>
-                        <form action="{% url 'terminal:container_delete' c.pk %}" method="post" class="border-t border-slate-100 mt-1 pt-1">
-                          {% csrf_token %}
-                          <button type="submit"
-                                  data-confirm-title="Supprimer ce conteneur ?"
-                                  data-confirm="{{ c.container_number }} sera retiré de la liste du {{ c.scheduled_date|date:'d/m/Y' }}, avec son historique. Cette action est définitive."
-                                  data-confirm-label="Supprimer"
-                                  data-confirm-tone="danger"
-                                  role="menuitem"
-                                  class="w-full flex items-center gap-2 px-3 py-2 rounded-md text-xs font-bold text-ctsa-red-text hover:bg-ctsa-red-bg transition">
-                            <svg class="portal-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>
-                            <span>Supprimer</span>
-                          </button>
-                        </form>
-                      </div>
-                    </details>
-                  </div>
-                {% else %}
-                  <span class="text-xs text-slate-400">—</span>
-                {% endif %}
-              </td>
-            </tr>
-
-            {% if user.can_edit_or_delete_containers %}
-              <tr id="row-edit-{{ c.pk }}" hidden class="bg-[#f8fafc]">
-                <td colspan="4" class="p-4 border-b border-slate-200/80">
-                  <div class="flex flex-wrap items-center justify-between gap-4">
-                    <form action="{% url 'terminal:container_update_status' c.pk %}" method="post" class="flex flex-wrap items-center gap-2">
-                      {% csrf_token %}
-                      <input type="hidden" name="status" value="{{ c.status }}">
-                      <input type="hidden" name="next" value="{{ request.get_full_path }}">
-                      <label for="line-row-{{ c.pk }}" class="text-xs font-bold text-slate-500">Ligne maritime :</label>
-                      <select id="line-row-{{ c.pk }}"
-                              name="shipping_line"
-                              data-auto-submit-select
-                              class="border border-slate-200/80 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-ctsa-slate bg-white">
-                        {% if not c.shipping_line %}
-                          <option value="">Non renseignée</option>
-                        {% endif %}
-                        {% for line in shipping_lines %}
-                          <option value="{{ line.id }}" {% if c.shipping_line_id == line.id %}selected{% endif %}>{{ line.name }}</option>
-                        {% endfor %}
-                      </select>
-                    </form>
-                  </div>
-                </td>
-              </tr>
-            {% endif %}
-          {% empty %}
-            <tr>
-              <th scope="row">—</th>
-              <td colspan="3" class="text-center py-8 text-slate-500">
-                Aucun conteneur pour cette séance.
-              </td>
-            </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
-    {% include 'partials/pagination.html' %}
+        <button type="submit" class="ui-btn ui-btn-secondary min-h-[42px]">
+          <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+          <span>Filtrer</span>
+        </button>
+      </form>
+    </search>
   </section>
 
-  <!-- 4. Barre flottante sombre d'actions groupées (affichée dès qu'au moins une case est cochée) -->
-  {% if user.can_edit_or_delete_containers %}
-    <div data-selection-bar="dashboard" hidden class="sticky bottom-4 z-30 rounded-xl bg-[#2c3741] text-white p-3.5 sm:px-5 shadow-xl border border-white/10 space-y-2.5">
-      <div class="flex flex-wrap items-center justify-between gap-2">
-        <form id="dashboard-bulk-status-form" action="{% url 'terminal:container_status_bulk' %}" method="post" class="flex flex-wrap items-center gap-2">
-          {% csrf_token %}
-          <input type="hidden" name="date" value="{{ selected_date|date:'Y-m-d' }}">
-          <input type="hidden" name="next" value="{{ request.get_full_path }}">
-          <span data-bulk-count="dashboard" class="inline-flex items-center px-3 py-1 rounded-full bg-ctsa-blue text-white text-xs font-bold tabular-nums mr-1">
-            Sélection
-          </span>
-          <button type="submit" name="status" value="confirmed" class="btn-admin rounded-lg">
-            <span class="status-seg-dot dot-confirmed" aria-hidden="true"></span>
-            <span>Confirmer</span>
-          </button>
-          <button type="submit" name="status" value="pending" class="btn-admin rounded-lg">
-            <span class="status-seg-dot dot-pending" aria-hidden="true"></span>
-            <span>En attente</span>
-          </button>
-          <button type="button"
-                  data-unavailable-bulk="dashboard-bulk-status-form"
-                  class="btn-admin rounded-lg">
-            <span class="status-seg-dot dot-unavailable" aria-hidden="true"></span>
-            <span>Indisponible</span>
-          </button>
-        </form>
+  {% if containers %}
+    <!-- Vue Mobile : cartes compactes avec sélecteur de statut unique + lien vers la fiche détail -->
+    <div class="lg:hidden space-y-3" aria-label="Liste mobile des conteneurs">
+      {% for c in containers %}
+        <article class="bg-white rounded-xl border border-slate-200/80 shadow-xs p-3.5 space-y-3">
+          <div class="flex items-start justify-between gap-2">
+            <div class="flex items-start gap-2.5 min-w-0 flex-1">
+              {% if user.can_edit_or_delete_containers %}
+                <input type="checkbox"
+                       name="ids"
+                       value="{{ c.pk }}"
+                       form="dashboard-bulk-status-form"
+                       data-check-group="dashboard"
+                       aria-label="Sélectionner {{ c.container_number }}"
+                       class="mt-1 w-4 h-4 rounded shrink-0">
+              {% endif %}
+              <a href="{% url 'terminal:container_detail' c.pk %}" class="min-w-0 flex-1 no-underline group block">
+                <div class="flex items-center justify-between gap-2">
+                  <span class="text-base font-bold font-mono tabular-nums text-ctsa-slate group-hover:text-ctsa-bluehover">
+                    {{ c.container_number }}
+                  </span>
+                  <svg class="w-4 h-4 text-slate-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
+                </div>
+                <p class="text-xs text-slate-500 mt-0.5 mb-0 truncate tabular-nums">
+                  {{ c.shipping_line.name|default:"Ligne non renseignée" }} · {{ c.updated_at|date:"H:i" }}{% if c.carried_from %} · repris du {{ c.carried_from.scheduled_date|date:"d/m" }}{% endif %}
+                </p>
+              </a>
+            </div>
+          </div>
+
+          <div class="pt-2 border-t border-slate-100">
+            {% include 'partials/status_actions.html' with c=c %}
+          </div>
+        </article>
+      {% endfor %}
+    </div>
+
+    <!-- Vue Desktop : tableau structuré sans menu ... -->
+    <section class="hidden lg:block bg-white rounded-xl border border-slate-200/80 shadow-xs overflow-hidden" aria-label="Tableau des conteneurs">
+      <div class="overflow-x-auto">
+        <table class="ctsa-table w-full">
+          <thead class="bg-slate-50/95">
+            <tr>
+              <th scope="col">
+                <label class="inline-flex items-center gap-2">
+                  {% if user.can_edit_or_delete_containers %}
+                    <input type="checkbox" data-check-all="dashboard" class="w-4 h-4 rounded">
+                  {% endif %}
+                  <span>Conteneur</span>
+                </label>
+              </th>
+              <th scope="col">Ligne maritime</th>
+              <th scope="col">Statut sur la rampe</th>
+              <th scope="col" class="text-right">Fiche</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for c in containers %}
+              <tr>
+                <th scope="row">
+                  <div class="flex items-start gap-2.5">
+                    {% if user.can_edit_or_delete_containers %}
+                      <input type="checkbox"
+                             name="ids"
+                             value="{{ c.pk }}"
+                             form="dashboard-bulk-status-form"
+                             data-check-group="dashboard"
+                             aria-label="Sélectionner {{ c.container_number }}"
+                             class="mt-1 w-4 h-4 rounded">
+                    {% endif %}
+                    <div>
+                      <a href="{% url 'terminal:container_detail' c.pk %}" class="text-base font-bold font-mono tabular-nums text-ctsa-slate hover:text-ctsa-bluehover no-underline">
+                        {{ c.container_number }}
+                      </a>
+                      <div class="text-xs font-sans font-normal text-slate-500 mt-0.5 tabular-nums">
+                        {{ c.updated_at|date:"H:i" }}{% if c.updated_by %} · {{ c.updated_by.display_name }}{% endif %}{% if c.carried_from %} · repris du {{ c.carried_from.scheduled_date|date:"d/m" }}{% endif %}
+                      </div>
+                    </div>
+                  </div>
+                </th>
+                <td class="font-semibold text-ctsa-slate">
+                  {{ c.shipping_line.name|default:"Non renseignée" }}
+                </td>
+                <td>
+                  {% include 'partials/status_actions.html' with c=c %}
+                </td>
+                <td class="text-right">
+                  <a href="{% url 'terminal:container_detail' c.pk %}" class="ui-btn ui-btn-ghost min-h-[36px] px-3 py-1.5 text-xs">
+                    <span>Détail</span>
+                    <svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
+                  </a>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
       </div>
+    </section>
+
+    {% include 'components/pagination.html' %}
+  {% else %}
+    {% with date_iso=selected_date|date:"Y-m-d" %}
+      {% include 'components/empty_state.html' with title="Aucun conteneur pour cette séance" description="Aucun conteneur ne correspond aux critères sélectionnés." cta_url=prepare_url|add:"?date="|add:date_iso cta_label="Ajouter des conteneurs" %}
+    {% endwith %}
+  {% endif %}
+
+  {% if user.can_edit_or_delete_containers %}
+    <div data-selection-bar="dashboard" hidden class="sticky bottom-20 lg:bottom-4 z-30 rounded-xl bg-[#2c3741] text-white p-3.5 sm:px-5 shadow-xl border border-white/10">
+      <form id="dashboard-bulk-status-form" action="{% url 'terminal:container_status_bulk' %}" method="post" class="flex flex-wrap items-center gap-2">
+        {% csrf_token %}
+        <input type="hidden" name="date" value="{{ selected_date|date:'Y-m-d' }}">
+        <input type="hidden" name="next" value="{{ request.get_full_path }}">
+        <span data-bulk-count="dashboard" class="inline-flex items-center px-3 py-1 rounded-full bg-ctsa-blue text-white text-xs font-bold tabular-nums mr-1">
+          Sélection
+        </span>
+        <button type="submit" name="status" value="confirmed" class="btn-admin rounded-lg">
+          <span class="status-seg-dot dot-confirmed" aria-hidden="true"></span>
+          <span>Confirmer</span>
+        </button>
+        <button type="submit" name="status" value="pending" class="btn-admin rounded-lg">
+          <span class="status-seg-dot dot-pending" aria-hidden="true"></span>
+          <span>En attente</span>
+        </button>
+        <button type="button" data-unavailable-bulk="dashboard-bulk-status-form" class="btn-admin rounded-lg">
+          <span class="status-seg-dot dot-unavailable" aria-hidden="true"></span>
+          <span>Indisponible</span>
+        </button>
+      </form>
     </div>
   {% endif %}
+
 </div>
 {% endblock %}
