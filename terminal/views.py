@@ -1788,3 +1788,48 @@ def site_settings_view(request):
     })
 
 
+def pwa_manifest_view(request):
+    """Manifeste Web App (PWA) pour l'installation mobile du Portail RAMPE."""
+    from django.templatetags.static import static
+    site_obj = SiteSettings.get_solo()
+    manifest = {
+        'name': f"{site_obj.company_name} — {site_obj.portal_title}",
+        'short_name': 'CTSA RAMPE',
+        'description': site_obj.portal_subtitle,
+        'start_url': '/',
+        'scope': '/',
+        'display': 'standalone',
+        'orientation': 'portrait',
+        'background_color': '#222b35',
+        'theme_color': '#222b35',
+        'lang': 'fr',
+        'icons': [
+            {
+                'src': static('img/icon-192.png'),
+                'sizes': '192x192',
+                'type': 'image/png',
+                'purpose': 'any',
+            },
+            {
+                'src': static('img/icon-512.png'),
+                'sizes': '512x512',
+                'type': 'image/png',
+                'purpose': 'any',
+            },
+            {
+                'src': static('img/icon-512-maskable.png'),
+                'sizes': '512x512',
+                'type': 'image/png',
+                'purpose': 'maskable',
+            },
+        ],
+    }
+    return JsonResponse(manifest, content_type='application/manifest+json; charset=utf-8')
+
+
+def pwa_service_worker_view(request):
+    """Service Worker PWA servi à la racine pour couvrir tout le site."""
+    return render(request, 'pwa/sw.js', content_type='application/javascript; charset=utf-8')
+
+
+

@@ -491,6 +491,21 @@ class ShippingLinesAndStatisticsTests(TestCase):
         self.assertContains(home_resp, '+50941705257')
         self.assertContains(home_resp, 'Titre personnalisé RAMPE')
 
+    def test_pwa_manifest_and_service_worker(self):
+        manifest_resp = self.client_http.get(reverse('terminal:pwa_manifest'))
+        self.assertEqual(manifest_resp.status_code, 200)
+        self.assertIn('application/manifest+json', manifest_resp['Content-Type'])
+        data = manifest_resp.json()
+        self.assertEqual(data['start_url'], '/')
+        self.assertEqual(data['display'], 'standalone')
+        self.assertGreaterEqual(len(data['icons']), 3)
+
+        sw_resp = self.client_http.get(reverse('terminal:pwa_sw'))
+        self.assertEqual(sw_resp.status_code, 200)
+        self.assertIn('application/javascript', sw_resp['Content-Type'])
+        self.assertIn('ctsa-rampe-v1', sw_resp.content.decode('utf-8'))
+
+
 
 
 

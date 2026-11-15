@@ -4,6 +4,10 @@ from . import views
 app_name = 'terminal'
 
 urlpatterns = [
+    # PWA
+    path('manifest.webmanifest', views.pwa_manifest_view, name='pwa_manifest'),
+    path('sw.js', views.pwa_service_worker_view, name='pwa_sw'),
+
     # Partie publique
     path('', views.home_view, name='home'),
     path('verification/', views.verification_view, name='verification'),

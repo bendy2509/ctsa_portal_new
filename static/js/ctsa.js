@@ -563,4 +563,11 @@ document.addEventListener('DOMContentLoaded', () => {
       verifDialog.close('cancel');
     });
   }
+
+  // 14. Enregistrement du Service Worker (PWA)
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/sw.js').catch(() => {});
+    });
+  }
 });
