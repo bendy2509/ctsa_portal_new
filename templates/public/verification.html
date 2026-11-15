@@ -257,10 +257,10 @@
               <li>Vérifiez que les 4 lettres et les 7 chiffres correspondent exactement à votre connaissement (Bill of Lading).</li>
               <li>La liste du jour est complétée au fil de la journée : cette page se met à jour toute seule si votre conteneur y est ajouté.</li>
               <li>
-                Pour toute question, appelez Cap Terminal S.A. au
-                <a href="tel:+13056350938" class="font-bold text-ctsa-bluehover underline underline-offset-2 tabular-nums">305-635-0938</a>
+                Pour toute question, appelez {{ site_settings.company_name }} au
+                <a href="tel:{{ site_settings.contact_phone_primary }}" class="font-bold text-ctsa-bluehover underline underline-offset-2 tabular-nums">{{ site_settings.contact_phone_primary }}</a>
                 ou écrivez à
-                <a href="mailto:info@capterminal.com" class="font-bold text-ctsa-bluehover underline underline-offset-2">info@capterminal.com</a>.
+                <a href="mailto:{{ site_settings.contact_email }}" class="font-bold text-ctsa-bluehover underline underline-offset-2">{{ site_settings.contact_email }}</a>.
               </li>
             </ul>
           </div>

@@ -19,11 +19,11 @@
     <div class="hidden lg:block bg-[#1a222b] border-b border-white/10">
       <div class="max-w-7xl mx-auto px-6 lg:px-8 h-9 flex items-center justify-between gap-4 text-xs text-slate-300">
         <div class="flex items-center gap-3 font-medium">
-          <span class="font-semibold text-white/90">Port du Cap-Haïtien</span>
+          <span class="font-semibold text-white/90">{{ site_settings.location_label }}</span>
           <span class="text-white/25" aria-hidden="true">·</span>
-          <a href="mailto:info@capterminal.com" class="hover:text-white transition no-underline text-slate-300">info@capterminal.com</a>
+          <a href="mailto:{{ site_settings.contact_email }}" class="hover:text-white transition no-underline text-slate-300">{{ site_settings.contact_email }}</a>
           <span class="text-white/25" aria-hidden="true">·</span>
-          <a href="tel:+13056350938" class="hover:text-white transition no-underline text-slate-300 tabular-nums">305-635-0938</a>
+          <a href="tel:{{ site_settings.contact_phone_primary }}" class="hover:text-white transition no-underline text-slate-300 tabular-nums">{{ site_settings.contact_phone_primary }}</a>
         </div>
 
         <div class="flex items-center gap-3">
@@ -59,8 +59,8 @@
                onerror="this.style.display='none'; this.nextElementSibling.style.display='inline-flex';">
           <span style="display:none" class="portal-brand-mark shrink-0">CTSA</span>
           <div class="min-w-0 border-l border-white/15 pl-2.5 sm:pl-3">
-            <div class="font-heading font-extrabold text-xs sm:text-sm tracking-wide uppercase text-white truncate">Portail RAMPE</div>
-            <div class="text-[11px] text-slate-300 truncate hidden sm:block">Vérification douanière des conteneurs</div>
+            <div class="font-heading font-extrabold text-xs sm:text-sm tracking-wide uppercase text-white truncate">{{ site_settings.portal_title }}</div>
+            <div class="text-[11px] text-slate-300 truncate hidden sm:block">{{ site_settings.portal_subtitle }}</div>
           </div>
         </a>
 
@@ -173,13 +173,13 @@
       <div class="md:col-span-5 space-y-3">
         <div class="flex items-center gap-3">
           <img src="{% static 'img/cap-terminal-logo.png' %}"
-               alt="Cap Terminal S.A."
+               alt="{{ site_settings.company_name }}"
                class="h-10 w-auto object-contain"
                onerror="this.style.display='none';">
-          <span class="font-heading font-bold text-sm text-white">Cap Terminal S.A.</span>
+          <span class="font-heading font-bold text-sm text-white">{{ site_settings.company_name }}</span>
         </div>
         <p class="text-slate-300 text-sm leading-relaxed m-0 max-w-md">
-          Opérateur du terminal à conteneurs du Port du Cap-Haïtien depuis 1998. Port accrédité par l'OMI et certifié ISPS.
+          {{ site_settings.footer_about }}
         </p>
       </div>
 
@@ -199,17 +199,19 @@
       <div class="md:col-span-4 space-y-2.5">
         <h2 class="font-heading text-xs font-bold uppercase tracking-wider text-slate-400 m-0">Contact</h2>
         <p class="text-slate-300 text-sm leading-relaxed m-0">
-          Port du Cap-Haïtien, Département du Nord, Haïti<br>
-          Tél. : <a href="tel:+13056350938" class="text-white hover:underline tabular-nums">305-635-0938</a>, poste 3003<br>
-          Tél. USA : <a href="tel:+13053650938" class="text-white hover:underline tabular-nums">305-365-0938</a>, poste 3001<br>
-          <a href="mailto:info@capterminal.com" class="text-sky-300 hover:underline">info@capterminal.com</a>
+          {{ site_settings.address_line }}<br>
+          Tél. : <a href="tel:{{ site_settings.contact_phone_primary }}" class="text-white hover:underline tabular-nums">{{ site_settings.contact_phone_primary }}</a><br>
+          {% if site_settings.contact_phone_secondary %}
+            Tél. 2 : <a href="tel:{{ site_settings.contact_phone_secondary }}" class="text-white hover:underline tabular-nums">{{ site_settings.contact_phone_secondary }}</a><br>
+          {% endif %}
+          <a href="mailto:{{ site_settings.contact_email }}" class="text-sky-300 hover:underline">{{ site_settings.contact_email }}</a>
         </p>
       </div>
     </div>
     <div class="border-t border-white/10 py-4 bg-[#1a222b]">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-xs text-slate-400 flex flex-wrap items-center justify-between gap-2">
-        <span>© {% now "Y" %} <strong class="text-slate-200">Cap Terminal S.A.</strong> — Tous droits réservés.</span>
-        <span>Portail RAMPE · Cap-Haïtien</span>
+        <span>© {% now "Y" %} <strong class="text-slate-200">{{ site_settings.company_name }}</strong> — Tous droits réservés.</span>
+        <span>{{ site_settings.portal_title }} · {{ site_settings.location_label }}</span>
       </div>
     </div>
   </footer>

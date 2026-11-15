@@ -437,3 +437,120 @@ class SavedContainer(models.Model):
     def __str__(self):
         return f"{self.container_number} ({self.user.username})"
 
+
+class SiteSettings(models.Model):
+    """Paramètres et textes publics modifiables depuis le tableau de bord."""
+
+    company_name = models.CharField(
+        max_length=120,
+        default="Cap Terminal S.A.",
+        verbose_name="Nom de l'entreprise",
+    )
+    portal_title = models.CharField(
+        max_length=80,
+        default="Portail RAMPE",
+        verbose_name="Titre du portail",
+    )
+    portal_subtitle = models.CharField(
+        max_length=160,
+        default="Vérification douanière des conteneurs",
+        verbose_name="Sous-titre du portail",
+    )
+    location_label = models.CharField(
+        max_length=120,
+        default="Port du Cap-Haïtien",
+        verbose_name="Localisation (bandeau)",
+    )
+    address_line = models.CharField(
+        max_length=220,
+        default="Port du Cap-Haïtien, Département du Nord, Haïti",
+        verbose_name="Adresse complète (pied de page)",
+    )
+    contact_email = models.EmailField(
+        default="contact@bendyservilus.com",
+        verbose_name="Courriel de contact",
+    )
+    contact_phone_primary = models.CharField(
+        max_length=40,
+        default="+50941705257",
+        verbose_name="Téléphone principal",
+    )
+    contact_phone_secondary = models.CharField(
+        max_length=40,
+        blank=True,
+        default="",
+        verbose_name="Téléphone secondaire (optionnel)",
+    )
+    footer_about = models.TextField(
+        default="Opérateur du terminal à conteneurs du Port du Cap-Haïtien depuis 1998. Port accrédité par l'OMI et certifié ISPS.",
+        verbose_name="Présentation (pied de page)",
+    )
+
+    hero_badge = models.CharField(
+        max_length=100,
+        default="Port du Cap-Haïtien · RAMPE",
+        verbose_name="Badge d'accueil",
+    )
+    hero_title = models.CharField(
+        max_length=180,
+        default="Vérifiez la disponibilité de votre conteneur",
+        verbose_name="Titre principal (accueil)",
+    )
+    hero_subtitle = models.TextField(
+        default="Consultez en temps réel si votre conteneur est programmé et confirmé pour la séance de vérification douanière du jour avant de vous déplacer au terminal.",
+        verbose_name="Sous-titre d'accueil",
+    )
+    search_note = models.CharField(
+        max_length=180,
+        default="Liste mise à jour chaque jour par Cap Terminal S.A.",
+        verbose_name="Mention sous la recherche",
+    )
+    status_guide_title = models.CharField(
+        max_length=160,
+        default="Signification des statuts de vérification",
+        verbose_name="Titre du guide des statuts",
+    )
+    status_guide_subtitle = models.TextField(
+        default="Chaque conteneur programmé passe par l'un des trois états suivants selon son positionnement physique à la RAMPE.",
+        verbose_name="Sous-titre du guide des statuts",
+    )
+    confirmed_instruction = models.CharField(
+        max_length=240,
+        default="Présentez-vous au terminal muni de vos documents douaniers.",
+        verbose_name="Consigne — Confirmé",
+    )
+    pending_instruction = models.CharField(
+        max_length=240,
+        default="Patientez avant de vous déplacer : la fiche se met à jour automatiquement.",
+        verbose_name="Consigne — En attente",
+    )
+    unavailable_instruction = models.CharField(
+        max_length=240,
+        default="Consultez le motif affiché et rapprochez-vous de votre transitaire.",
+        verbose_name="Consigne — Indisponible",
+    )
+    client_cta_title = models.CharField(
+        max_length=180,
+        default="Vous gérez plusieurs dossiers d'importation ou de transit ?",
+        verbose_name="Titre bandeau espace client",
+    )
+    client_cta_subtitle = models.TextField(
+        default="Créez un compte client gratuit pour enregistrer vos numéros de conteneurs dans une liste personnelle et suivre leurs statuts en un seul coup d'œil.",
+        verbose_name="Texte bandeau espace client",
+    )
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'site_settings'
+        verbose_name = "Paramètres du site"
+        verbose_name_plural = "Paramètres du site"
+
+    @classmethod
+    def get_solo(cls):
+        obj, _ = cls.objects.get_or_create(pk=1)
+        return obj
+
+    def __str__(self):
+        return f"Paramètres du site ({self.company_name})"
+
+

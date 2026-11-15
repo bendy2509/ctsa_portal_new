@@ -9,13 +9,13 @@
 
     <div class="text-center max-w-2xl mx-auto mb-7 sm:mb-9">
       <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-sky-50 border border-sky-200/80 text-xs font-heading uppercase tracking-wider text-ctsa-bluehover font-bold mb-3">
-        Port du Cap-Haïtien · RAMPE
+        {{ site_settings.hero_badge }}
       </div>
       <h1 class="font-heading text-2xl sm:text-4xl font-extrabold text-ctsa-slate leading-tight mb-3 m-0">
-        Vérifiez la disponibilité de votre conteneur
+        {{ site_settings.hero_title }}
       </h1>
       <p class="text-slate-600 text-sm sm:text-base leading-relaxed m-0">
-        Consultez en temps réel si votre conteneur est programmé et confirmé pour la séance de vérification douanière du jour avant de vous déplacer au terminal.
+        {{ site_settings.hero_subtitle }}
       </p>
     </div>
 
@@ -63,7 +63,7 @@
       </search>
 
       <div class="mt-5 pt-4 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3 text-xs text-slate-500">
-        <span>Liste mise à jour chaque jour par Cap Terminal S.A.</span>
+        <span>{{ site_settings.search_note }}</span>
         {% if user.is_authenticated %}
           <a href="{% url 'terminal:client_watchlist' %}" class="font-bold text-ctsa-bluehover hover:underline">
             Accéder à mes conteneurs suivis →
@@ -126,10 +126,10 @@
         Guide d'interprétation
       </div>
       <h2 class="font-heading text-xl sm:text-2xl font-extrabold text-ctsa-slate m-0">
-        Signification des statuts de vérification
+        {{ site_settings.status_guide_title }}
       </h2>
       <p class="text-sm text-slate-600 mt-1.5 mb-0">
-        Chaque conteneur programmé passe par l'un des trois états suivants selon son positionnement physique à la RAMPE.
+        {{ site_settings.status_guide_subtitle }}
       </p>
     </div>
 
@@ -152,7 +152,7 @@
         </div>
         <div class="bg-white rounded-lg p-3.5 border border-slate-200/80 text-xs sm:text-sm text-slate-700">
           <strong class="block font-heading uppercase tracking-wider text-ctsa-slate text-[11px] mb-1">Consigne client</strong>
-          Présentez-vous au terminal muni de vos documents douaniers.
+          {{ site_settings.confirmed_instruction }}
         </div>
       </article>
 
@@ -174,7 +174,7 @@
         </div>
         <div class="bg-white rounded-lg p-3.5 border border-slate-200/80 text-xs sm:text-sm text-slate-700">
           <strong class="block font-heading uppercase tracking-wider text-ctsa-slate text-[11px] mb-1">Consigne client</strong>
-          Patientez avant de vous déplacer : la fiche se met à jour automatiquement.
+          {{ site_settings.pending_instruction }}
         </div>
       </article>
 
@@ -196,7 +196,7 @@
         </div>
         <div class="bg-white rounded-lg p-3.5 border border-slate-200/80 text-xs sm:text-sm text-slate-700">
           <strong class="block font-heading uppercase tracking-wider text-ctsa-slate text-[11px] mb-1">Consigne client</strong>
-          Consultez le motif affiché et rapprochez-vous de votre transitaire.
+          {{ site_settings.unavailable_instruction }}
         </div>
       </article>
     </div>
@@ -208,10 +208,10 @@
   <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-5">
     <div class="max-w-2xl">
       <h2 class="font-heading text-lg font-extrabold text-ctsa-slate m-0">
-        Vous gérez plusieurs dossiers d'importation ou de transit ?
+        {{ site_settings.client_cta_title }}
       </h2>
       <p class="text-sm text-slate-600 mt-1 mb-0">
-        Créez un compte client gratuit pour enregistrer vos numéros de conteneurs dans une liste personnelle et suivre leurs statuts en un seul coup d'œil.
+        {{ site_settings.client_cta_subtitle }}
       </p>
     </div>
     <div class="flex flex-wrap gap-3 shrink-0 w-full sm:w-auto">

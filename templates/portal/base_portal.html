@@ -99,8 +99,8 @@
 
         {% if user.is_portal_admin %}
           <!-- Sous-menu 2 : Paramètres (Admin) -->
-          <details class="portal-submenu" {% if current == 'shipping_lines' or current == 'user_list' or current == 'user_edit' %}open{% endif %}>
-            <summary class="portal-submenu-trigger {% if current == 'shipping_lines' or current == 'user_list' or current == 'user_edit' %}text-white bg-white/8{% endif %}">
+          <details class="portal-submenu" {% if current == 'shipping_lines' or current == 'shipping_line_create' or current == 'shipping_line_edit' or current == 'user_list' or current == 'user_create' or current == 'user_edit' or current == 'site_settings' %}open{% endif %}>
+            <summary class="portal-submenu-trigger {% if current == 'shipping_lines' or current == 'shipping_line_create' or current == 'shipping_line_edit' or current == 'user_list' or current == 'user_create' or current == 'user_edit' or current == 'site_settings' %}text-white bg-white/8{% endif %}">
               <!-- Lucide: settings -->
               <svg class="portal-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
               <span>Paramètres</span>
@@ -108,14 +108,19 @@
             </summary>
             <div class="portal-submenu-list">
               <a href="{% url 'terminal:shipping_lines' %}"
-                 {% if current == 'shipping_lines' %}aria-current="page"{% endif %}
-                 class="portal-sublink {% if current == 'shipping_lines' %}is-active{% endif %}">
+                 {% if current == 'shipping_lines' or current == 'shipping_line_create' or current == 'shipping_line_edit' %}aria-current="page"{% endif %}
+                 class="portal-sublink {% if current == 'shipping_lines' or current == 'shipping_line_create' or current == 'shipping_line_edit' %}is-active{% endif %}">
                 <span>Lignes maritimes</span>
               </a>
               <a href="{% url 'accounts:user_list' %}"
-                 {% if current == 'user_list' or current == 'user_edit' %}aria-current="page"{% endif %}
-                 class="portal-sublink {% if current == 'user_list' or current == 'user_edit' %}is-active{% endif %}">
+                 {% if current == 'user_list' or current == 'user_create' or current == 'user_edit' %}aria-current="page"{% endif %}
+                 class="portal-sublink {% if current == 'user_list' or current == 'user_create' or current == 'user_edit' %}is-active{% endif %}">
                 <span>Utilisateurs</span>
+              </a>
+              <a href="{% url 'terminal:site_settings' %}"
+                 {% if current == 'site_settings' %}aria-current="page"{% endif %}
+                 class="portal-sublink {% if current == 'site_settings' %}is-active{% endif %}">
+                <span>Textes &amp; Coordonnées</span>
               </a>
             </div>
           </details>
