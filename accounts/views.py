@@ -139,6 +139,28 @@ def user_list_view(request):
 
 
 @login_required
+def user_create_view(request):
+    """Page dédiée de création d'un compte utilisateur."""
+    if not request.user.is_portal_admin:
+        messages.error(request, "Accès réservé aux administrateurs Cap Terminal S.A.")
+        return redirect('terminal:dashboard')
+
+    form = StaffUserCreateForm(request.POST or None)
+    if request.method == 'POST' and form.is_valid():
+        new_user = form.save()
+        messages.success(
+            request,
+            f"L'utilisateur « {new_user.display_name} » ({new_user.get_role_display()}) a été créé."
+        )
+        return redirect('accounts:user_list')
+
+    return render(request, 'portal/user_create.html', {
+        'form': form,
+        'role_choices': User.Role.choices,
+    })
+
+
+@login_required
 def user_edit_view(request, pk):
     if not request.user.is_portal_admin:
         messages.error(request, "Accès réservé aux administrateurs.")

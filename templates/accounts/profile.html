@@ -1,90 +1,16 @@
-{% extends 'base.html' %}
+{% extends user.is_staff_member|yesno:'portal/base_portal.html,base.html' %}
 
 {% block title %}Mon Profil — Cap Terminal S.A.{% endblock %}
+{% block page_title %}Mon profil{% endblock %}
 
 {% block content %}
-<div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8">
-  <div>
-    <h1 class="font-heading text-2xl font-extrabold text-[#2c3741]">
-      Mon profil
-    </h1>
-    <p class="text-sm text-[#666666]">
-      Identifiant : <strong>{{ user.username }}</strong> — Rôle : <span class="font-bold text-[#3498db]">{{ user.get_role_display }}</span>
-    </p>
-  </div>
+{% if not user.is_staff_member %}
+  {% include 'accounts/_profile_body.html' %}
+{% endif %}
+{% endblock %}
 
-  <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-    <div class="bg-[#f4f4f4] rounded-lg p-6 border border-[#dadada]">
-      <h2 id="profile-info-heading" class="font-heading text-base font-bold text-[#2c3741] mb-4">
-        Informations personnelles
-      </h2>
-      <form action="{% url 'accounts:profile' %}" method="post" aria-labelledby="profile-info-heading">
-        {% csrf_token %}
-        <input type="hidden" name="action" value="update_profile">
-
-        <div class="form-field">
-          <label for="prof-fullname">Nom complet</label>
-          <input type="text" id="prof-fullname" name="full_name" value="{{ profile_form.full_name.value|default:'' }}" autocomplete="name" class="form-control">
-        </div>
-
-        <div class="form-field">
-          <label for="prof-email">Adresse courriel</label>
-          <input type="email" id="prof-email" name="email" value="{{ profile_form.email.value|default:'' }}" autocomplete="email" class="form-control">
-        </div>
-
-        <div class="form-field">
-          <label for="prof-company">Entreprise / Service</label>
-          <input type="text" id="prof-company" name="company_name" value="{{ profile_form.company_name.value|default:'' }}" autocomplete="organization" class="form-control">
-        </div>
-
-        <div class="form-field">
-          <label for="prof-phone">Téléphone</label>
-          <input type="tel" id="prof-phone" name="phone" value="{{ profile_form.phone.value|default:'' }}" autocomplete="tel" class="form-control">
-        </div>
-
-        <button type="submit" class="btn-ctsa btn-ctsa-filled w-full">
-          Enregistrer mes informations
-        </button>
-      </form>
-    </div>
-
-    <div class="bg-[#f4f4f4] rounded-lg p-6 border border-[#dadada]">
-      <h2 id="profile-pwd-heading" class="font-heading text-base font-bold text-[#2c3741] mb-4">
-        Modifier mon mot de passe
-      </h2>
-      <form action="{% url 'accounts:profile' %}" method="post" aria-labelledby="profile-pwd-heading">
-        {% csrf_token %}
-        <input type="hidden" name="action" value="change_password">
-
-        <div class="form-field">
-          <label for="id_old_password">Mot de passe actuel</label>
-          <input type="password" id="id_old_password" name="old_password" required autocomplete="current-password" class="form-control">
-          {% if password_form.old_password.errors %}
-            <p class="text-xs text-[#c62828] font-bold">{{ password_form.old_password.errors.0 }}</p>
-          {% endif %}
-        </div>
-
-        <div class="form-field">
-          <label for="id_new_password1">Nouveau mot de passe (min. 8 caractères)</label>
-          <input type="password" id="id_new_password1" name="new_password1" required minlength="8" autocomplete="new-password" class="form-control">
-          {% if password_form.new_password1.errors %}
-            <p class="text-xs text-[#c62828] font-bold">{{ password_form.new_password1.errors.0 }}</p>
-          {% endif %}
-        </div>
-
-        <div class="form-field">
-          <label for="id_new_password2">Confirmer le nouveau mot de passe</label>
-          <input type="password" id="id_new_password2" name="new_password2" required minlength="8" autocomplete="new-password" class="form-control">
-          {% if password_form.new_password2.errors %}
-            <p class="text-xs text-[#c62828] font-bold">{{ password_form.new_password2.errors.0 }}</p>
-          {% endif %}
-        </div>
-
-        <button type="submit" class="btn-ctsa w-full">
-          Mettre à jour le mot de passe
-        </button>
-      </form>
-    </div>
-  </div>
-</div>
+{% block portal_content %}
+{% if user.is_staff_member %}
+  {% include 'accounts/_profile_body.html' %}
+{% endif %}
 {% endblock %}

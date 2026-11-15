@@ -582,4 +582,28 @@ document.addEventListener('DOMContentLoaded', () => {
       uiConfirmDialog.returnValue = '';
     });
   }
+
+  // 13. Bottom sheet pour la note d'inspection « Non vérifié »
+  const verifDialog = document.getElementById('verification-note-dialog');
+  if (verifDialog && typeof verifDialog.showModal === 'function') {
+    const verifForm = document.getElementById('verification-note-form');
+    const verifSub = document.getElementById('verification-note-subtitle');
+    const verifNext = document.getElementById('verification-note-next');
+    const verifInput = document.getElementById('verification-note-input');
+
+    document.addEventListener('click', (e) => {
+      const btn = e.target.closest('[data-verification-note-trigger]');
+      if (!btn) return;
+      if (verifForm) verifForm.action = btn.dataset.action || '';
+      if (verifSub) verifSub.textContent = btn.dataset.number || '';
+      if (verifNext) verifNext.value = btn.dataset.next || '';
+      if (verifInput) verifInput.value = btn.dataset.note || '';
+      verifDialog.showModal();
+      verifInput?.focus();
+    });
+
+    verifDialog.querySelector('[data-verification-note-cancel]')?.addEventListener('click', () => {
+      verifDialog.close('cancel');
+    });
+  }
 });

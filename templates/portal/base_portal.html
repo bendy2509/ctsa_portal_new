@@ -199,6 +199,40 @@
 
     {% include 'components/bottom_nav.html' %}
     {% include 'components/confirm_modal.html' %}
+
+    <!-- Bottom sheet réutilisable pour la note d'inspection « Non vérifié » -->
+    <dialog id="verification-note-dialog" class="ui-dialog ui-bottom-sheet" closedby="any" aria-labelledby="verification-note-title">
+      <form id="verification-note-form" method="post" action="" class="p-5 sm:p-6 space-y-4">
+        {% csrf_token %}
+        <input type="hidden" name="result" value="not_verified">
+        <input type="hidden" name="next" id="verification-note-next" value="">
+        <div class="space-y-1">
+          <h2 id="verification-note-title" class="text-lg font-heading font-extrabold text-ctsa-slate m-0">
+            Marquer non vérifié
+          </h2>
+          <p id="verification-note-subtitle" class="text-sm font-mono font-bold text-slate-600 m-0"></p>
+        </div>
+        <div class="space-y-1.5">
+          <label for="verification-note-input" class="block text-sm font-bold text-ctsa-slate">
+            Précision (facultatif)
+          </label>
+          <input type="text"
+                 id="verification-note-input"
+                 name="verification_note"
+                 maxlength="255"
+                 placeholder="Ex. scellé absent, file fermée..."
+                 class="w-full min-h-[44px] rounded-lg border border-slate-300 px-3.5 py-2 text-sm text-ctsa-slate bg-white focus:outline-none focus:ring-2 focus:ring-ctsa-blue/30 focus:border-ctsa-blue">
+        </div>
+        <div class="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 pt-2">
+          <button type="button" data-verification-note-cancel class="ui-btn ui-btn-secondary">
+            Annuler
+          </button>
+          <button type="submit" data-submit-guard class="ui-btn ui-btn-primary">
+            Confirmer non vérifié
+          </button>
+        </div>
+      </form>
+    </dialog>
   </div>
 </div>
 {% endwith %}

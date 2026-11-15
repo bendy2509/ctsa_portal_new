@@ -118,3 +118,71 @@ class InactivityTimeoutTests(TestCase):
 
         resp = self.client.get(reverse('terminal:dashboard'))
         self.assertRedirects(resp, f"{reverse('accounts:login')}?next={reverse('terminal:dashboard')}")
+
+
+class UserManagementPermissionsTests(TestCase):
+    def setUp(self):
+        self.admin = User.objects.create_user(
+            username='admin_mgr',
+            password='Password123!',
+            role=User.Role.ADMIN,
+        )
+        self.supervisor = User.objects.create_user(
+            username='sup_nonadmin',
+            password='Password123!',
+            role=User.Role.SUPERVISOR,
+        )
+
+    def test_non_admin_cannot_access_user_management(self):
+        self.client.login(username='sup_nonadmin', password='Password123!')
+        for route in [
+            reverse('accounts:user_list'),
+            reverse('accounts:user_create'),
+            reverse('accounts:user_edit', args=[self.admin.pk]),
+        ]:
+            resp = self.client.get(route)
+            self.assertEqual(resp.status_code, 302)
+
+        del_resp = self.client.post(reverse('accounts:user_delete', args=[self.admin.pk]))
+        self.assertEqual(del_resp.status_code, 302)
+        self.assertTrue(User.objects.filter(pk=self.admin.pk).exists())
+
+    def test_admin_can_create_edit_and_delete_user(self):
+        self.client.login(username='admin_mgr', password='Password123!')
+        create_get = self.client.get(reverse('accounts:user_create'))
+        self.assertEqual(create_get.status_code, 200)
+        self.assertContains(create_get, 'portal-has-form-actions')
+
+        create_post = self.client.post(
+            reverse('accounts:user_create'),
+            {
+                'username': 'new_agent',
+                'full_name': 'Agent Test',
+                'role': User.Role.SUPERVISOR,
+                'password': 'Password123!',
+                'is_active': 'on',
+            },
+        )
+        self.assertRedirects(create_post, reverse('accounts:user_list'))
+        created = User.objects.get(username='new_agent')
+
+        edit_get = self.client.get(reverse('accounts:user_edit', args=[created.pk]))
+        self.assertEqual(edit_get.status_code, 200)
+        self.assertContains(edit_get, 'portal-has-form-actions')
+
+        edit_post = self.client.post(
+            reverse('accounts:user_edit', args=[created.pk]),
+            {
+                'username': 'new_agent',
+                'full_name': 'Agent Modifié',
+                'role': User.Role.SUPERVISOR,
+                'is_active': 'on',
+            },
+        )
+        self.assertRedirects(edit_post, reverse('accounts:user_list'))
+        created.refresh_from_db()
+        self.assertEqual(created.full_name, 'Agent Modifié')
+
+        del_post = self.client.post(reverse('accounts:user_delete', args=[created.pk]))
+        self.assertRedirects(del_post, reverse('accounts:user_list'))
+        self.assertFalse(User.objects.filter(pk=created.pk).exists())
