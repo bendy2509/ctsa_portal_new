@@ -35,7 +35,7 @@ Puis initialisez la base et les statiques :
 ```bash
 set -a && source .env && set +a
 python manage.py migrate
-python manage.py collectstatic --noinput
+python manage.py collectstatic --noinput --ignore "src/*"
 python manage.py createsuperuser
 ```
 
@@ -57,7 +57,8 @@ sudo certbot --nginx -d rampe.votredomaine.com
 
 ## 4. Mises à jour suivantes
 
+Le script de déploiement est stocké localement sur le VPS dans `/usr/local/bin/ctsa-deploy.sh` (hors du dépôt Git) :
+
 ```bash
-cd /var/www/ctsa
-bash deploy/deploy.sh
+/usr/local/bin/ctsa-deploy.sh
 ```
