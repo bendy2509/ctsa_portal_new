@@ -338,6 +338,24 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // Fermer les menus déroulants (.portal-dropdown) au clic extérieur ou sur Échap
+  // et les ouvrir vers le haut s'ils risquent d'être coupés en bas de l'écran.
+  document.querySelectorAll('details.portal-dropdown').forEach((dd) => {
+    dd.addEventListener('toggle', () => {
+      if (!dd.open) {
+        dd.classList.remove('open-up');
+        return;
+      }
+      const menu = dd.querySelector('.portal-dropdown-menu');
+      if (!menu) return;
+      dd.classList.remove('open-up');
+      const rect = menu.getBoundingClientRect();
+      const bottomLimit = window.innerWidth < 1024 ? window.innerHeight - 68 : window.innerHeight - 12;
+      if (rect.bottom > bottomLimit) {
+        dd.classList.add('open-up');
+      }
+    });
+  });
+
   document.addEventListener('click', (e) => {
     document.querySelectorAll('details.portal-dropdown[open]').forEach((dd) => {
       if (!dd.contains(e.target)) dd.open = false;

@@ -979,20 +979,25 @@ html {
 
 details.portal-dropdown[open] {
   position: relative;
-  z-index: 35;
+  z-index: 50;
 }
 
 .portal-dropdown-menu {
   position: absolute;
   inset-inline-end: 0;
   inset-block-start: calc(100% + 0.35rem);
-  z-index: 40;
+  z-index: 55;
   min-inline-size: 13.5rem;
   padding: 0.35rem;
   border: 1px solid var(--ctsa-border);
   border-radius: 0.5rem;
   background-color: #ffffff;
   box-shadow: 0 10px 25px rgba(44, 55, 65, 0.14);
+}
+
+.portal-dropdown.open-up .portal-dropdown-menu {
+  inset-block-start: auto;
+  inset-block-end: calc(100% + 0.35rem);
 }
 
 .portal-dropdown-item {
