@@ -69,6 +69,8 @@ if PRODUCTION:
     # HSTS : une heure par défaut ; à allonger (31536000) une fois le HTTPS validé.
     SECURE_HSTS_SECONDS = int(os.environ.get('DJANGO_HSTS_SECONDS', '3600'))
     SECURE_CONTENT_TYPE_NOSNIFF = True
+    # Les autres sous-domaines ne sont pas tous forcément en HTTPS (pas d'includeSubDomains/preload).
+    SILENCED_SYSTEM_CHECKS = ['security.W005', 'security.W021']
 
 
 # Application definition
