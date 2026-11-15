@@ -80,3 +80,41 @@ class LoginRedirectTests(TestCase):
             self.client.logout()
             resp = self.client.post(reverse('accounts:login'), self.credentials, QUERY_STRING=f'next={hostile}')
             self.assertRedirects(resp, reverse('terminal:client_watchlist'), fetch_redirect_response=False)
+
+
+class InactivityTimeoutTests(TestCase):
+    """La session expire après 5 minutes d'inactivité réelle, hors rafraîchissements automatiques."""
+
+    def setUp(self):
+        User.objects.create_user(username='sup', password='Password123!', role=User.Role.SUPERVISOR)
+        self.client.login(username='sup', password='Password123!')
+
+    def test_active_user_stays_logged_in_and_background_poll_does_not_extend(self):
+        import time
+
+        resp = self.client.get(reverse('terminal:dashboard'))
+        self.assertEqual(resp.status_code, 200)
+        recorded = self.client.session['_last_activity']
+
+        # Simule un rafraîchissement automatique en arrière-plan 4 min plus tard :
+        # _last_activity ne doit pas être mis à jour.
+        old_ts = time.time() - 240
+        session = self.client.session
+        session['_last_activity'] = old_ts
+        session.save()
+
+        self.client.get(reverse('terminal:verification_state'), {'q': 'CMAU4052450'})
+        self.assertEqual(self.client.session['_last_activity'], old_ts)
+        self.assertGreater(recorded, old_ts)
+
+    def test_user_is_logged_out_after_5_minutes_of_inactivity(self):
+        import time
+
+        self.assertEqual(self.client.get(reverse('terminal:dashboard')).status_code, 200)
+
+        session = self.client.session
+        session['_last_activity'] = time.time() - 301
+        session.save()
+
+        resp = self.client.get(reverse('terminal:dashboard'))
+        self.assertRedirects(resp, f"{reverse('accounts:login')}?next={reverse('terminal:dashboard')}")

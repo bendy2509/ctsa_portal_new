@@ -24,38 +24,40 @@
       <p class="text-sm text-slate-500 mt-0.5 mb-0">{{ selected_date|date:"l j F Y"|capfirst }}</p>
     </div>
 
-    <div class="flex flex-wrap items-center gap-2">
-      <div class="inline-flex rounded-lg border border-slate-200/80 bg-white overflow-hidden shadow-xs">
-        <a href="{% url 'terminal:containers' %}?date={{ today|date:'Y-m-d' }}"
-           class="px-3.5 py-2 text-xs font-bold border-r border-slate-200/80 transition {% if selected_date == today %}bg-ctsa-slate text-white{% else %}text-ctsa-slate hover:bg-slate-50{% endif %}">
-          Aujourd'hui
-        </a>
-        <a href="{% url 'terminal:containers' %}?date={{ tomorrow|date:'Y-m-d' }}"
-           class="px-3.5 py-2 text-xs font-bold transition {% if selected_date == tomorrow %}bg-ctsa-slate text-white{% else %}text-ctsa-slate hover:bg-slate-50{% endif %}">
-          Demain
-        </a>
+    <div class="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2">
+      <div class="col-span-2 sm:col-auto flex flex-wrap items-center gap-2">
+        <div class="inline-flex rounded-lg border border-slate-200/80 bg-white overflow-hidden shadow-xs">
+          <a href="{% url 'terminal:containers' %}?date={{ today|date:'Y-m-d' }}"
+             class="px-3.5 py-2 text-xs font-bold border-r border-slate-200/80 transition {% if selected_date == today %}bg-ctsa-slate text-white{% else %}text-ctsa-slate hover:bg-slate-50{% endif %}">
+            Aujourd'hui
+          </a>
+          <a href="{% url 'terminal:containers' %}?date={{ tomorrow|date:'Y-m-d' }}"
+             class="px-3.5 py-2 text-xs font-bold transition {% if selected_date == tomorrow %}bg-ctsa-slate text-white{% else %}text-ctsa-slate hover:bg-slate-50{% endif %}">
+            Demain
+          </a>
+        </div>
+
+        <form action="{% url 'terminal:containers' %}" method="get" class="inline-flex items-center gap-1.5 flex-1 sm:flex-initial">
+          <label for="quick-date-picker" class="visually-hidden">Choisir une date</label>
+          <input type="date"
+                 id="quick-date-picker"
+                 name="date"
+                 value="{{ selected_date|date:'Y-m-d' }}"
+                 data-auto-submit-date
+                 class="w-full sm:w-auto border border-slate-200/80 rounded-lg px-3 py-1.5 min-h-[38px] text-xs font-semibold text-ctsa-slate bg-white shadow-xs">
+          <noscript><button type="submit" class="btn-admin rounded-lg">Afficher</button></noscript>
+        </form>
       </div>
 
-      <form action="{% url 'terminal:containers' %}" method="get" class="inline-flex items-center gap-1.5">
-        <label for="quick-date-picker" class="visually-hidden">Choisir une date</label>
-        <input type="date"
-               id="quick-date-picker"
-               name="date"
-               value="{{ selected_date|date:'Y-m-d' }}"
-               data-auto-submit-date
-               class="border border-slate-200/80 rounded-lg px-3 py-1.5 min-h-[38px] text-xs font-semibold text-ctsa-slate bg-white shadow-xs">
-        <button type="submit" class="btn-admin rounded-lg">Afficher</button>
-      </form>
-
       <a href="{% url 'terminal:prepare' %}?date={{ selected_date|date:'Y-m-d' }}"
-         class="btn-admin btn-admin-primary rounded-lg">
+         class="btn-admin btn-admin-primary rounded-lg justify-center">
         <!-- Lucide: plus -->
         <svg class="portal-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
         <span>Préparer / Ajouter</span>
       </a>
 
       <details class="portal-dropdown">
-        <summary class="btn-admin btn-admin-slate rounded-lg cursor-pointer">
+        <summary class="btn-admin btn-admin-slate rounded-lg cursor-pointer w-full justify-center">
           <!-- Lucide: download -->
           <svg class="portal-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
           <span>Exporter</span>
@@ -100,7 +102,7 @@
   </nav>
 
   <!-- 3. Carte principale : Recherche + Tableau haute densité -->
-  <section id="liste-conteneurs-jour" aria-label="Liste des conteneurs" class="bg-white rounded-xl border border-slate-200/80 shadow-xs overflow-hidden">
+  <section id="liste-conteneurs-jour" aria-label="Liste des conteneurs" class="bg-white rounded-xl border border-slate-200/80 shadow-xs">
 
     <!-- Barre compacte : compteur + action rapide + recherche -->
     <div class="px-4 py-3 sm:px-5 bg-white border-b border-slate-200/80 flex flex-col xl:flex-row xl:items-center xl:justify-between gap-2.5">
