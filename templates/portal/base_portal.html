@@ -134,15 +134,32 @@
 
   <div class="portal-frame bg-[#f8fafc]">
     <header class="portal-topbar bg-white/95 backdrop-blur-xs border-slate-200/80">
-      <button type="button"
-              id="portal-nav-toggle"
-              aria-expanded="false"
-              aria-controls="portal-nav"
-              class="portal-menu-btn">
-        <!-- Lucide: menu -->
-        <svg class="portal-icon" viewBox="0 0 24 24" aria-hidden="true"><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="18" y2="18"/></svg>
-        <span>Menu</span>
-      </button>
+      <div class="flex items-center gap-2.5 min-w-0">
+        <button type="button"
+                id="portal-nav-toggle"
+                aria-expanded="false"
+                aria-controls="portal-nav"
+                class="portal-menu-btn shrink-0">
+          <!-- Lucide: menu -->
+          <svg class="portal-icon" viewBox="0 0 24 24" aria-hidden="true"><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="18" y2="18"/></svg>
+          <span>Menu</span>
+        </button>
+
+        <span class="lg:hidden text-sm font-heading font-extrabold text-[#2c3741] truncate">
+          {% if current == 'dashboard' %}Tableau de bord
+          {% elif current == 'containers' %}Conteneurs
+          {% elif current == 'prepare' %}Préparer
+          {% elif current == 'inspection' %}Inspection
+          {% elif current == 'carryover' %}Non vérifiés
+          {% elif current == 'statistics' %}Statistiques
+          {% elif current == 'register' %}Registre
+          {% elif current == 'status_logs' %}Historique
+          {% elif current == 'shipping_lines' %}Lignes maritimes
+          {% elif current == 'user_list' or current == 'user_edit' %}Utilisateurs
+          {% elif current == 'profile' %}Mon profil
+          {% else %}Exploitation RAMPE{% endif %}
+        </span>
+      </div>
 
       <div class="portal-topbar-date">
         {% now "l j F Y" as today_label %}{{ today_label|capfirst }}
@@ -153,15 +170,15 @@
           <strong>{{ user.display_name }}</strong>
           <span>{{ user.get_role_display }}</span>
         </div>
-        <a href="{% url 'accounts:profile' %}" class="btn-admin">
+        <a href="{% url 'accounts:profile' %}" class="btn-admin" aria-label="Mon profil" title="Mon profil">
           <svg class="portal-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-          <span>Mon profil</span>
+          <span class="hidden sm:inline">Mon profil</span>
         </a>
         <form action="{% url 'accounts:logout' %}" method="post">
           {% csrf_token %}
-          <button type="submit" class="btn-admin">
+          <button type="submit" class="btn-admin" aria-label="Déconnexion" title="Déconnexion">
             <svg class="portal-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>
-            <span>Déconnexion</span>
+            <span class="hidden sm:inline">Déconnexion</span>
           </button>
         </form>
       </div>
@@ -176,6 +193,31 @@
     <main class="portal-main">
       {% block portal_content %}{% endblock %}
     </main>
+
+    <!-- Barre d'accès rapide sur mobile pour éviter de se perdre dans le menu -->
+    <nav class="portal-bottom-nav lg:hidden" aria-label="Accès rapide mobile">
+      <a href="{% url 'terminal:dashboard' %}" {% if current == 'dashboard' %}aria-current="page"{% endif %} class="portal-bottom-link">
+        <svg class="portal-icon" viewBox="0 0 24 24" aria-hidden="true"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>
+        <span>Accueil</span>
+      </a>
+      <a href="{% url 'terminal:containers' %}" {% if current == 'containers' %}aria-current="page"{% endif %} class="portal-bottom-link">
+        <svg class="portal-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 6h13"/><path d="M8 12h13"/><path d="M8 18h13"/><path d="M3 6h.01"/><path d="M3 12h.01"/><path d="M3 18h.01"/></svg>
+        <span>Conteneurs</span>
+      </a>
+      <a href="{% url 'terminal:prepare' %}" {% if current == 'prepare' %}aria-current="page"{% endif %} class="portal-bottom-link">
+        <svg class="portal-icon" viewBox="0 0 24 24" aria-hidden="true"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M8 12h8"/><path d="M12 8v8"/></svg>
+        <span>Préparer</span>
+      </a>
+      <a href="{% url 'terminal:inspection' %}" {% if current == 'inspection' or current == 'carryover' %}aria-current="page"{% endif %} class="portal-bottom-link">
+        <span class="relative inline-flex">
+          <svg class="portal-icon" viewBox="0 0 24 24" aria-hidden="true"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="m9 14 2 2 4-4"/></svg>
+          {% if portal_unverified_count %}
+            <span class="portal-bottom-badge tabular-nums">{{ portal_unverified_count }}</span>
+          {% endif %}
+        </span>
+        <span>Inspection</span>
+      </a>
+    </nav>
   </div>
 </div>
 {% endwith %}
