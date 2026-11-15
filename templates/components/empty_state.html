@@ -1,0 +1,12 @@
+{# Composant empty_state : état vide uniforme avec action éventuelle. #}
+<div class="bg-white rounded-xl border border-slate-200/80 px-5 py-10 text-center">
+  <p class="text-base font-heading font-bold text-ctsa-slate m-0">{{ title|default:"Aucun résultat" }}</p>
+  {% if description %}
+    <p class="text-sm text-slate-500 mt-1.5 mb-0 max-w-md mx-auto">{{ description }}</p>
+  {% endif %}
+  {% if cta_url and cta_label %}
+    <div class="mt-4">
+      <a href="{{ cta_url }}" class="ui-btn ui-btn-secondary">{{ cta_label }}</a>
+    </div>
+  {% endif %}
+</div>

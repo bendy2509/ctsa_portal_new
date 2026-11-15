@@ -790,7 +790,113 @@ def container_delete_view(request, pk):
         ).update(carry_decision='', carry_decided_by=None, carry_decided_at=None)
     container.delete()
     messages.info(request, f"Le conteneur {num} a été supprimé de la liste du {scheduled.strftime('%d/%m/%Y')}.")
-    return redirect(_dashboard_url(scheduled))
+    return redirect(f"{reverse('terminal:containers')}?date={scheduled.isoformat()}")
+
+
+@login_required
+def container_detail_view(request, pk):
+    """Fiche détail d'un conteneur programmé : infos, changement de statut, suppression, historique."""
+    if not request.user.is_staff_member:
+        return redirect('terminal:client_watchlist')
+
+    container = get_object_or_404(
+        Container.objects.select_related(
+            'shipping_line', 'prefix_ref', 'created_by', 'updated_by', 'verified_by', 'carried_from'
+        ),
+        pk=pk,
+    )
+    logs = (
+        ContainerStatusLog.objects.select_related('changed_by')
+        .filter(container=container)
+        .order_by('-changed_at')
+    )
+    return render(request, 'portal/container_detail.html', {
+        'container': container,
+        'logs': logs,
+        'shipping_lines': ShippingLine.objects.filter(is_active=True),
+    })
+
+
+@login_required
+def container_edit_view(request, pk):
+    """Page dédiée de modification d'un conteneur programmé."""
+    if not request.user.can_edit_or_delete_containers:
+        messages.error(request, "Vous n'avez pas l'autorisation de modifier ce conteneur.")
+        return redirect('terminal:container_detail', pk=pk)
+
+    container = get_object_or_404(Container, pk=pk)
+    shipping_lines = ShippingLine.objects.filter(is_active=True)
+    errors = {}
+    form_values = {
+        'container_number': container.container_number,
+        'shipping_line': str(container.shipping_line_id or ''),
+        'scheduled_date': container.scheduled_date.isoformat(),
+        'status': container.status,
+        'unavailability_note': container.unavailability_note,
+    }
+
+    if request.method == 'POST':
+        raw_number = request.POST.get('container_number', '').strip()
+        normalized = normalize_container_number(raw_number)
+        raw_line = request.POST.get('shipping_line', '').strip()
+        raw_date = request.POST.get('scheduled_date', '').strip()
+        new_status = request.POST.get('status', '').strip()
+        note = request.POST.get('unavailability_note', '').strip()
+
+        form_values = {
+            'container_number': raw_number,
+            'shipping_line': raw_line,
+            'scheduled_date': raw_date,
+            'status': new_status,
+            'unavailability_note': note,
+        }
+
+        if not CONTAINER_NUMBER_REGEX.match(normalized):
+            errors['container_number'] = "Format requis : 4 lettres suivies de 7 chiffres (ex. CMAU4052450)."
+
+        try:
+            parsed_date = datetime.date.fromisoformat(raw_date)
+        except ValueError:
+            parsed_date = None
+            errors['scheduled_date'] = "Veuillez saisir une date valide."
+
+        if new_status not in dict(Container.Status.choices):
+            errors['status'] = "Statut invalide."
+
+        line_obj = None
+        if raw_line:
+            if raw_line.isdigit():
+                line_obj = ShippingLine.objects.filter(pk=int(raw_line)).first()
+            if not line_obj:
+                errors['shipping_line'] = "Ligne maritime invalide."
+
+        if (
+            not errors
+            and Container.objects.filter(container_number=normalized, scheduled_date=parsed_date)
+            .exclude(pk=container.pk)
+            .exists()
+        ):
+            errors['container_number'] = (
+                f"Le conteneur {normalized} est déjà programmé le {parsed_date.strftime('%d/%m/%Y')}."
+            )
+
+        if not errors:
+            container.container_number = normalized
+            container.shipping_line = line_obj
+            container.scheduled_date = parsed_date
+            container.status = new_status
+            container.unavailability_note = note if new_status == Container.Status.UNAVAILABLE else ''
+            container.save(acting_user=request.user)
+            messages.success(request, f"Conteneur {container.container_number} enregistré.")
+            return redirect('terminal:container_detail', pk=container.pk)
+
+    return render(request, 'portal/container_edit.html', {
+        'container': container,
+        'shipping_lines': shipping_lines,
+        'status_choices': Container.Status.choices,
+        'errors': errors,
+        'form_values': form_values,
+    })
 
 
 @login_required

@@ -15,6 +15,8 @@ urlpatterns = [
     # Partie interne (/admin)
     path('admin/', views.dashboard_view, name='dashboard'),
     path('admin/conteneurs/', views.container_list_view, name='containers'),
+    path('admin/conteneurs/<int:pk>/', views.container_detail_view, name='container_detail'),
+    path('admin/conteneurs/<int:pk>/modifier/', views.container_edit_view, name='container_edit'),
     path('admin/preparer/', views.prepare_view, name='prepare'),
     path('admin/containers/add/', views.container_add_single_view, name='container_add_single'),
     path('admin/containers/bulk-add/', views.container_add_bulk_view, name='container_add_bulk'),

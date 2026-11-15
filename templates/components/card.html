@@ -1,0 +1,19 @@
+{# Composant card : conteneur sobre et uniforme. #}
+<section {% if id %}id="{{ id }}"{% endif %}
+         {% if title_id %}aria-labelledby="{{ title_id }}"{% elif aria_label %}aria-label="{{ aria_label }}"{% endif %}
+         class="bg-white rounded-xl border border-slate-200/80 shadow-xs {{ extra_class }}">
+  {% if title %}
+    <div class="px-4 sm:px-5 py-3.5 border-b border-slate-200/80 flex items-center justify-between gap-3">
+      <div>
+        <h2 {% if title_id %}id="{{ title_id }}"{% endif %} class="text-base font-heading font-extrabold text-ctsa-slate m-0">{{ title }}</h2>
+        {% if subtitle %}<p class="text-xs text-slate-500 mt-0.5 mb-0">{{ subtitle }}</p>{% endif %}
+      </div>
+      {% if action_url and action_label %}
+        <a href="{{ action_url }}" class="text-sm font-semibold text-primary hover:underline shrink-0">{{ action_label }}</a>
+      {% endif %}
+    </div>
+  {% endif %}
+  <div class="{{ body_class|default:'p-4 sm:p-5' }}">
+    {{ content }}
+  </div>
+</section>

@@ -1,0 +1,39 @@
+{# Composant page_header : titre, fil d'Ariane/retour, compteur éventuel, et UN seul bouton primaire. #}
+<header class="flex flex-col gap-3 pb-4 border-b border-slate-200/80">
+  {% if back_url %}
+    <div>
+      <a href="{{ back_url }}"
+         class="inline-flex items-center gap-1.5 text-sm font-semibold text-slate-600 hover:text-ctsa-slate no-underline min-h-[36px]">
+        <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
+        <span>{{ back_label|default:"Retour" }}</span>
+      </a>
+    </div>
+  {% endif %}
+
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+    <div class="min-w-0">
+      <div class="flex flex-wrap items-center gap-2.5">
+        <h1 class="text-xl sm:text-2xl font-heading font-extrabold text-ctsa-slate m-0">{{ title }}</h1>
+        {% if count is not None %}
+          <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-slate-100 text-slate-700 tabular-nums">
+            {{ count }}
+          </span>
+        {% endif %}
+      </div>
+      {% if subtitle %}
+        <p class="text-sm text-slate-500 mt-1 mb-0">{{ subtitle }}</p>
+      {% endif %}
+    </div>
+
+    {% if primary_url and primary_label %}
+      <div class="shrink-0">
+        <a href="{{ primary_url }}" class="ui-btn ui-btn-primary w-full sm:w-auto">
+          {% if primary_icon == 'plus' %}
+            <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+          {% endif %}
+          <span>{{ primary_label }}</span>
+        </a>
+      </div>
+    {% endif %}
+  </div>
+</header>

@@ -533,4 +533,53 @@ document.addEventListener('DOMContentLoaded', () => {
       window.print();
     });
   });
+
+  // 11. Protection contre le double envoi des formulaires (data-submit-guard)
+  document.querySelectorAll('form').forEach((form) => {
+    form.addEventListener('submit', () => {
+      const btn = form.querySelector('[data-submit-guard]');
+      if (!btn || btn.disabled) return;
+      btn.disabled = true;
+      btn.classList.add('is-loading');
+      btn.setAttribute('aria-busy', 'true');
+    });
+  });
+
+  // 12. Modale de confirmation générique (#ui-confirm-dialog)
+  const uiConfirmDialog = document.getElementById('ui-confirm-dialog');
+  if (uiConfirmDialog && typeof uiConfirmDialog.showModal === 'function') {
+    const titleEl = document.getElementById('ui-confirm-title');
+    const msgEl = document.getElementById('ui-confirm-message');
+    const formEl = document.getElementById('ui-confirm-form');
+    const extraEl = document.getElementById('ui-confirm-extra');
+    const submitEl = document.getElementById('ui-confirm-submit');
+
+    document.querySelectorAll('[data-confirm-modal]').forEach((trigger) => {
+      trigger.addEventListener('click', () => {
+        if (titleEl) titleEl.textContent = trigger.dataset.confirmTitle || "Confirmer l'action";
+        if (msgEl) msgEl.textContent = trigger.dataset.confirmMessage || "Êtes-vous sûr de vouloir continuer ?";
+        if (formEl) formEl.action = trigger.dataset.confirmAction || '';
+        if (submitEl) submitEl.textContent = trigger.dataset.confirmLabel || 'Supprimer';
+        if (extraEl) {
+          extraEl.innerHTML = '';
+          if (trigger.dataset.confirmPayloadName && trigger.dataset.confirmPayloadValue) {
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = trigger.dataset.confirmPayloadName;
+            input.value = trigger.dataset.confirmPayloadValue;
+            extraEl.appendChild(input);
+          }
+        }
+        uiConfirmDialog.showModal();
+      });
+    });
+
+    uiConfirmDialog.querySelector('[data-confirm-cancel]')?.addEventListener('click', () => {
+      uiConfirmDialog.close('cancel');
+    });
+
+    uiConfirmDialog.addEventListener('close', () => {
+      uiConfirmDialog.returnValue = '';
+    });
+  }
 });

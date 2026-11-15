@@ -253,5 +253,90 @@ class CTSAPortalBusinessTests(TestCase):
         self.assertEqual(c1.unavailability_note, 'En maintenance')
         self.assertEqual(c2.status, Container.Status.CONFIRMED)
 
+    def test_container_list_detail_edit_delete_and_permissions(self):
+        from accounts.models import User
+        today = timezone.localdate()
+        c = Container.objects.create(
+            container_number='MSCU3333333',
+            shipping_line=self.cma,
+            scheduled_date=today,
+            status=Container.Status.PENDING,
+        )
+        c_dup = Container.objects.create(
+            container_number='MSCU4444444',
+            shipping_line=self.cma,
+            scheduled_date=today,
+            status=Container.Status.CONFIRMED,
+        )
+
+        # Non-staff user is redirected away from container detail & edit
+        client_user = User.objects.create_user(
+            username='client_only',
+            password='Password123!',
+            role=User.Role.CLIENT if hasattr(User, 'Role') else 'client',
+        )
+        self.client_http.login(username='client_only', password='Password123!')
+        self.assertEqual(
+            self.client_http.get(reverse('terminal:container_detail', args=[c.pk])).status_code,
+            302,
+        )
+        self.assertEqual(
+            self.client_http.get(reverse('terminal:container_edit', args=[c.pk])).status_code,
+            302,
+        )
+
+        # Staff user can view list without portal-dropdown, view detail, edit, and delete
+        self.client_http.login(username='sup_test', password='Password123!')
+        list_resp = self.client_http.get(reverse('terminal:containers'))
+        self.assertEqual(list_resp.status_code, 200)
+        self.assertContains(list_resp, 'MSCU3333333')
+        self.assertNotContains(list_resp, 'portal-dropdown')
+
+        detail_resp = self.client_http.get(reverse('terminal:container_detail', args=[c.pk]))
+        self.assertEqual(detail_resp.status_code, 200)
+        self.assertContains(detail_resp, 'MSCU3333333')
+
+        edit_get = self.client_http.get(reverse('terminal:container_edit', args=[c.pk]))
+        self.assertEqual(edit_get.status_code, 200)
+        self.assertContains(edit_get, 'portal-has-form-actions')
+
+        # Duplicate container_number on same date returns 200 with error
+        edit_dup = self.client_http.post(
+            reverse('terminal:container_edit', args=[c.pk]),
+            {
+                'container_number': 'MSCU4444444',
+                'scheduled_date': today.isoformat(),
+                'shipping_line': str(self.cma.pk),
+                'status': Container.Status.CONFIRMED,
+                'unavailability_note': '',
+            },
+        )
+        self.assertEqual(edit_dup.status_code, 200)
+        c.refresh_from_db()
+        self.assertEqual(c.container_number, 'MSCU3333333')
+
+        # Valid edit updates container and redirects to detail
+        edit_ok = self.client_http.post(
+            reverse('terminal:container_edit', args=[c.pk]),
+            {
+                'container_number': 'MSCU-5555555',
+                'scheduled_date': today.isoformat(),
+                'shipping_line': str(self.cma.pk),
+                'status': Container.Status.UNAVAILABLE,
+                'unavailability_note': 'Bloqué douane',
+            },
+        )
+        self.assertRedirects(edit_ok, reverse('terminal:container_detail', args=[c.pk]))
+        c.refresh_from_db()
+        self.assertEqual(c.container_number, 'MSCU5555555')
+        self.assertEqual(c.status, Container.Status.UNAVAILABLE)
+        self.assertEqual(c.unavailability_note, 'Bloqué douane')
+
+        # Delete removes container and redirects to containers list
+        del_resp = self.client_http.post(reverse('terminal:container_delete', args=[c.pk]))
+        self.assertEqual(del_resp.status_code, 302)
+        self.assertFalse(Container.objects.filter(pk=c.pk).exists())
+
+
 
 
