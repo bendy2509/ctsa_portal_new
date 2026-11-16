@@ -604,7 +604,7 @@ class SiteSettings(models.Model):
     portal_subtitle_ht = models.CharField(
         max_length=160,
         blank=True,
-        default="Verifikasyon ladwann pou kontenè yo",
+        default="Verifikasyon ladwàn pou kontenè yo",
         verbose_name="Sous-titre du portail (Kreyòl)",
     )
     location_label_ht = models.CharField(
@@ -626,7 +626,7 @@ class SiteSettings(models.Model):
     )
     hero_subtitle_ht = models.TextField(
         blank=True,
-        default="Konsilte an tan reyèl si kontenè ou a pwograme epi konfime pou verifikasyon ladwann jodi a anvan ou deplase vin nan tèminal la.",
+        default="Konsilte an tan reyèl si kontenè ou a pwograme epi konfime pou verifikasyon ladwàn jodi a anvan ou deplase vin nan tèminal la.",
         verbose_name="Sous-titre d'accueil (Kreyòl)",
     )
     search_note_ht = models.CharField(
@@ -662,7 +662,7 @@ class SiteSettings(models.Model):
     step3_title_ht = models.CharField(
         max_length=80,
         blank=True,
-        default="Ale nan RAMPE la",
+        default="Ale nan RANP la",
         verbose_name="Étape 3 — Titre (Kreyòl)",
     )
     step3_text_ht = models.CharField(
@@ -679,24 +679,24 @@ class SiteSettings(models.Model):
     )
     status_guide_subtitle_ht = models.TextField(
         blank=True,
-        default="Chak kontenè ki pwograme pase nan youn nan twa eta sa yo selon plas li nan RAMPE la.",
+        default="Chak kontenè ki pwograme pase nan youn nan twa eta sa yo selon plas li nan RANP la.",
         verbose_name="Sous-titre du guide des statuts (Kreyòl)",
     )
     confirmed_title_ht = models.CharField(
         max_length=120,
         blank=True,
-        default="Kontenè a plase nan RAMPE la",
+        default="Kontenè a plase nan RANP la",
         verbose_name="Titre — Confirmé (Kreyòl)",
     )
     confirmed_description_ht = models.TextField(
         blank=True,
-        default="Kontenè a disponib fizikman epi tèminal la valide li pou verifikasyon ladwann jodi a.",
+        default="Kontenè a disponib fizikman epi tèminal la valide li pou verifikasyon ladwàn jodi a.",
         verbose_name="Description — Confirmé (Kreyòl)",
     )
     confirmed_instruction_ht = models.CharField(
         max_length=240,
         blank=True,
-        default="Vin nan tèminal la ak tout dokiman ladwann ou yo.",
+        default="Vin nan tèminal la ak tout dokiman ladwàn ou yo.",
         verbose_name="Consigne — Confirmé (Kreyòl)",
     )
     pending_title_ht = models.CharField(
@@ -707,7 +707,7 @@ class SiteSettings(models.Model):
     )
     pending_description_ht = models.TextField(
         blank=True,
-        default="Kontenè a nan pwogramasyon jodi a, men plasman final li nan RAMPE la poko konfime.",
+        default="Kontenè a nan pwogramasyon jodi a, men plasman final li nan RANP la poko konfime.",
         verbose_name="Description — En attente (Kreyòl)",
     )
     pending_instruction_ht = models.CharField(
@@ -724,7 +724,7 @@ class SiteSettings(models.Model):
     )
     unavailable_description_ht = models.TextField(
         blank=True,
-        default="Kontenè a pa ka prezante pou verifikasyon ladwann jodi a. Rezon an ekri sou fich li.",
+        default="Kontenè a pa ka prezante pou verifikasyon ladwàn jodi a. Rezon an ekri sou fich li.",
         verbose_name="Description — Indisponible (Kreyòl)",
     )
     unavailable_instruction_ht = models.CharField(

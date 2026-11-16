@@ -1,6 +1,6 @@
 msgid ""
 msgstr ""
-"Project-Id-Version: CTSA Portail RAMPE\n"
+"Project-Id-Version: CTSA Portail RANP\n"
 "Language: ht\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
@@ -40,7 +40,7 @@ msgid "Mes conteneurs"
 msgstr "Kontenè mwen yo"
 
 msgid "Exploitation RAMPE"
-msgstr "Jesyon RAMPE"
+msgstr "Jesyon RANP"
 
 msgid "Menu"
 msgstr "Meni"
@@ -142,7 +142,7 @@ msgid "Vérification de Conteneur"
 msgstr "Verifikasyon Kontenè"
 
 msgid "Port du Cap-Haïtien · Vérification douanière RAMPE"
-msgstr "Pò Okap · Verifikasyon ladwann RAMPE"
+msgstr "Pò Okap · Verifikasyon ladwàn RANP"
 
 msgid "Vérification du statut d'un conteneur"
 msgstr "Verifye stati yon kontenè"
@@ -163,7 +163,7 @@ msgid "Conteneur déjà vérifié"
 msgstr "Kontenè sa a deja verifye"
 
 msgid "Ce conteneur a déjà été vérifié à la RAMPE le <strong>%(date_str)s</strong>. Aucune nouvelle vérification n'est programmée."
-msgstr "Kontenè sa a te deja verifye nan RAMPE la jou ki te <strong>%(date_str)s</strong>. Pa gen lòt verifikasyon ki pwograme."
+msgstr "Kontenè sa a te deja verifye nan RANP la jou ki te <strong>%(date_str)s</strong>. Pa gen lòt verifikasyon ki pwograme."
 
 msgid "Programmé le %(date_str)s — Ne pas se déplacer aujourd'hui"
 msgstr "Pwograme pou %(date_str)s — Pa vini jodi a"
@@ -178,16 +178,16 @@ msgid "Ce conteneur n'est pas sur la liste du jour (<strong>%(today_str)s</stron
 msgstr "Kontenè sa a pa sou lis jodi a (<strong>%(today_str)s</strong>). Dènye dat li te parèt : <strong>%(sched_str)s</strong>."
 
 msgid "Déplacement autorisé — Conteneur à la RAMPE"
-msgstr "Ou ka vini — Kontenè a nan RAMPE la"
+msgstr "Ou ka vini — Kontenè a nan RANP la"
 
 msgid "Ce conteneur est confirmé pour la séance du <strong>%(sched_str)s</strong>. Présentez-vous au terminal avec vos documents douaniers."
-msgstr "Kontenè sa a konfime pou jou <strong>%(sched_str)s</strong>. Vin nan tèminal la ak tout dokiman ladwann ou yo."
+msgstr "Kontenè sa a konfime pou jou <strong>%(sched_str)s</strong>. Vin nan tèminal la ak tout dokiman ladwàn ou yo."
 
 msgid "En attente de confirmation — Ne pas se déplacer"
 msgstr "Ap tann konfimasyon — Pa vini ankò"
 
 msgid "Ce conteneur est programmé pour le <strong>%(sched_str)s</strong>, mais n'est pas encore positionné à la RAMPE. La page se met à jour automatiquement."
-msgstr "Kontenè sa a pwograme pou <strong>%(sched_str)s</strong>, men li poko plase nan RAMPE la. Paj la ap mete tèt li ajou otomatikman."
+msgstr "Kontenè sa a pwograme pou <strong>%(sched_str)s</strong>, men li poko plase nan RANP la. Paj la ap mete tèt li ajou otomatikman."
 
 msgid "Conteneur indisponible — Ne pas se déplacer"
 msgstr "Kontenè a pa disponib — Pa vini"
@@ -235,7 +235,7 @@ msgid "Aucune programmation trouvée pour « %(num)s »"
 msgstr "Pa gen okenn pwogramasyon pou « %(num)s »"
 
 msgid "Ce conteneur ne figure pas encore sur la liste de vérification douanière RAMPE publiée à la date du <strong>%(today_str)s</strong>."
-msgstr "Kontenè sa a poko sou lis verifikasyon ladwann RAMPE ki pibliye pou dat <strong>%(today_str)s</strong>."
+msgstr "Kontenè sa a poko sou lis verifikasyon ladwàn RANP ki pibliye pou dat <strong>%(today_str)s</strong>."
 
 msgid "Que faire ?"
 msgstr "Kisa pou w fè ?"
@@ -256,10 +256,10 @@ msgid "Dernière actualisation à"
 msgstr "Dènye mizajou a"
 
 msgid "Conteneur disponible à la RAMPE. Déplacement au terminal autorisé."
-msgstr "Kontenè a disponib nan RAMPE la. Ou ka vin nan tèminal la."
+msgstr "Kontenè a disponib nan RANP la. Ou ka vin nan tèminal la."
 
 msgid "Conteneur programmé mais en attente de positionnement à la RAMPE."
-msgstr "Kontenè a pwograme men l ap tann pou yo plase l nan RAMPE la."
+msgstr "Kontenè a pwograme men l ap tann pou yo plase l nan RANP la."
 
 msgid "Non présentable ce jour. Le motif communiqué est indiqué sur la fiche."
 msgstr "Pa ka prezante l jodi a. Rezon an ekri sou fich la."
@@ -289,7 +289,7 @@ msgid "Espace Client · Cap Terminal S.A."
 msgstr "Espas Kliyan · Cap Terminal S.A."
 
 msgid "Inscrivez-vous pour enregistrer et suivre vos conteneurs programmés à la RAMPE."
-msgstr "Enskri ou pou anrejistre epi swiv kontenè ou yo ki pwograme nan RAMPE la."
+msgstr "Enskri ou pou anrejistre epi swiv kontenè ou yo ki pwograme nan RANP la."
 
 msgid "Identifiant"
 msgstr "Non itilizatè"
@@ -334,7 +334,7 @@ msgid "Mes conteneurs suivis"
 msgstr "Kontenè m ap swiv yo"
 
 msgid "Enregistrez vos numéros de conteneurs pour consulter leur statut douanier à la RAMPE en un coup d'œil."
-msgstr "Anrejistre nimewo kontenè ou yo pou gade stati ladwann yo nan RAMPE la fasilman."
+msgstr "Anrejistre nimewo kontenè ou yo pou gade stati ladwàn yo nan RANP la fasilman."
 
 msgid "Ajouter un conteneur à ma liste de suivi"
 msgstr "Ajoute yon kontenè nan lis swivi mwen"
@@ -376,4 +376,4 @@ msgid "Aucun conteneur suivi"
 msgstr "Pa gen kontenè w ap swiv"
 
 msgid "Utilisez le formulaire ci-dessus pour ajouter vos numéros de conteneurs et suivre leur statut douanier."
-msgstr "Sèvi ak fòmilè ki anlè a pou ajoute nimewo kontenè ou yo epi swiv stati ladwann yo."
+msgstr "Sèvi ak fòmilè ki anlè a pou ajoute nimewo kontenè ou yo epi swiv stati ladwàn yo."

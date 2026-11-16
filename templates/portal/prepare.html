@@ -102,14 +102,13 @@
 
         <div class="space-y-1.5">
           <label for="add-single-line" class="block text-sm font-bold text-ctsa-slate">
-            Ligne maritime {% if shipping_lines %}<span class="text-ctsa-red-text" aria-hidden="true">*</span>{% endif %}
+            Ligne maritime <span class="text-xs font-normal text-slate-500">(optionnel)</span>
           </label>
           <select id="add-single-line"
                   name="shipping_line"
-                  {% if shipping_lines %}required{% endif %}
                   class="w-full min-h-[44px] rounded-lg border border-slate-300 px-3.5 py-2 text-sm font-semibold text-ctsa-slate bg-white focus:outline-none focus:ring-2 focus:ring-ctsa-blue/30 focus:border-ctsa-blue">
             {% if shipping_lines %}
-              <option value="" disabled {% if not single_line_value %}selected{% endif %}>Choisir une ligne maritime</option>
+              <option value="" {% if not single_line_value %}selected{% endif %}>— Aucune / Non renseignée —</option>
               {% for line in shipping_lines %}
                 <option value="{{ line.id }}" {% if line.id|stringformat:'s' == single_line_value %}selected{% endif %}>{{ line.name }}</option>
               {% endfor %}
@@ -153,14 +152,13 @@
 
         <div class="space-y-1.5">
           <label for="bulk-line" class="block text-sm font-bold text-ctsa-slate">
-            Ligne maritime {% if shipping_lines %}<span class="text-ctsa-red-text" aria-hidden="true">*</span>{% endif %}
+            Ligne maritime <span class="text-xs font-normal text-slate-500">(optionnel)</span>
           </label>
           <select id="bulk-line"
                   name="shipping_line"
-                  {% if shipping_lines %}required{% endif %}
                   class="w-full min-h-[44px] rounded-lg border border-slate-300 px-3.5 py-2 text-sm font-semibold text-ctsa-slate bg-white focus:outline-none focus:ring-2 focus:ring-ctsa-blue/30 focus:border-ctsa-blue">
             {% if shipping_lines %}
-              <option value="" disabled {% if not bulk_line_value %}selected{% endif %}>Choisir une ligne maritime</option>
+              <option value="" {% if not bulk_line_value %}selected{% endif %}>— Aucune / Non renseignée —</option>
               {% for line in shipping_lines %}
                 <option value="{{ line.id }}" {% if line.id|stringformat:'s' == bulk_line_value %}selected{% endif %}>{{ line.name }}</option>
               {% endfor %}

@@ -577,16 +577,7 @@ def container_add_single_view(request):
         )
         return redirect(_safe_next(request, _dashboard_url(target_date)))
 
-    # Ligne maritime obligatoire dès qu'au moins une ligne active existe.
     line_id = int(shipping_line_id) if shipping_line_id.isdigit() else None
-    if line_id is None and ShippingLine.objects.filter(is_active=True).exists():
-        request.session['_prepare_form_draft'] = {
-            'active_tab': 'single',
-            'single_number': raw_number,
-            'single_line': shipping_line_id,
-        }
-        messages.error(request, "Veuillez sélectionner une ligne maritime.")
-        return redirect(_safe_next(request, _dashboard_url(target_date)))
 
     existing = Container.objects.filter(
         container_number=normalized, scheduled_date=target_date
@@ -655,14 +646,6 @@ def container_add_bulk_view(request):
     # Tout nouvel ajout dans une liste démarre « En attente » jusqu'à confirmation sur la rampe.
     default_status = Container.Status.PENDING
     resolved_line_id = int(shipping_line_id) if shipping_line_id.isdigit() else None
-    if resolved_line_id is None and ShippingLine.objects.filter(is_active=True).exists():
-        request.session['_prepare_form_draft'] = {
-            'active_tab': 'bulk',
-            'bulk_list': raw_list,
-            'bulk_line': shipping_line_id,
-        }
-        messages.error(request, "Veuillez sélectionner une ligne maritime.")
-        return redirect(_safe_next(request, _dashboard_url(target_date)))
 
     tokens = [t.strip() for t in re.split(r'[\r\n,;]+', raw_list) if t.strip()]
     if not tokens:

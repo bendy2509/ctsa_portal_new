@@ -337,13 +337,15 @@ class CTSAPortalBusinessTests(TestCase):
         self.assertEqual(del_resp.status_code, 302)
         self.assertFalse(Container.objects.filter(pk=c.pk).exists())
 
-        # Adding without shipping_line is rejected when active shipping lines exist
+        # Adding without shipping_line succeeds because shipping_line is optional
         no_line_resp = self.client_http.post(
             reverse('terminal:container_add_single'),
             {'container_number': 'MSCU7777777', 'scheduled_date': today.isoformat()},
         )
         self.assertEqual(no_line_resp.status_code, 302)
-        self.assertFalse(Container.objects.filter(container_number='MSCU7777777').exists())
+        self.assertTrue(
+            Container.objects.filter(container_number='MSCU7777777', shipping_line__isnull=True).exists()
+        )
 
 
 class ShippingLinesAndStatisticsTests(TestCase):
