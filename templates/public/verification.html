@@ -129,7 +129,7 @@
                   {% trans "Conteneur déjà vérifié" %}
                 </h3>
                 <p class="text-sm leading-relaxed m-0">
-                  {% blocktrans with date_str=result.scheduled_date|date:"d/m/Y" %}Ce conteneur a déjà été vérifié à la RAMPE le <strong>{{ date_str }}</strong>. Aucune nouvelle vérification n'est programmée.{% endblocktrans %}
+                  {% trans "Ce conteneur a déjà été vérifié à la RAMPE. Aucune nouvelle vérification n'est programmée." %}
                 </p>
               </div>
             {% elif result.timing == 'upcoming' %}
@@ -180,7 +180,7 @@
             {% endif %}
 
             <!-- Grille de métadonnées -->
-            <dl class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 m-0">
+            <dl class="grid grid-cols-1 sm:grid-cols-2 {% if not result.is_verified or result.timing == 'upcoming' %}lg:grid-cols-4{% endif %} gap-3.5 m-0">
               <div class="p-4 rounded-xl bg-slate-50 border border-slate-200/80">
                 <dt class="text-[11px] uppercase font-heading font-bold tracking-wider text-slate-500">
                   {% trans "Numéro de conteneur" %}
@@ -199,23 +199,25 @@
                 </dd>
               </div>
 
-              <div class="p-4 rounded-xl bg-slate-50 border border-slate-200/80">
-                <dt class="text-[11px] uppercase font-heading font-bold tracking-wider text-slate-500">
-                  {% if result.timing == 'past' %}{% trans "Dernière séance" %}{% else %}{% trans "Date programmée" %}{% endif %}
-                </dt>
-                <dd class="text-sm font-bold text-ctsa-slate mt-1 m-0 tabular-nums">
-                  {{ result.scheduled_date|date:"d/m/Y" }}
-                </dd>
-              </div>
+              {% if not result.is_verified or result.timing == 'upcoming' %}
+                <div class="p-4 rounded-xl bg-slate-50 border border-slate-200/80">
+                  <dt class="text-[11px] uppercase font-heading font-bold tracking-wider text-slate-500">
+                    {% if result.timing == 'past' %}{% trans "Dernière séance" %}{% else %}{% trans "Date programmée" %}{% endif %}
+                  </dt>
+                  <dd class="text-sm font-bold text-ctsa-slate mt-1 m-0 tabular-nums">
+                    {{ result.scheduled_date|date:"d/m/Y" }}
+                  </dd>
+                </div>
 
-              <div class="p-4 rounded-xl bg-slate-50 border border-slate-200/80">
-                <dt class="text-[11px] uppercase font-heading font-bold tracking-wider text-slate-500">
-                  {% trans "Dernière mise à jour" %}
-                </dt>
-                <dd class="text-sm font-bold text-ctsa-slate mt-1 m-0 tabular-nums">
-                  {{ result.updated_at|date:"d/m/Y" }} {% trans "à" %} {{ result.updated_at|date:"H:i" }}
-                </dd>
-              </div>
+                <div class="p-4 rounded-xl bg-slate-50 border border-slate-200/80">
+                  <dt class="text-[11px] uppercase font-heading font-bold tracking-wider text-slate-500">
+                    {% trans "Dernière mise à jour" %}
+                  </dt>
+                  <dd class="text-sm font-bold text-ctsa-slate mt-1 m-0 tabular-nums">
+                    {{ result.updated_at|date:"d/m/Y" }} {% trans "à" %} {{ result.updated_at|date:"H:i" }}
+                  </dd>
+                </div>
+              {% endif %}
             </dl>
 
             <!-- Pied du bordereau -->
