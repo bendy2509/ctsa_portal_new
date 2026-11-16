@@ -129,7 +129,7 @@
                   {% trans "Conteneur déjà vérifié" %}
                 </h3>
                 <p class="text-sm leading-relaxed m-0">
-                  {% blocktrans with date_str=result.verified_at|default:result.scheduled_date|date:"d/m/Y" %}Ce conteneur a déjà été vérifié à la RAMPE le <strong>{{ date_str }}</strong>. Aucune nouvelle vérification n'est programmée.{% endblocktrans %}
+                  {% blocktrans with date_str=result.scheduled_date|date:"d/m/Y" %}Ce conteneur a déjà été vérifié à la RAMPE le <strong>{{ date_str }}</strong>. Aucune nouvelle vérification n'est programmée.{% endblocktrans %}
                 </p>
               </div>
             {% elif result.timing == 'upcoming' %}
