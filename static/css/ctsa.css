@@ -308,6 +308,12 @@ h1, h2, h3, h4, h5, h6 {
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
+textarea.form-control {
+  min-height: 6rem;
+  line-height: 1.5;
+  resize: vertical;
+}
+
 .form-control:hover {
   border-color: #b5b5b5;
 }

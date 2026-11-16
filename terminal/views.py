@@ -1764,16 +1764,16 @@ class SiteSettingsForm(forms.ModelForm):
             'client_cta_subtitle',
         ]
         widgets = {
-            'footer_about': forms.Textarea(attrs={'rows': 3}),
-            'hero_subtitle': forms.Textarea(attrs={'rows': 3}),
-            'step1_text': forms.Textarea(attrs={'rows': 2}),
-            'step2_text': forms.Textarea(attrs={'rows': 2}),
-            'step3_text': forms.Textarea(attrs={'rows': 2}),
-            'status_guide_subtitle': forms.Textarea(attrs={'rows': 2}),
-            'confirmed_description': forms.Textarea(attrs={'rows': 2}),
-            'pending_description': forms.Textarea(attrs={'rows': 2}),
-            'unavailable_description': forms.Textarea(attrs={'rows': 2}),
-            'client_cta_subtitle': forms.Textarea(attrs={'rows': 2}),
+            'footer_about': forms.Textarea(attrs={'rows': 4}),
+            'hero_subtitle': forms.Textarea(attrs={'rows': 4}),
+            'step1_text': forms.Textarea(attrs={'rows': 3}),
+            'step2_text': forms.Textarea(attrs={'rows': 3}),
+            'step3_text': forms.Textarea(attrs={'rows': 3}),
+            'status_guide_subtitle': forms.Textarea(attrs={'rows': 3}),
+            'confirmed_description': forms.Textarea(attrs={'rows': 3}),
+            'pending_description': forms.Textarea(attrs={'rows': 3}),
+            'unavailable_description': forms.Textarea(attrs={'rows': 3}),
+            'client_cta_subtitle': forms.Textarea(attrs={'rows': 3}),
         }
 
     def __init__(self, *args, **kwargs):
