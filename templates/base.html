@@ -55,7 +55,7 @@
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div class="h-16 flex items-center justify-between gap-4">
         <!-- Zone 1 : Marque -->
-        <a href="{% url 'terminal:home' %}" class="flex items-center gap-2.5 sm:gap-3 min-w-0 shrink-0 no-underline text-white">
+        <a href="{% url 'terminal:home' %}" class="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1 lg:flex-none no-underline text-white">
           <img src="{% static 'img/cap-terminal-logo.png' %}"
                alt="Cap Terminal S.A."
                class="h-8 sm:h-10 w-auto object-contain shrink-0"
@@ -121,28 +121,15 @@
           {% endif %}
         </div>
 
-        <!-- Contrôles mobile & tablette -->
-        <div class="lg:hidden flex items-center gap-2 shrink-0">
-          <div class="inline-flex items-center rounded-lg bg-white/8 border border-white/15 p-0.5" role="group" aria-label="{% trans 'Choisir la langue' %}">
-            <a href="{% switch_lang_url 'fr' %}"
-               class="px-2 py-1.5 rounded-md text-[11px] font-bold no-underline transition {% if CURRENT_LANG|slice:':2' == 'fr' %}bg-[#1a6394] text-white{% else %}text-slate-300{% endif %}">
-              FR
-            </a>
-            <a href="{% switch_lang_url 'ht' %}"
-               class="px-2 py-1.5 rounded-md text-[11px] font-bold no-underline transition {% if CURRENT_LANG|slice:':2' == 'ht' %}bg-[#1a6394] text-white{% else %}text-slate-300{% endif %}">
-              HT
-            </a>
-          </div>
-
-          <button type="button"
-                  id="mobile-menu-toggle"
-                  aria-expanded="false"
-                  aria-controls="primary-nav-links"
-                  class="inline-flex items-center gap-2 min-h-[44px] px-3.5 py-2 rounded-lg border border-white/20 bg-white/8 text-sm font-semibold text-white hover:bg-white/15 transition cursor-pointer">
-            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="18" y2="18"/></svg>
-            <span>{% trans "Menu" %}</span>
-          </button>
-        </div>
+        <!-- Bouton menu mobile & tablette -->
+        <button type="button"
+                id="mobile-menu-toggle"
+                aria-expanded="false"
+                aria-controls="primary-nav-links"
+                class="lg:hidden inline-flex items-center gap-2 min-h-[44px] px-3.5 py-2 rounded-lg border border-white/20 bg-white/8 text-sm font-semibold text-white hover:bg-white/15 transition cursor-pointer shrink-0">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="18" y2="18"/></svg>
+          <span>{% trans "Menu" %}</span>
+        </button>
       </div>
 
       <!-- Menu déroulant mobile -->
