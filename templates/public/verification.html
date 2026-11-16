@@ -1,6 +1,7 @@
 {% extends 'base.html' %}
+{% load i18n %}
 
-{% block title %}Vérification de Conteneur — Cap Terminal S.A.{% endblock %}
+{% block title %}{% trans "Vérification de Conteneur" %} — Cap Terminal S.A.{% endblock %}
 
 {% block content %}
 <!-- Bandeau supérieur de recherche -->
@@ -8,10 +9,10 @@
   <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
     <div class="mb-5">
       <div class="text-xs font-heading uppercase tracking-widest text-ctsa-bluehover font-bold mb-1">
-        Port du Cap-Haïtien · Vérification douanière RAMPE
+        {% trans "Port du Cap-Haïtien · Vérification douanière RAMPE" %}
       </div>
       <h1 id="verification-form-title" class="font-heading text-2xl sm:text-3xl font-extrabold text-ctsa-slate m-0">
-        Vérification du statut d'un conteneur
+        {% trans "Vérification du statut d'un conteneur" %}
       </h1>
     </div>
 
@@ -21,10 +22,10 @@
           <div class="form-field mb-0">
             <div class="flex flex-wrap items-baseline justify-between gap-1.5 mb-2">
               <label for="verif-q" class="font-heading text-sm font-extrabold text-ctsa-slate">
-                Numéro du conteneur <span aria-hidden="true" class="text-red-600">*</span>
+                {% trans "Numéro du conteneur" %} <span aria-hidden="true" class="text-red-600">*</span>
               </label>
               <span id="verif-format-hint" class="text-xs text-slate-500 font-medium">
-                4 lettres + 7 chiffres du connaissement
+                {% trans "4 lettres + 7 chiffres du connaissement" %}
               </span>
             </div>
 
@@ -41,17 +42,17 @@
                   autocapitalize="characters"
                   spellcheck="false"
                   enterkeyhint="search"
-                  placeholder="ex. CMAU4052450"
+                  placeholder="{% trans 'ex. CMAU4052450' %}"
                   aria-describedby="verif-format-hint"
                   data-error="verif-q-error"
                   class="form-control font-mono text-base sm:text-lg uppercase tracking-wider"
                 >
                 <div id="verif-q-error" class="error-msg">
-                  Veuillez saisir un numéro valide composé de 4 lettres et 7 chiffres.
+                  {% trans "Veuillez saisir un numéro valide composé de 4 lettres et 7 chiffres." %}
                 </div>
               </div>
               <button type="submit" class="ui-btn ui-btn-primary sm:w-auto w-full shrink-0">
-                Rechercher
+                {% trans "Rechercher" %}
               </button>
             </div>
           </div>
@@ -68,7 +69,7 @@
     {% if normalized %}
       {% if format_warning %}
         <div class="p-5 rounded-xl bg-red-50 border border-red-200 border-l-4 border-l-red-600 text-red-900" role="alert">
-          <h2 class="font-heading text-base font-extrabold text-red-800 mb-1 mt-0">Format de numéro invalide</h2>
+          <h2 class="font-heading text-base font-extrabold text-red-800 mb-1 mt-0">{% trans "Format de numéro invalide" %}</h2>
           <p class="text-sm font-medium m-0">{{ format_warning }}</p>
         </div>
       {% elif result %}
@@ -95,19 +96,27 @@
 
             <div class="flex flex-wrap items-center gap-2.5">
               {% if result.is_verified and result.timing != 'upcoming' %}
-                {% include 'components/badge.html' with variant='verified' label='Vérifié' %}
+                {% trans "Déjà vérifié" as lbl_verified %}
+                {% include 'components/badge.html' with variant='verified' label=lbl_verified %}
               {% elif result.timing == 'upcoming' %}
-                {% with date_lbl=result.scheduled_date|date:"d/m/Y" %}
-                  {% include 'components/badge.html' with variant='neutral' label='Séance à venir' %}
-                {% endwith %}
+                {% trans "Séance à venir" as lbl_upcoming %}
+                {% include 'components/badge.html' with variant='neutral' label=lbl_upcoming %}
               {% elif result.timing == 'past' %}
-                {% include 'components/badge.html' with variant='neutral' label="Non programmé aujourd'hui" %}
+                {% trans "Non programmé aujourd'hui" as lbl_past %}
+                {% include 'components/badge.html' with variant='neutral' label=lbl_past %}
+              {% elif result.status == 'confirmed' %}
+                {% trans "Confirmé" as lbl_status %}
+                {% include 'components/badge.html' with variant=result.status label=lbl_status %}
+              {% elif result.status == 'pending' %}
+                {% trans "En attente" as lbl_status %}
+                {% include 'components/badge.html' with variant=result.status label=lbl_status %}
               {% else %}
-                {% include 'components/badge.html' with variant=result.status label=result.get_status_display %}
+                {% trans "Indisponible" as lbl_status %}
+                {% include 'components/badge.html' with variant=result.status label=lbl_status %}
               {% endif %}
 
               <button type="button" data-print-slip class="no-print ui-btn ui-btn-secondary ui-btn-sm">
-                Imprimer
+                {% trans "Imprimer" %}
               </button>
             </div>
           </div>
@@ -117,55 +126,55 @@
             {% if result.is_verified and result.timing != 'upcoming' %}
               <div class="p-4 sm:p-5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-950">
                 <h3 class="text-base sm:text-lg font-heading font-extrabold uppercase tracking-wide text-emerald-800 mb-1 mt-0">
-                  Vérification douanière effectuée
+                  {% trans "Conteneur déjà vérifié" %}
                 </h3>
                 <p class="text-sm leading-relaxed m-0">
-                  Ce conteneur a été vérifié à la RAMPE le <strong>{{ result.scheduled_date|date:"d/m/Y" }}</strong>. Aucune nouvelle vérification n'est programmée.
+                  {% blocktrans with date_str=result.verified_at|default:result.scheduled_date|date:"d/m/Y" %}Ce conteneur a déjà été vérifié à la RAMPE le <strong>{{ date_str }}</strong>. Aucune nouvelle vérification n'est programmée.{% endblocktrans %}
                 </p>
               </div>
             {% elif result.timing == 'upcoming' %}
               <div class="p-4 sm:p-5 rounded-xl bg-slate-100 border border-slate-300 text-slate-900">
                 <h3 class="text-base sm:text-lg font-heading font-extrabold uppercase tracking-wide text-ctsa-slate mb-1 mt-0">
-                  Programmé le {{ result.scheduled_date|date:"d/m/Y" }} — Ne pas se déplacer aujourd'hui
+                  {% blocktrans with date_str=result.scheduled_date|date:"d/m/Y" %}Programmé le {{ date_str }} — Ne pas se déplacer aujourd'hui{% endblocktrans %}
                 </h3>
                 <p class="text-sm leading-relaxed m-0">
-                  Ce conteneur n'est pas prévu aujourd'hui (<strong>{{ today|date:"d/m/Y" }}</strong>). Il est programmé pour le <strong>{{ result.scheduled_date|date:"d/m/Y" }}</strong> (statut provisoire : {{ result.get_status_display }}).
+                  {% blocktrans with today_str=today|date:"d/m/Y" sched_str=result.scheduled_date|date:"d/m/Y" status_str=result.get_status_display %}Ce conteneur n'est pas prévu aujourd'hui (<strong>{{ today_str }}</strong>). Il est programmé pour le <strong>{{ sched_str }}</strong> (statut provisoire : {{ status_str }}).{% endblocktrans %}
                 </p>
               </div>
             {% elif result.timing == 'past' %}
               <div class="p-4 sm:p-5 rounded-xl bg-slate-100 border border-slate-300 text-slate-900">
                 <h3 class="text-base sm:text-lg font-heading font-extrabold uppercase tracking-wide text-ctsa-slate mb-1 mt-0">
-                  Non programmé aujourd'hui — Ne pas se déplacer
+                  {% trans "Non programmé aujourd'hui — Ne pas se déplacer" %}
                 </h3>
                 <p class="text-sm leading-relaxed m-0">
-                  Ce conteneur n'est pas sur la liste du jour (<strong>{{ today|date:"d/m/Y" }}</strong>). Dernière séance connue : <strong>{{ result.scheduled_date|date:"d/m/Y" }}</strong> ({{ result.get_status_display }}{% if result.status == 'confirmed' %}, non vérifié{% endif %}).
+                  {% blocktrans with today_str=today|date:"d/m/Y" sched_str=result.scheduled_date|date:"d/m/Y" %}Ce conteneur n'est pas sur la liste du jour (<strong>{{ today_str }}</strong>). Dernière séance connue : <strong>{{ sched_str }}</strong>.{% endblocktrans %}
                 </p>
               </div>
             {% elif result.status == 'confirmed' %}
               <div class="p-4 sm:p-5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-950">
                 <h3 class="text-base sm:text-lg font-heading font-extrabold uppercase tracking-wide text-emerald-800 mb-1 mt-0">
-                  Déplacement autorisé — Conteneur à la RAMPE
+                  {% trans "Déplacement autorisé — Conteneur à la RAMPE" %}
                 </h3>
                 <p class="text-sm leading-relaxed m-0">
-                  Ce conteneur est confirmé pour la séance du <strong>{{ result.scheduled_date|date:"d/m/Y" }}</strong>. Présentez-vous au terminal avec vos documents douaniers.
+                  {% blocktrans with sched_str=result.scheduled_date|date:"d/m/Y" %}Ce conteneur est confirmé pour la séance du <strong>{{ sched_str }}</strong>. Présentez-vous au terminal avec vos documents douaniers.{% endblocktrans %}
                 </p>
               </div>
             {% elif result.status == 'pending' %}
               <div class="p-4 sm:p-5 rounded-xl bg-amber-50 border border-amber-200 text-amber-950">
                 <h3 class="text-base sm:text-lg font-heading font-extrabold uppercase tracking-wide text-amber-900 mb-1 mt-0">
-                  En attente de confirmation — Ne pas se déplacer
+                  {% trans "En attente de confirmation — Ne pas se déplacer" %}
                 </h3>
                 <p class="text-sm leading-relaxed m-0">
-                  Ce conteneur est programmé pour le <strong>{{ result.scheduled_date|date:"d/m/Y" }}</strong>, mais n'est pas encore positionné à la RAMPE. La page se met à jour automatiquement.
+                  {% blocktrans with sched_str=result.scheduled_date|date:"d/m/Y" %}Ce conteneur est programmé pour le <strong>{{ sched_str }}</strong>, mais n'est pas encore positionné à la RAMPE. La page se met à jour automatiquement.{% endblocktrans %}
                 </p>
               </div>
             {% else %}
               <div class="p-4 sm:p-5 rounded-xl bg-red-50 border border-red-200 text-red-950">
                 <h3 class="text-base sm:text-lg font-heading font-extrabold uppercase tracking-wide text-red-800 mb-1 mt-0">
-                  Conteneur indisponible — Ne pas se déplacer
+                  {% trans "Conteneur indisponible — Ne pas se déplacer" %}
                 </h3>
                 <p class="text-sm font-semibold leading-relaxed m-0">
-                  Motif : {{ result.full_reason_display }}
+                  {% trans "Motif" %} : {{ result.full_reason_display }}
                 </p>
               </div>
             {% endif %}
@@ -174,7 +183,7 @@
             <dl class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 m-0">
               <div class="p-4 rounded-xl bg-slate-50 border border-slate-200/80">
                 <dt class="text-[11px] uppercase font-heading font-bold tracking-wider text-slate-500">
-                  Numéro de conteneur
+                  {% trans "Numéro de conteneur" %}
                 </dt>
                 <dd class="text-base font-mono font-extrabold text-ctsa-slate mt-1 m-0 tabular-nums">
                   {{ result.container_number }}
@@ -183,16 +192,16 @@
 
               <div class="p-4 rounded-xl bg-slate-50 border border-slate-200/80">
                 <dt class="text-[11px] uppercase font-heading font-bold tracking-wider text-slate-500">
-                  Ligne maritime
+                  {% trans "Ligne maritime" %}
                 </dt>
                 <dd class="text-sm font-bold text-ctsa-slate mt-1 m-0">
-                  {% if result.shipping_line %}{{ result.shipping_line.name }}{% else %}Non spécifiée{% endif %}
+                  {% if result.shipping_line %}{{ result.shipping_line.name }}{% else %}{% trans "Non spécifiée" %}{% endif %}
                 </dd>
               </div>
 
               <div class="p-4 rounded-xl bg-slate-50 border border-slate-200/80">
                 <dt class="text-[11px] uppercase font-heading font-bold tracking-wider text-slate-500">
-                  {% if result.timing == 'past' %}Dernière séance{% else %}Date programmée{% endif %}
+                  {% if result.timing == 'past' %}{% trans "Dernière séance" %}{% else %}{% trans "Date programmée" %}{% endif %}
                 </dt>
                 <dd class="text-sm font-bold text-ctsa-slate mt-1 m-0 tabular-nums">
                   {{ result.scheduled_date|date:"d/m/Y" }}
@@ -201,7 +210,7 @@
 
               <div class="p-4 rounded-xl bg-slate-50 border border-slate-200/80">
                 <dt class="text-[11px] uppercase font-heading font-bold tracking-wider text-slate-500">
-                  Dernière mise à jour
+                  {% trans "Dernière mise à jour" %}
                 </dt>
                 <dd class="text-sm font-bold text-ctsa-slate mt-1 m-0 tabular-nums">
                   {{ result.updated_at|date:"d/m/Y à H:i" }}
@@ -215,29 +224,29 @@
                 {% if user.is_authenticated %}
                   {% if is_saved %}
                     <span class="text-xs text-emerald-700 font-bold">
-                      Ce conteneur figure déjà dans « Mes conteneurs suivis ».
+                      {% trans "Ce conteneur figure déjà dans « Mes conteneurs suivis »." %}
                     </span>
                   {% else %}
                     <form action="{% url 'terminal:client_watchlist' %}" method="post" class="inline">
                       {% csrf_token %}
                       <input type="hidden" name="container_number" value="{{ result.container_number }}">
                       <button type="submit" class="ui-btn ui-btn-secondary ui-btn-sm">
-                        Enregistrer dans mes conteneurs suivis
+                        {% trans "Enregistrer dans mes conteneurs suivis" %}
                       </button>
                     </form>
                   {% endif %}
                 {% else %}
                   <span class="text-xs text-slate-600">
-                    Vous souhaitez suivre ce conteneur ?
+                    {% trans "Vous souhaitez suivre ce conteneur ?" %}
                     <a href="{% url 'accounts:login' %}?next={{ request.get_full_path|urlencode:'' }}" class="font-bold text-ctsa-bluehover hover:underline ml-1">
-                      Connectez-vous à votre espace client
+                      {% trans "Connectez-vous à votre espace client" %}
                     </a>
                   </span>
                 {% endif %}
               </div>
 
               <a href="{% url 'terminal:verification' %}" class="text-xs font-bold text-slate-600 hover:text-ctsa-bluehover underline">
-                Effacer la recherche
+                {% trans "Effacer la recherche" %}
               </a>
             </div>
           </div>
@@ -246,20 +255,20 @@
         <!-- État vide lorsque le conteneur n'est pas programmé -->
         <div class="bg-slate-50 rounded-2xl p-6 sm:p-8 border border-slate-200/90 border-t-4 border-t-slate-500">
           <h2 class="font-heading text-lg font-extrabold text-ctsa-slate mb-2 mt-0">
-            Aucune programmation trouvée pour « {{ normalized }} »
+            {% blocktrans with num=normalized %}Aucune programmation trouvée pour « {{ num }} »{% endblocktrans %}
           </h2>
           <p class="text-sm text-slate-600 leading-relaxed mb-4">
-            Ce conteneur ne figure pas encore sur la liste de vérification douanière RAMPE publiée à la date du <strong>{{ today|date:"d/m/Y" }}</strong>.
+            {% blocktrans with today_str=today|date:"d/m/Y" %}Ce conteneur ne figure pas encore sur la liste de vérification douanière RAMPE publiée à la date du <strong>{{ today_str }}</strong>.{% endblocktrans %}
           </p>
           <div class="bg-white rounded-xl p-4 sm:p-5 border border-slate-200/80 text-sm text-slate-700 space-y-2">
-            <div class="font-bold text-ctsa-slate">Que faire ?</div>
+            <div class="font-bold text-ctsa-slate">{% trans "Que faire ?" %}</div>
             <ul class="list-disc pl-5 space-y-1.5 text-slate-600 m-0">
-              <li>Vérifiez que les 4 lettres et les 7 chiffres correspondent exactement à votre connaissement (Bill of Lading).</li>
-              <li>La liste du jour est complétée au fil de la journée : cette page se met à jour toute seule si votre conteneur y est ajouté.</li>
+              <li>{% trans "Vérifiez que les 4 lettres et les 7 chiffres correspondent exactement à votre connaissement (Bill of Lading)." %}</li>
+              <li>{% trans "La liste du jour est complétée au fil de la journée : cette page se met à jour toute seule si votre conteneur y est ajouté." %}</li>
               <li>
-                Pour toute question, appelez {{ site_settings.company_name }} au
+                {% trans "Pour toute question, appelez" %} {{ site_settings.company_name }} :
                 <a href="tel:{{ site_settings.contact_phone_primary }}" class="font-bold text-ctsa-bluehover underline underline-offset-2 tabular-nums">{{ site_settings.contact_phone_primary }}</a>
-                ou écrivez à
+                /
                 <a href="mailto:{{ site_settings.contact_email }}" class="font-bold text-ctsa-bluehover underline underline-offset-2">{{ site_settings.contact_email }}</a>.
               </li>
             </ul>
@@ -273,29 +282,32 @@
            data-refresh-url="{% url 'terminal:verification_state' %}?q={{ normalized|urlencode:'' }}"
            data-refresh-signature="{{ refresh_signature }}"
            aria-live="polite">
-          Cette page se met à jour toute seule.
-          <span data-refresh-status>Dernière actualisation à <time data-refresh-time>{% now "H:i" %}</time>.</span>
+          {% trans "Cette page se met à jour toute seule." %}
+          <span data-refresh-status>{% trans "Dernière actualisation à" %} <time data-refresh-time>{% now "H:i" %}</time>.</span>
         </p>
       {% endif %}
     {% else %}
       <!-- Rappel des 3 statuts avant recherche -->
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div class="bg-slate-50 rounded-xl p-5 border border-slate-200/80 border-t-4 border-t-emerald-600 space-y-2">
-          {% include 'components/badge.html' with variant='confirmed' label='Confirmé' %}
+          {% trans "Confirmé" as lbl_c %}
+          {% include 'components/badge.html' with variant='confirmed' label=lbl_c %}
           <p class="text-xs sm:text-sm text-slate-600 leading-relaxed m-0">
-            Conteneur disponible à la RAMPE. Déplacement au terminal autorisé.
+            {% trans "Conteneur disponible à la RAMPE. Déplacement au terminal autorisé." %}
           </p>
         </div>
         <div class="bg-slate-50 rounded-xl p-5 border border-slate-200/80 border-t-4 border-t-amber-500 space-y-2">
-          {% include 'components/badge.html' with variant='pending' label='En attente' %}
+          {% trans "En attente" as lbl_p %}
+          {% include 'components/badge.html' with variant='pending' label=lbl_p %}
           <p class="text-xs sm:text-sm text-slate-600 leading-relaxed m-0">
-            Conteneur programmé mais en attente de positionnement à la RAMPE.
+            {% trans "Conteneur programmé mais en attente de positionnement à la RAMPE." %}
           </p>
         </div>
         <div class="bg-slate-50 rounded-xl p-5 border border-slate-200/80 border-t-4 border-t-red-600 space-y-2">
-          {% include 'components/badge.html' with variant='unavailable' label='Indisponible' %}
+          {% trans "Indisponible" as lbl_u %}
+          {% include 'components/badge.html' with variant='unavailable' label=lbl_u %}
           <p class="text-xs sm:text-sm text-slate-600 leading-relaxed m-0">
-            Non présentable ce jour. Le motif communiqué est indiqué sur la fiche.
+            {% trans "Non présentable ce jour. Le motif communiqué est indiqué sur la fiche." %}
           </p>
         </div>
       </div>

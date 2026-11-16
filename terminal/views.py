@@ -12,6 +12,7 @@ from django.http import HttpResponse, JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse
 from django.utils import timezone
+from django.utils.translation import gettext as _
 from django.views.decorators.http import require_POST
 
 from accounts.utils import safe_next_url
@@ -22,6 +23,7 @@ from .models import (
     ContainerStatusLog,
     SavedContainer,
     SiteSettings,
+    HeroSlide,
     normalize_container_number,
     CONTAINER_NUMBER_REGEX,
 )
@@ -185,9 +187,16 @@ def _backlog_breakdown(queryset) -> dict:
 def home_view(request):
     today = timezone.localdate()
     shipping_lines = ShippingLine.objects.filter(is_active=True).order_by('name')
+    site_obj = SiteSettings.get_solo()
+    hero_slides = (
+        list(HeroSlide.objects.filter(is_active=True)[: site_obj.hero_carousel_limit])
+        if site_obj.hero_carousel_enabled
+        else []
+    )
     return render(request, 'public/home.html', {
         'today': today,
         'shipping_lines': shipping_lines,
+        'hero_slides': hero_slides,
     })
 
 
@@ -232,7 +241,7 @@ def verification_view(request):
 
     if normalized:
         if not CONTAINER_NUMBER_REGEX.match(normalized):
-            format_warning = (
+            format_warning = _(
                 "Le numéro de conteneur doit comporter exactement 4 lettres suivies de 7 chiffres (exemple : CMAU4052450)."
             )
         else:
@@ -358,6 +367,7 @@ def prepare_view(request):
     session_qs = Container.objects.filter(scheduled_date=selected_date).select_related('shipping_line')
     registered_count = session_qs.count()
     backlog_qs = unverified_backlog(selected_date)
+    draft = request.session.pop('_prepare_form_draft', None) or {}
 
     return render(request, 'portal/prepare.html', {
         'today': today,
@@ -370,6 +380,13 @@ def prepare_view(request):
         'backlog_rows': list(backlog_qs.order_by('first_scheduled_date', 'container_number')[:40]),
         'shipping_lines': ShippingLine.objects.filter(is_active=True),
         'status_choices': Container.Status.choices,
+        'active_tab': draft.get('active_tab', 'single'),
+        'single_number_value': draft.get('single_number', ''),
+        'single_line_value': draft.get('single_line', ''),
+        'confirm_verified': draft.get('confirm_verified'),
+        'bulk_list_value': draft.get('bulk_list', ''),
+        'bulk_line_value': draft.get('bulk_line', ''),
+        'confirm_verified_bulk': draft.get('confirm_verified_bulk'),
     })
 
 
@@ -551,16 +568,43 @@ def container_add_single_view(request):
     note = request.POST.get('unavailability_note', '').strip()
 
     if not CONTAINER_NUMBER_REGEX.match(normalized):
+        request.session['_prepare_form_draft'] = {
+            'active_tab': 'single',
+            'single_number': raw_number,
+            'single_line': shipping_line_id,
+        }
         messages.error(
             request,
             f"Numéro « {raw_number} » invalide : il doit comporter 4 lettres et 7 chiffres (ex. CMAU4052450)."
         )
         return redirect(_safe_next(request, _dashboard_url(target_date)))
 
-    # Ligne maritime obligatoire dès qu'au moins une ligne active existe.
     line_id = int(shipping_line_id) if shipping_line_id.isdigit() else None
-    if line_id is None and ShippingLine.objects.filter(is_active=True).exists():
-        messages.error(request, "Veuillez sélectionner une ligne maritime.")
+
+    already_verified = (
+        Container.objects.filter(
+            container_number=normalized,
+            verification_result=Container.Verification.VERIFIED,
+        )
+        .order_by('-verified_at', '-scheduled_date')
+        .first()
+    )
+    if already_verified and request.POST.get('confirm_already_verified') != '1':
+        verif_dt = already_verified.verified_at.date() if already_verified.verified_at else already_verified.scheduled_date
+        verif_date_str = verif_dt.strftime('%d/%m/%Y')
+        request.session['_prepare_form_draft'] = {
+            'active_tab': 'single',
+            'single_number': raw_number,
+            'single_line': shipping_line_id,
+            'confirm_verified': {
+                'number': normalized,
+                'verified_date': verif_date_str,
+            },
+        }
+        messages.warning(
+            request,
+            f"Le conteneur {normalized} a déjà été vérifié le {verif_date_str}. Confirmez ci-dessous pour l'inscrire à nouveau."
+        )
         return redirect(_safe_next(request, _dashboard_url(target_date)))
 
     existing = Container.objects.filter(
@@ -630,14 +674,43 @@ def container_add_bulk_view(request):
     # Tout nouvel ajout dans une liste démarre « En attente » jusqu'à confirmation sur la rampe.
     default_status = Container.Status.PENDING
     resolved_line_id = int(shipping_line_id) if shipping_line_id.isdigit() else None
-    if resolved_line_id is None and ShippingLine.objects.filter(is_active=True).exists():
-        messages.error(request, "Veuillez sélectionner une ligne maritime.")
-        return redirect(_safe_next(request, _dashboard_url(target_date)))
 
     tokens = [t.strip() for t in re.split(r'[\r\n,;]+', raw_list) if t.strip()]
     if not tokens:
+        request.session['_prepare_form_draft'] = {
+            'active_tab': 'bulk',
+            'bulk_list': raw_list,
+            'bulk_line': shipping_line_id,
+        }
         messages.warning(request, "Aucun numéro de conteneur fourni dans la zone d'ajout massif.")
         return redirect(_safe_next(request, _dashboard_url(target_date)))
+
+    if request.POST.get('confirm_already_verified') != '1':
+        valid_norms = [normalize_container_number(t) for t in tokens if CONTAINER_NUMBER_REGEX.match(normalize_container_number(t))]
+        verified_map = {}
+        for vc in (
+            Container.objects.filter(
+                container_number__in=valid_norms,
+                verification_result=Container.Verification.VERIFIED,
+            )
+            .order_by('-verified_at', '-scheduled_date')
+        ):
+            if vc.container_number not in verified_map:
+                vdate = vc.verified_at.date() if vc.verified_at else vc.scheduled_date
+                verified_map[vc.container_number] = vdate.strftime('%d/%m/%Y')
+        if verified_map:
+            details = ', '.join(f"{num} (vérifié le {dt})" for num, dt in verified_map.items())
+            request.session['_prepare_form_draft'] = {
+                'active_tab': 'bulk',
+                'bulk_list': raw_list,
+                'bulk_line': shipping_line_id,
+                'confirm_verified_bulk': details,
+            }
+            messages.warning(
+                request,
+                f"Conteneur(s) déjà vérifié(s) détecté(s) : {details}. Confirmez ci-dessous pour poursuivre l'enregistrement."
+            )
+            return redirect(_safe_next(request, _dashboard_url(target_date)))
 
     created_count = 0
     skipped_duplicates = []
@@ -1743,25 +1816,107 @@ class SiteSettingsForm(forms.ModelForm):
             'hero_title',
             'hero_subtitle',
             'search_note',
+            'step1_title',
+            'step1_text',
+            'step2_title',
+            'step2_text',
+            'step3_title',
+            'step3_text',
             'status_guide_title',
             'status_guide_subtitle',
+            'confirmed_title',
+            'confirmed_description',
             'confirmed_instruction',
+            'pending_title',
+            'pending_description',
             'pending_instruction',
+            'unavailable_title',
+            'unavailable_description',
             'unavailable_instruction',
             'client_cta_title',
             'client_cta_subtitle',
+            'hero_carousel_enabled',
+            'hero_carousel_limit',
+            # Champs Kreyòl
+            'portal_subtitle_ht',
+            'location_label_ht',
+            'footer_about_ht',
+            'hero_title_ht',
+            'hero_subtitle_ht',
+            'search_note_ht',
+            'step1_title_ht',
+            'step1_text_ht',
+            'step2_title_ht',
+            'step2_text_ht',
+            'step3_title_ht',
+            'step3_text_ht',
+            'status_guide_title_ht',
+            'status_guide_subtitle_ht',
+            'confirmed_title_ht',
+            'confirmed_description_ht',
+            'confirmed_instruction_ht',
+            'pending_title_ht',
+            'pending_description_ht',
+            'pending_instruction_ht',
+            'unavailable_title_ht',
+            'unavailable_description_ht',
+            'unavailable_instruction_ht',
+            'client_cta_title_ht',
+            'client_cta_subtitle_ht',
         ]
         widgets = {
-            'footer_about': forms.Textarea(attrs={'rows': 3}),
-            'hero_subtitle': forms.Textarea(attrs={'rows': 3}),
-            'status_guide_subtitle': forms.Textarea(attrs={'rows': 2}),
-            'client_cta_subtitle': forms.Textarea(attrs={'rows': 2}),
+            'footer_about': forms.Textarea(attrs={'rows': 4}),
+            'hero_subtitle': forms.Textarea(attrs={'rows': 4}),
+            'step1_text': forms.Textarea(attrs={'rows': 3}),
+            'step2_text': forms.Textarea(attrs={'rows': 3}),
+            'step3_text': forms.Textarea(attrs={'rows': 3}),
+            'status_guide_subtitle': forms.Textarea(attrs={'rows': 3}),
+            'confirmed_description': forms.Textarea(attrs={'rows': 3}),
+            'pending_description': forms.Textarea(attrs={'rows': 3}),
+            'unavailable_description': forms.Textarea(attrs={'rows': 3}),
+            'client_cta_subtitle': forms.Textarea(attrs={'rows': 3}),
+            'footer_about_ht': forms.Textarea(attrs={'rows': 4}),
+            'hero_subtitle_ht': forms.Textarea(attrs={'rows': 4}),
+            'step1_text_ht': forms.Textarea(attrs={'rows': 3}),
+            'step2_text_ht': forms.Textarea(attrs={'rows': 3}),
+            'step3_text_ht': forms.Textarea(attrs={'rows': 3}),
+            'status_guide_subtitle_ht': forms.Textarea(attrs={'rows': 3}),
+            'confirmed_description_ht': forms.Textarea(attrs={'rows': 3}),
+            'pending_description_ht': forms.Textarea(attrs={'rows': 3}),
+            'unavailable_description_ht': forms.Textarea(attrs={'rows': 3}),
+            'client_cta_subtitle_ht': forms.Textarea(attrs={'rows': 3}),
+            'hero_carousel_limit': forms.NumberInput(attrs={'min': 1, 'max': 6}),
         }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        for field in self.fields.values():
-            field.widget.attrs.setdefault('class', 'form-control')
+        self.fields['hero_badge'].required = False
+        for name, field in self.fields.items():
+            if name.endswith('_ht'):
+                field.required = False
+            if name == 'hero_carousel_enabled':
+                field.widget.attrs.setdefault('class', 'w-4 h-4 rounded border-slate-300 text-ctsa-blue focus:ring-ctsa-blue')
+            else:
+                field.widget.attrs.setdefault('class', 'form-control')
+
+
+class HeroSlideForm(forms.ModelForm):
+    class Meta:
+        model = HeroSlide
+        fields = ['image', 'title', 'display_order', 'is_active']
+        widgets = {
+            'image': forms.ClearableFileInput(attrs={'accept': 'image/*'}),
+            'title': forms.TextInput(attrs={'placeholder': 'Ex. Vue aérienne du terminal RAMPE'}),
+            'display_order': forms.NumberInput(attrs={'min': 1, 'max': 99}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for name, field in self.fields.items():
+            if name == 'is_active':
+                field.widget.attrs.setdefault('class', 'w-4 h-4 rounded border-slate-300 text-ctsa-blue focus:ring-ctsa-blue')
+            else:
+                field.widget.attrs.setdefault('class', 'form-control')
 
 
 @login_required
@@ -1782,9 +1937,110 @@ def site_settings_view(request):
     else:
         form = SiteSettingsForm(instance=instance)
 
+    slides = list(HeroSlide.objects.all())
+    active_slides_count = sum(1 for s in slides if s.is_active)
+
     return render(request, 'portal/site_settings.html', {
         'form': form,
         'site_obj': instance,
+        'slides': slides,
+        'active_slides_count': active_slides_count,
+        'slide_form': HeroSlideForm(initial={'display_order': len(slides) + 1}),
     })
+
+
+@login_required
+@require_POST
+def hero_slide_create_view(request):
+    """Ajoute une image au carrousel d'arrière-plan de l'accueil."""
+    if not request.user.is_portal_admin:
+        messages.error(request, "Accès réservé aux administrateurs.")
+        return redirect('terminal:dashboard')
+
+    form = HeroSlideForm(request.POST, request.FILES)
+    if form.is_valid():
+        slide = form.save()
+        messages.success(request, f"Image « {slide} » ajoutée au carrousel.")
+    else:
+        messages.error(request, "Impossible d'ajouter l'image. Vérifiez le format du fichier.")
+    return redirect('terminal:site_settings')
+
+
+@login_required
+@require_POST
+def hero_slide_toggle_view(request, pk):
+    """Active ou désactive une image du carrousel."""
+    if not request.user.is_portal_admin:
+        messages.error(request, "Accès réservé aux administrateurs.")
+        return redirect('terminal:dashboard')
+
+    slide = get_object_or_404(HeroSlide, pk=pk)
+    slide.is_active = not slide.is_active
+    slide.save(update_fields=['is_active'])
+    state = "activée" if slide.is_active else "masquée"
+    messages.info(request, f"Image « {slide} » {state}.")
+    return redirect('terminal:site_settings')
+
+
+@login_required
+@require_POST
+def hero_slide_delete_view(request, pk):
+    """Supprime une image du carrousel."""
+    if not request.user.is_portal_admin:
+        messages.error(request, "Accès réservé aux administrateurs.")
+        return redirect('terminal:dashboard')
+
+    slide = get_object_or_404(HeroSlide, pk=pk)
+    label = str(slide)
+    if slide.image:
+        slide.image.delete(save=False)
+    slide.delete()
+    messages.info(request, f"Image « {label} » supprimée du carrousel.")
+    return redirect('terminal:site_settings')
+
+
+def pwa_manifest_view(request):
+    """Manifeste Web App (PWA) pour l'installation mobile du Portail RAMPE."""
+    from django.templatetags.static import static
+    site_obj = SiteSettings.get_solo()
+    manifest = {
+        'name': f"{site_obj.company_name} — {site_obj.portal_title}",
+        'short_name': 'CTSA RAMPE',
+        'description': site_obj.portal_subtitle,
+        'start_url': '/',
+        'scope': '/',
+        'display': 'standalone',
+        'orientation': 'portrait',
+        'background_color': '#222b35',
+        'theme_color': '#222b35',
+        'lang': 'fr',
+        'icons': [
+            {
+                'src': static('img/icon-192.png'),
+                'sizes': '192x192',
+                'type': 'image/png',
+                'purpose': 'any',
+            },
+            {
+                'src': static('img/icon-512.png'),
+                'sizes': '512x512',
+                'type': 'image/png',
+                'purpose': 'any',
+            },
+            {
+                'src': static('img/icon-512-maskable.png'),
+                'sizes': '512x512',
+                'type': 'image/png',
+                'purpose': 'maskable',
+            },
+        ],
+    }
+    return JsonResponse(manifest, content_type='application/manifest+json; charset=utf-8')
+
+
+def pwa_service_worker_view(request):
+    """Service Worker PWA servi à la racine pour couvrir tout le site."""
+    return render(request, 'pwa/sw.js', content_type='application/javascript; charset=utf-8')
+
 
 

@@ -4,6 +4,10 @@ from . import views
 app_name = 'terminal'
 
 urlpatterns = [
+    # PWA
+    path('manifest.webmanifest', views.pwa_manifest_view, name='pwa_manifest'),
+    path('sw.js', views.pwa_service_worker_view, name='pwa_sw'),
+
     # Partie publique
     path('', views.home_view, name='home'),
     path('verification/', views.verification_view, name='verification'),
@@ -38,4 +42,7 @@ urlpatterns = [
     path('admin/lignes-maritimes/<int:pk>/modifier/', views.shipping_line_edit_view, name='shipping_line_edit'),
     path('admin/lignes-maritimes/<int:pk>/supprimer/', views.shipping_line_delete_view, name='shipping_line_delete'),
     path('admin/parametres-site/', views.site_settings_view, name='site_settings'),
+    path('admin/parametres-site/carrousel/ajouter/', views.hero_slide_create_view, name='hero_slide_create'),
+    path('admin/parametres-site/carrousel/<int:pk>/basculer/', views.hero_slide_toggle_view, name='hero_slide_toggle'),
+    path('admin/parametres-site/carrousel/<int:pk>/supprimer/', views.hero_slide_delete_view, name='hero_slide_delete'),
 ]

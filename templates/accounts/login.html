@@ -1,6 +1,7 @@
 {% extends 'base.html' %}
+{% load i18n %}
 
-{% block title %}Connexion — Cap Terminal S.A.{% endblock %}
+{% block title %}{% trans "Connexion" %} — Cap Terminal S.A.{% endblock %}
 
 {% block content %}
 <div class="max-w-md mx-auto px-4 sm:px-6 py-10 sm:py-14">
@@ -10,10 +11,10 @@
         Cap Terminal S.A.
       </div>
       <h1 id="signin-heading" class="font-heading text-2xl font-extrabold text-ctsa-slate m-0">
-        Connexion
+        {% trans "Connexion" %}
       </h1>
       <p class="text-sm text-slate-600 mt-1 mb-0">
-        Saisissez vos identifiants pour accéder à votre espace.
+        {% trans "Saisissez vos identifiants pour accéder à votre espace." %}
       </p>
     </div>
 
@@ -29,7 +30,7 @@
       {% csrf_token %}
 
       <div class="form-field mb-0">
-        <label for="id_username">Identifiant ou courriel</label>
+        <label for="id_username">{% trans "Identifiant ou courriel" %}</label>
         <input
           type="text"
           id="id_username"
@@ -45,21 +46,21 @@
           class="form-control"
         >
         <div id="login-user-error" class="error-msg">
-          Veuillez saisir votre identifiant ou votre adresse courriel.
+          {% trans "Veuillez saisir votre identifiant ou votre adresse courriel." %}
         </div>
       </div>
 
       <div class="form-field mb-0">
         <div class="flex items-center justify-between mb-1">
-          <label for="id_password" class="mb-0">Mot de passe</label>
+          <label for="id_password" class="mb-0">{% trans "Mot de passe" %}</label>
           <button
             type="button"
             data-toggle-password="id_password"
             aria-pressed="false"
-            aria-label="Afficher le mot de passe"
+            aria-label="{% trans 'Afficher le mot de passe' %}"
             class="text-xs font-bold text-ctsa-bluehover hover:underline bg-transparent border-0 cursor-pointer p-0"
           >
-            <span data-toggle-label>Afficher</span>
+            <span data-toggle-label>{% trans "Afficher" %}</span>
           </button>
         </div>
         <input
@@ -73,19 +74,19 @@
           class="form-control"
         >
         <div id="login-pass-error" class="error-msg">
-          Veuillez saisir votre mot de passe.
+          {% trans "Veuillez saisir votre mot de passe." %}
         </div>
       </div>
 
       <button type="submit" class="ui-btn ui-btn-primary w-full mt-2" data-submit-guard>
-        Se connecter
+        {% trans "Se connecter" %}
       </button>
     </form>
 
     <div class="mt-6 pt-5 border-t border-slate-100 text-center text-xs text-slate-600">
-      Pas encore de compte client ?
+      {% trans "Pas encore de compte client ?" %}
       <a href="{% url 'accounts:register' %}" class="font-bold text-ctsa-bluehover hover:underline ml-1">
-        Créer un compte
+        {% trans "Créer un compte" %}
       </a>
     </div>
   </div>

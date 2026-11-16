@@ -337,13 +337,15 @@ class CTSAPortalBusinessTests(TestCase):
         self.assertEqual(del_resp.status_code, 302)
         self.assertFalse(Container.objects.filter(pk=c.pk).exists())
 
-        # Adding without shipping_line is rejected when active shipping lines exist
+        # Adding without shipping_line succeeds because shipping_line is optional
         no_line_resp = self.client_http.post(
             reverse('terminal:container_add_single'),
             {'container_number': 'MSCU7777777', 'scheduled_date': today.isoformat()},
         )
         self.assertEqual(no_line_resp.status_code, 302)
-        self.assertFalse(Container.objects.filter(container_number='MSCU7777777').exists())
+        self.assertTrue(
+            Container.objects.filter(container_number='MSCU7777777', shipping_line__isnull=True).exists()
+        )
 
 
 class ShippingLinesAndStatisticsTests(TestCase):
@@ -472,13 +474,27 @@ class ShippingLinesAndStatisticsTests(TestCase):
                 'hero_title': 'Titre personnalisé RAMPE',
                 'hero_subtitle': 'Sous-titre personnalisé.',
                 'search_note': 'Mise à jour quotidienne.',
+                'step1_title': 'Étape 1 perso',
+                'step1_text': 'Texte étape 1.',
+                'step2_title': 'Étape 2 perso',
+                'step2_text': 'Texte étape 2.',
+                'step3_title': 'Étape 3 perso',
+                'step3_text': 'Texte étape 3.',
                 'status_guide_title': 'Statuts RAMPE',
                 'status_guide_subtitle': 'Explication des statuts.',
+                'confirmed_title': 'Titre confirmé perso',
+                'confirmed_description': 'Desc confirmé perso.',
                 'confirmed_instruction': 'Venez avec vos documents.',
+                'pending_title': 'Titre attente perso',
+                'pending_description': 'Desc attente perso.',
                 'pending_instruction': 'Patientez.',
+                'unavailable_title': 'Titre indispo perso',
+                'unavailable_description': 'Desc indispo perso.',
                 'unavailable_instruction': 'Contactez votre transitaire.',
                 'client_cta_title': 'Suivi multi-conteneurs',
                 'client_cta_subtitle': 'Créez un compte client.',
+                'hero_carousel_enabled': 'on',
+                'hero_carousel_limit': '4',
             },
         )
         self.assertRedirects(post_resp, reverse('terminal:site_settings'))
@@ -490,6 +506,185 @@ class ShippingLinesAndStatisticsTests(TestCase):
         self.assertContains(home_resp, 'rampe@bendyservilus.com')
         self.assertContains(home_resp, '+50941705257')
         self.assertContains(home_resp, 'Titre personnalisé RAMPE')
+        self.assertContains(home_resp, 'Étape 1 perso')
+        self.assertContains(home_resp, 'Titre confirmé perso')
+
+    def test_hero_carousel_upload_limit_toggle_and_delete(self):
+        import io
+        import shutil
+        import tempfile
+        from PIL import Image
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        from django.test import override_settings
+        from .models import HeroSlide, SiteSettings
+
+        def make_png(name):
+            buf = io.BytesIO()
+            Image.new('RGB', (40, 24), (26, 99, 148)).save(buf, format='PNG')
+            return SimpleUploadedFile(name, buf.getvalue(), content_type='image/png')
+
+        tmp_media = tempfile.mkdtemp()
+        try:
+            with override_settings(MEDIA_ROOT=tmp_media):
+                self.client_http.force_login(self.admin_user)
+                for idx in range(1, 4):
+                    resp = self.client_http.post(
+                        reverse('terminal:hero_slide_create'),
+                        {
+                            'title': f'Slide {idx}',
+                            'display_order': idx,
+                            'is_active': 'on',
+                            'image': make_png(f'slide_{idx}.png'),
+                        },
+                    )
+                    self.assertRedirects(resp, reverse('terminal:site_settings'))
+
+                self.assertEqual(HeroSlide.objects.count(), 3)
+                site_obj = SiteSettings.get_solo()
+                site_obj.hero_carousel_limit = 2
+                site_obj.hero_carousel_enabled = True
+                site_obj.save()
+
+                home_resp = self.client_http.get(reverse('terminal:home'))
+                self.assertEqual(home_resp.status_code, 200)
+                self.assertEqual(len(home_resp.context['hero_slides']), 2)
+
+                first_slide = HeroSlide.objects.first()
+                self.client_http.post(reverse('terminal:hero_slide_toggle', args=[first_slide.pk]))
+                first_slide.refresh_from_db()
+                self.assertFalse(first_slide.is_active)
+
+                self.client_http.post(reverse('terminal:hero_slide_delete', args=[first_slide.pk]))
+                self.assertEqual(HeroSlide.objects.count(), 2)
+        finally:
+            shutil.rmtree(tmp_media, ignore_errors=True)
+
+    def test_pwa_manifest_and_service_worker(self):
+        manifest_resp = self.client_http.get(reverse('terminal:pwa_manifest'))
+        self.assertEqual(manifest_resp.status_code, 200)
+        self.assertIn('application/manifest+json', manifest_resp['Content-Type'])
+        data = manifest_resp.json()
+        self.assertEqual(data['start_url'], '/')
+        self.assertEqual(data['display'], 'standalone')
+        self.assertGreaterEqual(len(data['icons']), 3)
+
+        sw_resp = self.client_http.get(reverse('terminal:pwa_sw'))
+        self.assertEqual(sw_resp.status_code, 200)
+        self.assertIn('application/javascript', sw_resp['Content-Type'])
+        self.assertIn('ctsa-rampe-v1', sw_resp.content.decode('utf-8'))
+
+    def test_verified_container_search_shows_already_verified(self):
+        Container.objects.create(
+            container_number='MSCU7778889',
+            scheduled_date=timezone.localdate(),
+            status=Container.Status.CONFIRMED,
+            verification_result=Container.Verification.VERIFIED,
+            verified_at=timezone.now(),
+            created_by=self.admin_user,
+        )
+        resp = self.client_http.get(reverse('terminal:verification'), {'q': 'MSCU7778889'})
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, 'Déjà vérifié')
+        self.assertContains(resp, 'Conteneur déjà vérifié')
+
+    def test_creole_language_switch_and_localized_site_settings(self):
+        from .models import SiteSettings
+
+        site_obj = SiteSettings.get_solo()
+        site_obj.hero_title_ht = 'Verifye kontenè ou an Kreyòl'
+        site_obj.save()
+
+        home_ht = self.client_http.get('/ht/')
+        self.assertEqual(home_ht.status_code, 200)
+        self.assertContains(home_ht, 'Verifye kontenè ou an Kreyòl')
+        self.assertContains(home_ht, 'Verifye stati a')
+        self.assertContains(home_ht, 'Akèy')
+
+        verif_ht = self.client_http.get('/ht/verification/')
+        self.assertEqual(verif_ht.status_code, 200)
+        self.assertContains(verif_ht, 'Verifye stati yon kontenè')
+        self.assertContains(verif_ht, 'Chèche')
+
+        login_ht = self.client_http.get('/ht/auth/connexion/')
+        self.assertEqual(login_ht.status_code, 200)
+        self.assertContains(login_ht, 'Non itilizatè oswa imèl')
+        self.assertContains(login_ht, 'Modpas')
+        self.assertContains(login_ht, 'Konekte')
+
+        register_ht = self.client_http.get('/ht/auth/inscription/')
+        self.assertEqual(register_ht.status_code, 200)
+        self.assertContains(register_ht, 'Kreye yon kont kliyan')
+        self.assertContains(register_ht, 'Kreye kont mwen')
+
+        home_fr = self.client_http.get('/fr/')
+        self.assertEqual(home_fr.status_code, 200)
+        self.assertContains(home_fr, site_obj.hero_title)
+        self.assertContains(home_fr, 'Vérifier le statut')
+
+    def test_prepare_preserves_fields_on_error(self):
+        from .models import ShippingLine
+
+        line = ShippingLine.objects.create(name='CMA CGM', code='CMA', is_active=True)
+        self.client_http.force_login(self.admin_user)
+        prepare_url = reverse('terminal:prepare')
+        resp = self.client_http.post(
+            reverse('terminal:container_add_single'),
+            {
+                'container_number': 'BAD123',
+                'shipping_line': str(line.pk),
+                'scheduled_date': timezone.localdate().isoformat(),
+                'next': prepare_url,
+            },
+            follow=True,
+        )
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, 'BAD123')
+        self.assertContains(resp, f'value="{line.pk}" selected')
+
+    def test_prepare_warns_and_confirms_already_verified_container(self):
+        import datetime
+        from .models import Container
+
+        yesterday = timezone.localdate() - datetime.timedelta(days=1)
+        today = timezone.localdate()
+        Container.objects.create(
+            container_number='CMAU9998881',
+            scheduled_date=yesterday,
+            status=Container.Status.CONFIRMED,
+            verification_result=Container.Verification.VERIFIED,
+            verified_at=timezone.now() - datetime.timedelta(days=1),
+            created_by=self.admin_user,
+        )
+
+        self.client_http.force_login(self.admin_user)
+        prepare_url = reverse('terminal:prepare')
+        warn_resp = self.client_http.post(
+            reverse('terminal:container_add_single'),
+            {
+                'container_number': 'CMAU9998881',
+                'scheduled_date': today.isoformat(),
+                'next': prepare_url,
+            },
+            follow=True,
+        )
+        self.assertEqual(warn_resp.status_code, 200)
+        self.assertContains(warn_resp, yesterday.strftime('%d/%m/%Y'))
+        self.assertContains(warn_resp, 'confirm_already_verified')
+        self.assertFalse(Container.objects.filter(container_number='CMAU9998881', scheduled_date=today).exists())
+
+        ok_resp = self.client_http.post(
+            reverse('terminal:container_add_single'),
+            {
+                'container_number': 'CMAU9998881',
+                'scheduled_date': today.isoformat(),
+                'confirm_already_verified': '1',
+                'next': prepare_url,
+            },
+            follow=True,
+        )
+        self.assertEqual(ok_resp.status_code, 200)
+        self.assertTrue(Container.objects.filter(container_number='CMAU9998881', scheduled_date=today).exists())
+
 
 
 

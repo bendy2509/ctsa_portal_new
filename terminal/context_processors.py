@@ -1,11 +1,15 @@
+from django.utils.translation import get_language
+
 from .models import SiteSettings
 from .views import default_carry_target, unverified_backlog
 
 
 def portal_navigation(request):
     """Injecte les paramètres publics du site et le compteur « Non vérifiés »."""
+    site_obj = SiteSettings.get_solo()
     context = {
-        'site_settings': SiteSettings.get_solo(),
+        'site_settings': site_obj,
+        'site_t': site_obj.for_language(get_language()),
     }
     user = getattr(request, 'user', None)
     if user and user.is_authenticated and user.is_staff_member:

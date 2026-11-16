@@ -563,4 +563,30 @@ document.addEventListener('DOMContentLoaded', () => {
       verifDialog.close('cancel');
     });
   }
+
+  // 14. Carrousel discret en arrière-plan du hero
+  const heroCarousel = document.querySelector('[data-hero-carousel]');
+  if (heroCarousel) {
+    const slides = Array.from(heroCarousel.querySelectorAll('[data-hero-slide]'));
+    const reducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (slides.length > 1 && !reducedMotion) {
+      let current = 0;
+      const advanceSlide = () => {
+        if (document.hidden) return;
+        slides[current].classList.remove('opacity-100');
+        slides[current].classList.add('opacity-0');
+        current = (current + 1) % slides.length;
+        slides[current].classList.remove('opacity-0');
+        slides[current].classList.add('opacity-100');
+      };
+      setInterval(advanceSlide, 6000);
+    }
+  }
+
+  // 15. Enregistrement du Service Worker (PWA)
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/sw.js').catch(() => {});
+    });
+  }
 });

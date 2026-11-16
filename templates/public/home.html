@@ -1,35 +1,52 @@
 {% extends 'base.html' %}
+{% load i18n %}
 
-{% block title %}Cap Terminal S.A. — Vérification Douanière RAMPE{% endblock %}
+{% block title %}{{ site_settings.company_name }} — {{ site_settings.portal_title }}{% endblock %}
 
 {% block content %}
-<!-- Hero + Recherche centrale -->
-<section class="bg-gradient-to-b from-slate-100 to-slate-50 border-b border-slate-200/80 py-10 sm:py-14">
-  <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-
-    <div class="text-center max-w-2xl mx-auto mb-7 sm:mb-9">
-      <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-sky-50 border border-sky-200/80 text-xs font-heading uppercase tracking-wider text-ctsa-bluehover font-bold mb-3">
-        {{ site_settings.hero_badge }}
-      </div>
-      <h1 class="font-heading text-2xl sm:text-4xl font-extrabold text-ctsa-slate leading-tight mb-3 m-0">
-        {{ site_settings.hero_title }}
-      </h1>
-      <p class="text-slate-600 text-sm sm:text-base leading-relaxed m-0">
-        {{ site_settings.hero_subtitle }}
-      </p>
+<!-- Hero maritime + guichet de recherche flottant -->
+<section class="relative bg-[#1e2730] text-white pt-12 pb-20 sm:pt-16 sm:pb-24 overflow-hidden">
+  {% if hero_slides %}
+    <div class="pointer-events-none absolute inset-0 overflow-hidden" data-hero-carousel aria-hidden="true">
+      {% for slide in hero_slides %}
+        <img
+          src="{{ slide.image.url }}"
+          alt=""
+          data-hero-slide
+          {% if forloop.first %}fetchpriority="high"{% else %}loading="lazy"{% endif %}
+          class="absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ease-in-out {% if forloop.first %}opacity-100{% else %}opacity-0{% endif %}"
+        >
+      {% endfor %}
+      <div class="absolute inset-0 bg-[#1e2730]/78"></div>
     </div>
+  {% endif %}
+  <div class="pointer-events-none absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:32px_32px]" aria-hidden="true"></div>
+  <div class="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(52,152,219,0.24),transparent_65%)]" aria-hidden="true"></div>
 
-    <!-- Guichet de recherche central -->
-    <div class="max-w-3xl mx-auto bg-white rounded-2xl shadow-sm border border-slate-200/90 border-t-4 border-t-ctsa-blue p-5 sm:p-8">
+  <div class="relative max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+    <h1 class="font-heading text-2xl sm:text-4xl lg:text-[2.65rem] font-extrabold !text-white tracking-tight leading-[1.15] max-w-3xl mx-auto mb-4 mt-0">
+      {{ site_t.hero_title }}
+    </h1>
+
+    <p class="text-slate-300 text-sm sm:text-base leading-relaxed max-w-2xl mx-auto m-0">
+      {{ site_t.hero_subtitle }}
+    </p>
+  </div>
+</section>
+
+<!-- Carte de recherche élevée chevauchant le hero -->
+<section class="bg-slate-50 pb-12 sm:pb-16 border-b border-slate-200/80">
+  <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="relative -mt-12 sm:-mt-14 max-w-3xl mx-auto bg-white rounded-2xl shadow-xl shadow-slate-900/10 border border-slate-200/90 border-t-[3px] border-t-ctsa-blue p-5 sm:p-8">
       <search>
         <form action="{% url 'terminal:verification' %}" method="get" aria-labelledby="home-search-label">
           <div class="form-field mb-0">
-            <div class="flex flex-wrap items-baseline justify-between gap-1.5 mb-2">
+            <div class="flex flex-wrap items-baseline justify-between gap-1.5 mb-2.5">
               <label id="home-search-label" for="home-container-q" class="font-heading text-sm sm:text-base font-extrabold text-ctsa-slate">
-                Numéro du conteneur <span aria-hidden="true" class="text-red-600">*</span>
+                {% trans "Numéro du conteneur" %} <span aria-hidden="true" class="text-red-600">*</span>
               </label>
               <span id="home-format-hint" class="text-xs text-slate-500 font-medium">
-                4 lettres + 7 chiffres (ex. CMAU4052450)
+                {% trans "4 lettres + 7 chiffres (ex. CMAU4052450)" %}
               </span>
             </div>
 
@@ -41,21 +58,23 @@
                   name="q"
                   required
                   pattern="\s*[A-Za-z]{4}(?:[\s-]*[0-9]){7}\s*"
+                  autocomplete="off"
                   autocorrect="off"
                   autocapitalize="characters"
                   spellcheck="false"
                   enterkeyhint="search"
-                  placeholder="ex. CMAU4052450"
+                  placeholder="{% trans 'ex. CMAU4052450' %}"
                   aria-describedby="home-format-hint"
                   data-error="home-q-error"
-                  class="form-control font-mono text-base sm:text-lg uppercase tracking-wider"
+                  class="form-control h-12 font-mono text-base sm:text-lg uppercase tracking-wider"
                 >
                 <div id="home-q-error" class="error-msg">
-                  Veuillez saisir un numéro composé de 4 lettres suivies de 7 chiffres.
+                  {% trans "Veuillez saisir un numéro composé de 4 lettres suivies de 7 chiffres." %}
                 </div>
               </div>
-              <button type="submit" class="ui-btn ui-btn-primary sm:w-auto w-full shrink-0">
-                Vérifier le statut
+              <button type="submit" class="ui-btn ui-btn-primary h-12 px-6 sm:w-auto w-full shrink-0 gap-2">
+                <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                <span>{% trans "Vérifier le statut" %}</span>
               </button>
             </div>
           </div>
@@ -63,170 +82,177 @@
       </search>
 
       <div class="mt-5 pt-4 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3 text-xs text-slate-500">
-        <span>{{ site_settings.search_note }}</span>
+        <span>{{ site_t.search_note }}</span>
         {% if user.is_authenticated %}
-          <a href="{% url 'terminal:client_watchlist' %}" class="font-bold text-ctsa-bluehover hover:underline">
-            Accéder à mes conteneurs suivis →
+          <a href="{% url 'terminal:client_watchlist' %}" class="font-bold text-ctsa-bluehover hover:underline no-underline">
+            {% trans "Accéder à mes conteneurs suivis" %} →
           </a>
         {% else %}
-          <a href="{% url 'accounts:login' %}?next={% url 'terminal:client_watchlist' %}" class="font-bold text-ctsa-bluehover hover:underline">
-            Espace client : suivre plusieurs conteneurs →
+          <a href="{% url 'accounts:login' %}?next={% url 'terminal:client_watchlist' %}" class="font-bold text-ctsa-bluehover hover:underline no-underline">
+            {% trans "Espace client : suivre plusieurs conteneurs" %} →
           </a>
         {% endif %}
       </div>
     </div>
 
     <!-- Parcours en 3 étapes -->
-    <ol class="max-w-4xl mx-auto mt-8 grid grid-cols-1 md:grid-cols-3 gap-4 list-none p-0 mb-0">
+    <ol class="max-w-4xl mx-auto mt-10 grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-5 list-none p-0 mb-0">
       <li class="bg-white rounded-xl p-5 border border-slate-200/80 shadow-xs flex items-start gap-3.5">
-        <span class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-ctsa-slate text-white font-heading font-extrabold text-xs shrink-0">
+        <span class="inline-flex items-center justify-center w-9 h-9 rounded-xl bg-slate-900 text-white font-heading font-extrabold text-xs shrink-0">
           01
         </span>
-        <div>
-          <h2 class="font-heading text-sm font-extrabold text-ctsa-slate mb-1 mt-0">Saisir le numéro</h2>
+        <div class="min-w-0">
+          <h2 class="font-heading text-sm font-extrabold text-ctsa-slate mb-1 mt-0">{{ site_t.step1_title }}</h2>
           <p class="text-xs sm:text-sm text-slate-600 leading-relaxed m-0">
-            Reportez les 4 lettres et 7 chiffres inscrits sur votre connaissement maritime (Bill of Lading).
+            {{ site_t.step1_text }}
           </p>
         </div>
       </li>
 
       <li class="bg-white rounded-xl p-5 border border-slate-200/80 shadow-xs flex items-start gap-3.5">
-        <span class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-ctsa-blue text-white font-heading font-extrabold text-xs shrink-0">
+        <span class="inline-flex items-center justify-center w-9 h-9 rounded-xl bg-ctsa-blue text-white font-heading font-extrabold text-xs shrink-0">
           02
         </span>
-        <div>
-          <h2 class="font-heading text-sm font-extrabold text-ctsa-slate mb-1 mt-0">Consulter la fiche</h2>
+        <div class="min-w-0">
+          <h2 class="font-heading text-sm font-extrabold text-ctsa-slate mb-1 mt-0">{{ site_t.step2_title }}</h2>
           <p class="text-xs sm:text-sm text-slate-600 leading-relaxed m-0">
-            Visualisez instantanément le statut du jour, la ligne maritime associée et l'heure de mise à jour.
+            {{ site_t.step2_text }}
           </p>
         </div>
       </li>
 
       <li class="bg-white rounded-xl p-5 border border-slate-200/80 shadow-xs flex items-start gap-3.5">
-        <span class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-ctsa-green text-white font-heading font-extrabold text-xs shrink-0">
+        <span class="inline-flex items-center justify-center w-9 h-9 rounded-xl bg-ctsa-green text-white font-heading font-extrabold text-xs shrink-0">
           03
         </span>
-        <div>
-          <h2 class="font-heading text-sm font-extrabold text-ctsa-slate mb-1 mt-0">Se présenter à la RAMPE</h2>
+        <div class="min-w-0">
+          <h2 class="font-heading text-sm font-extrabold text-ctsa-slate mb-1 mt-0">{{ site_t.step3_title }}</h2>
           <p class="text-xs sm:text-sm text-slate-600 leading-relaxed m-0">
-            Déplacez-vous au terminal uniquement lorsque votre conteneur affiche le statut Confirmé.
+            {{ site_t.step3_text }}
           </p>
         </div>
       </li>
     </ol>
-
   </div>
 </section>
 
 <!-- Signification des 3 statuts -->
 <section class="bg-white py-12 sm:py-16">
   <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-    <div class="max-w-2xl mb-8">
-      <div class="text-xs font-heading uppercase tracking-widest text-ctsa-bluehover font-bold mb-1">
-        Guide d'interprétation
+    <div class="max-w-2xl mb-8 sm:mb-10">
+      <div class="text-xs font-heading uppercase tracking-widest text-ctsa-bluehover font-bold mb-1.5">
+        {% trans "Guide d'interprétation" %}
       </div>
       <h2 class="font-heading text-xl sm:text-2xl font-extrabold text-ctsa-slate m-0">
-        {{ site_settings.status_guide_title }}
+        {{ site_t.status_guide_title }}
       </h2>
-      <p class="text-sm text-slate-600 mt-1.5 mb-0">
-        {{ site_settings.status_guide_subtitle }}
+      <p class="text-sm text-slate-600 mt-1.5 mb-0 leading-relaxed">
+        {{ site_t.status_guide_subtitle }}
       </p>
     </div>
 
     <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
       <!-- Confirmé -->
-      <article class="bg-slate-50 rounded-xl p-5 sm:p-6 border border-slate-200/80 border-t-4 border-t-emerald-600 flex flex-col justify-between gap-4">
+      <article class="bg-slate-50/80 rounded-2xl p-5 sm:p-6 border border-slate-200/80 border-t-4 border-t-emerald-600 flex flex-col justify-between gap-5">
         <div>
-          <div class="flex items-center justify-between gap-2 mb-3.5">
-            {% include 'components/badge.html' with variant='confirmed' label='Confirmé' %}
+          <div class="flex items-center justify-between gap-2 mb-4">
+            {% trans "Confirmé" as lbl_confirmed %}
+            {% include 'components/badge.html' with variant='confirmed' label=lbl_confirmed %}
             <span class="text-[11px] font-heading font-bold uppercase tracking-wider text-emerald-700">
-              Déplacement autorisé
+              {% trans "Déplacement autorisé" %}
             </span>
           </div>
           <h3 class="font-heading text-base font-extrabold text-ctsa-slate mb-1.5 mt-0">
-            Conteneur positionné à la RAMPE
+            {{ site_t.confirmed_title }}
           </h3>
           <p class="text-sm text-slate-600 leading-relaxed m-0">
-            Le conteneur est physiquement disponible et validé par le terminal pour la séance de vérification douanière du jour.
+            {{ site_t.confirmed_description }}
           </p>
         </div>
-        <div class="bg-white rounded-lg p-3.5 border border-slate-200/80 text-xs sm:text-sm text-slate-700">
-          <strong class="block font-heading uppercase tracking-wider text-ctsa-slate text-[11px] mb-1">Consigne client</strong>
-          {{ site_settings.confirmed_instruction }}
+        <div class="bg-white rounded-xl p-3.5 border border-slate-200/80 text-xs sm:text-sm text-slate-700">
+          <strong class="block font-heading uppercase tracking-wider text-emerald-800 text-[11px] mb-1">{% trans "Consigne client" %}</strong>
+          {{ site_t.confirmed_instruction }}
         </div>
       </article>
 
       <!-- En attente -->
-      <article class="bg-slate-50 rounded-xl p-5 sm:p-6 border border-slate-200/80 border-t-4 border-t-amber-500 flex flex-col justify-between gap-4">
+      <article class="bg-slate-50/80 rounded-2xl p-5 sm:p-6 border border-slate-200/80 border-t-4 border-t-amber-500 flex flex-col justify-between gap-5">
         <div>
-          <div class="flex items-center justify-between gap-2 mb-3.5">
-            {% include 'components/badge.html' with variant='pending' label='En attente' %}
+          <div class="flex items-center justify-between gap-2 mb-4">
+            {% trans "En attente" as lbl_pending %}
+            {% include 'components/badge.html' with variant='pending' label=lbl_pending %}
             <span class="text-[11px] font-heading font-bold uppercase tracking-wider text-amber-800">
-              Mise en place en cours
+              {% trans "Mise en place en cours" %}
             </span>
           </div>
           <h3 class="font-heading text-base font-extrabold text-ctsa-slate mb-1.5 mt-0">
-            En attente de confirmation
+            {{ site_t.pending_title }}
           </h3>
           <p class="text-sm text-slate-600 leading-relaxed m-0">
-            Le conteneur figure sur la programmation quotidienne, mais son positionnement final à la RAMPE n'est pas encore confirmé.
+            {{ site_t.pending_description }}
           </p>
         </div>
-        <div class="bg-white rounded-lg p-3.5 border border-slate-200/80 text-xs sm:text-sm text-slate-700">
-          <strong class="block font-heading uppercase tracking-wider text-ctsa-slate text-[11px] mb-1">Consigne client</strong>
-          {{ site_settings.pending_instruction }}
+        <div class="bg-white rounded-xl p-3.5 border border-slate-200/80 text-xs sm:text-sm text-slate-700">
+          <strong class="block font-heading uppercase tracking-wider text-amber-900 text-[11px] mb-1">{% trans "Consigne client" %}</strong>
+          {{ site_t.pending_instruction }}
         </div>
       </article>
 
       <!-- Indisponible -->
-      <article class="bg-slate-50 rounded-xl p-5 sm:p-6 border border-slate-200/80 border-t-4 border-t-red-600 flex flex-col justify-between gap-4">
+      <article class="bg-slate-50/80 rounded-2xl p-5 sm:p-6 border border-slate-200/80 border-t-4 border-t-red-600 flex flex-col justify-between gap-5">
         <div>
-          <div class="flex items-center justify-between gap-2 mb-3.5">
-            {% include 'components/badge.html' with variant='unavailable' label='Indisponible' %}
+          <div class="flex items-center justify-between gap-2 mb-4">
+            {% trans "Indisponible" as lbl_unavailable %}
+            {% include 'components/badge.html' with variant='unavailable' label=lbl_unavailable %}
             <span class="text-[11px] font-heading font-bold uppercase tracking-wider text-red-700">
-              Ne pas se déplacer
+              {% trans "Ne pas se déplacer" %}
             </span>
           </div>
           <h3 class="font-heading text-base font-extrabold text-ctsa-slate mb-1.5 mt-0">
-            Non disponible ce jour
+            {{ site_t.unavailable_title }}
           </h3>
           <p class="text-sm text-slate-600 leading-relaxed m-0">
-            Le conteneur ne peut pas être présenté à la vérification douanière pour la séance en cours. Le motif exact est indiqué sur sa fiche.
+            {{ site_t.unavailable_description }}
           </p>
         </div>
-        <div class="bg-white rounded-lg p-3.5 border border-slate-200/80 text-xs sm:text-sm text-slate-700">
-          <strong class="block font-heading uppercase tracking-wider text-ctsa-slate text-[11px] mb-1">Consigne client</strong>
-          {{ site_settings.unavailable_instruction }}
+        <div class="bg-white rounded-xl p-3.5 border border-slate-200/80 text-xs sm:text-sm text-slate-700">
+          <strong class="block font-heading uppercase tracking-wider text-red-800 text-[11px] mb-1">{% trans "Consigne client" %}</strong>
+          {{ site_t.unavailable_instruction }}
         </div>
       </article>
     </div>
   </div>
 </section>
 
-<!-- Bandeau Espace Client -->
-<section class="bg-slate-100 border-t border-slate-200/80 py-10">
-  <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-5">
-    <div class="max-w-2xl">
-      <h2 class="font-heading text-lg font-extrabold text-ctsa-slate m-0">
-        {{ site_settings.client_cta_title }}
-      </h2>
-      <p class="text-sm text-slate-600 mt-1 mb-0">
-        {{ site_settings.client_cta_subtitle }}
-      </p>
-    </div>
-    <div class="flex flex-wrap gap-3 shrink-0 w-full sm:w-auto">
-      {% if user.is_authenticated %}
-        <a href="{% url 'terminal:client_watchlist' %}" class="ui-btn ui-btn-primary w-full sm:w-auto">
-          Voir mes conteneurs suivis
-        </a>
-      {% else %}
-        <a href="{% url 'accounts:register' %}" class="ui-btn ui-btn-primary w-full sm:w-auto">
-          Créer un compte client
-        </a>
-        <a href="{% url 'accounts:login' %}" class="ui-btn ui-btn-secondary w-full sm:w-auto">
-          Se connecter
-        </a>
-      {% endif %}
+<!-- Accès Espace Client -->
+<section class="bg-slate-50 border-t border-slate-200/80 py-10 sm:py-12">
+  <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="rounded-2xl bg-white border border-slate-200/90 border-l-4 border-l-ctsa-green p-6 sm:p-8 shadow-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+      <div class="max-w-2xl">
+        <div class="text-xs font-heading uppercase tracking-widest text-ctsa-bluehover font-bold mb-1.5">
+          {% trans "Suivi multi-conteneurs" %}
+        </div>
+        <h2 class="font-heading text-lg sm:text-xl font-extrabold text-ctsa-slate m-0">
+          {{ site_t.client_cta_title }}
+        </h2>
+        <p class="text-sm text-slate-600 mt-1.5 mb-0 leading-relaxed">
+          {{ site_t.client_cta_subtitle }}
+        </p>
+      </div>
+      <div class="flex flex-wrap gap-3 shrink-0 w-full sm:w-auto">
+        {% if user.is_authenticated %}
+          <a href="{% url 'terminal:client_watchlist' %}" class="ui-btn ui-btn-primary w-full sm:w-auto">
+            {% trans "Voir mes conteneurs suivis" %}
+          </a>
+        {% else %}
+          <a href="{% url 'accounts:register' %}" class="ui-btn ui-btn-primary w-full sm:w-auto">
+            {% trans "Créer un compte client" %}
+          </a>
+          <a href="{% url 'accounts:login' %}" class="ui-btn ui-btn-secondary w-full sm:w-auto">
+            {% trans "Se connecter" %}
+          </a>
+        {% endif %}
+      </div>
     </div>
   </div>
 </section>

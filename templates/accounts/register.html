@@ -1,19 +1,20 @@
 {% extends 'base.html' %}
+{% load i18n %}
 
-{% block title %}Inscription Client — Cap Terminal S.A.{% endblock %}
+{% block title %}{% trans "Inscription Client" %} — Cap Terminal S.A.{% endblock %}
 
 {% block content %}
 <div class="max-w-lg mx-auto px-4 sm:px-6 py-10 sm:py-12">
   <div class="bg-white rounded-2xl p-6 sm:p-8 border border-slate-200/90 border-t-4 border-t-ctsa-blue shadow-sm">
     <div class="mb-6">
       <div class="text-xs font-heading uppercase tracking-widest text-ctsa-bluehover font-bold mb-1">
-        Espace Client · Cap Terminal S.A.
+        {% trans "Espace Client · Cap Terminal S.A." %}
       </div>
       <h1 id="signup-heading" class="font-heading text-2xl font-extrabold text-ctsa-slate m-0">
-        Créer un compte client
+        {% trans "Créer un compte client" %}
       </h1>
       <p class="text-sm text-slate-600 mt-1 mb-0">
-        Inscrivez-vous pour enregistrer et suivre vos conteneurs programmés à la RAMPE.
+        {% trans "Inscrivez-vous pour enregistrer et suivre vos conteneurs programmés à la RAMPE." %}
       </p>
     </div>
 
@@ -21,7 +22,7 @@
       {% csrf_token %}
 
       <div class="form-field mb-0">
-        <label for="reg-username">Identifiant</label>
+        <label for="reg-username">{% trans "Identifiant" %}</label>
         <input
           type="text"
           id="reg-username"
@@ -37,7 +38,7 @@
           class="form-control"
         >
         <div id="reg-user-error" class="error-msg">
-          Veuillez choisir un identifiant d'au moins 3 caractères.
+          {% trans "Veuillez choisir un identifiant d'au moins 3 caractères." %}
         </div>
         {% if form.username.errors %}
           <p class="text-xs text-red-700 font-bold mt-1 mb-0">{{ form.username.errors.0 }}</p>
@@ -45,7 +46,7 @@
       </div>
 
       <div class="form-field mb-0">
-        <label for="reg-fullname">Nom complet</label>
+        <label for="reg-fullname">{% trans "Nom complet" %}</label>
         <input
           type="text"
           id="reg-fullname"
@@ -57,12 +58,12 @@
           class="form-control"
         >
         <div id="reg-name-error" class="error-msg">
-          Veuillez indiquer votre nom complet.
+          {% trans "Veuillez indiquer votre nom complet." %}
         </div>
       </div>
 
       <div class="form-field mb-0">
-        <label for="reg-email">Adresse courriel</label>
+        <label for="reg-email">{% trans "Adresse courriel" %}</label>
         <input
           type="email"
           id="reg-email"
@@ -74,7 +75,7 @@
           class="form-control"
         >
         <div id="reg-email-error" class="error-msg">
-          Veuillez saisir une adresse courriel valide.
+          {% trans "Veuillez saisir une adresse courriel valide." %}
         </div>
         {% if form.email.errors %}
           <p class="text-xs text-red-700 font-bold mt-1 mb-0">{{ form.email.errors.0 }}</p>
@@ -83,7 +84,7 @@
 
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div class="form-field mb-0">
-          <label for="reg-company">Entreprise (optionnel)</label>
+          <label for="reg-company">{% trans "Entreprise (optionnel)" %}</label>
           <input
             type="text"
             id="reg-company"
@@ -95,7 +96,7 @@
         </div>
 
         <div class="form-field mb-0">
-          <label for="reg-phone">Téléphone (optionnel)</label>
+          <label for="reg-phone">{% trans "Téléphone (optionnel)" %}</label>
           <input
             type="tel"
             id="reg-phone"
@@ -109,15 +110,15 @@
 
       <div class="form-field mb-0">
         <div class="flex items-center justify-between mb-1">
-          <label for="reg-password" class="mb-0">Mot de passe (minimum 8 caractères)</label>
+          <label for="reg-password" class="mb-0">{% trans "Mot de passe (minimum 8 caractères)" %}</label>
           <button
             type="button"
             data-toggle-password="reg-password"
             aria-pressed="false"
-            aria-label="Afficher le mot de passe"
+            aria-label="{% trans 'Afficher le mot de passe' %}"
             class="text-xs font-bold text-ctsa-bluehover hover:underline bg-transparent border-0 cursor-pointer p-0"
           >
-            <span data-toggle-label>Afficher</span>
+            <span data-toggle-label>{% trans "Afficher" %}</span>
           </button>
         </div>
         <input
@@ -131,19 +132,19 @@
           class="form-control"
         >
         <div id="reg-pass-error" class="error-msg">
-          Votre mot de passe doit contenir au moins 8 caractères.
+          {% trans "Votre mot de passe doit contenir au moins 8 caractères." %}
         </div>
       </div>
 
       <button type="submit" class="ui-btn ui-btn-primary w-full mt-2" data-submit-guard>
-        Créer mon compte
+        {% trans "Créer mon compte" %}
       </button>
     </form>
 
     <div class="mt-6 pt-5 border-t border-slate-100 text-center text-xs text-slate-600">
-      Déjà inscrit ?
+      {% trans "Déjà inscrit ?" %}
       <a href="{% url 'accounts:login' %}" class="font-bold text-ctsa-bluehover hover:underline ml-1">
-        Se connecter
+        {% trans "Se connecter" %}
       </a>
     </div>
   </div>

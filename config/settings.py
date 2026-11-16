@@ -89,6 +89,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'django.middleware.locale.LocaleMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -112,6 +113,7 @@ TEMPLATES = [
         'OPTIONS': {
             'context_processors': [
                 'django.template.context_processors.request',
+                'django.template.context_processors.i18n',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
                 'terminal.context_processors.portal_navigation',
@@ -182,7 +184,23 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/6.1/topics/i18n/
 
-LANGUAGE_CODE = 'fr-fr'
+from django.conf.locale import LANG_INFO
+
+LANG_INFO['ht'] = {
+    'bidi': False,
+    'code': 'ht',
+    'name': 'Haitian Creole',
+    'name_local': 'Kreyòl ayisyen',
+}
+
+LANGUAGE_CODE = 'fr'
+
+LANGUAGES = [
+    ('fr', 'Français'),
+    ('ht', 'Kreyòl'),
+]
+
+LOCALE_PATHS = [BASE_DIR / 'locale']
 
 TIME_ZONE = 'America/Port-au-Prince'
 
@@ -197,6 +215,9 @@ USE_TZ = True
 STATIC_URL = 'static/'
 STATICFILES_DIRS = [BASE_DIR / 'static']
 STATIC_ROOT = BASE_DIR / 'staticfiles'
+
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
 
 # En production, fichiers statiques compressés et nommés par empreinte (cache longue durée).
 # En développement et en test, le stockage par défaut suffit et n'exige pas collectstatic.

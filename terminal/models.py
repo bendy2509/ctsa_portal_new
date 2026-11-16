@@ -1,8 +1,13 @@
+import io
+import os
 import re
 from django.conf import settings
 from django.core.exceptions import ValidationError
+from django.core.files.base import ContentFile
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.utils import timezone
+from PIL import Image, ImageOps
 
 # Create your models here.
 
@@ -505,6 +510,36 @@ class SiteSettings(models.Model):
         default="Liste mise à jour chaque jour par Cap Terminal S.A.",
         verbose_name="Mention sous la recherche",
     )
+    step1_title = models.CharField(
+        max_length=80,
+        default="Saisir le numéro",
+        verbose_name="Étape 1 — Titre",
+    )
+    step1_text = models.CharField(
+        max_length=220,
+        default="Reportez les 4 lettres et 7 chiffres inscrits sur votre connaissement maritime (Bill of Lading).",
+        verbose_name="Étape 1 — Description",
+    )
+    step2_title = models.CharField(
+        max_length=80,
+        default="Consulter la fiche",
+        verbose_name="Étape 2 — Titre",
+    )
+    step2_text = models.CharField(
+        max_length=220,
+        default="Visualisez instantanément le statut du jour, la ligne maritime associée et l'heure de mise à jour.",
+        verbose_name="Étape 2 — Description",
+    )
+    step3_title = models.CharField(
+        max_length=80,
+        default="Se présenter à la RAMPE",
+        verbose_name="Étape 3 — Titre",
+    )
+    step3_text = models.CharField(
+        max_length=220,
+        default="Déplacez-vous au terminal uniquement lorsque votre conteneur affiche le statut Confirmé.",
+        verbose_name="Étape 3 — Description",
+    )
     status_guide_title = models.CharField(
         max_length=160,
         default="Signification des statuts de vérification",
@@ -514,15 +549,42 @@ class SiteSettings(models.Model):
         default="Chaque conteneur programmé passe par l'un des trois états suivants selon son positionnement physique à la RAMPE.",
         verbose_name="Sous-titre du guide des statuts",
     )
+    confirmed_title = models.CharField(
+        max_length=120,
+        default="Conteneur positionné à la RAMPE",
+        verbose_name="Titre — Confirmé",
+    )
+    confirmed_description = models.TextField(
+        default="Le conteneur est physiquement disponible et validé par le terminal pour la séance de vérification douanière du jour.",
+        verbose_name="Description — Confirmé",
+    )
     confirmed_instruction = models.CharField(
         max_length=240,
         default="Présentez-vous au terminal muni de vos documents douaniers.",
         verbose_name="Consigne — Confirmé",
     )
+    pending_title = models.CharField(
+        max_length=120,
+        default="En attente de confirmation",
+        verbose_name="Titre — En attente",
+    )
+    pending_description = models.TextField(
+        default="Le conteneur figure sur la programmation quotidienne, mais son positionnement final à la RAMPE n'est pas encore confirmé.",
+        verbose_name="Description — En attente",
+    )
     pending_instruction = models.CharField(
         max_length=240,
         default="Patientez avant de vous déplacer : la fiche se met à jour automatiquement.",
         verbose_name="Consigne — En attente",
+    )
+    unavailable_title = models.CharField(
+        max_length=120,
+        default="Non disponible ce jour",
+        verbose_name="Titre — Indisponible",
+    )
+    unavailable_description = models.TextField(
+        default="Le conteneur ne peut pas être présenté à la vérification douanière pour la séance en cours. Le motif exact est indiqué sur sa fiche.",
+        verbose_name="Description — Indisponible",
     )
     unavailable_instruction = models.CharField(
         max_length=240,
@@ -538,6 +600,159 @@ class SiteSettings(models.Model):
         default="Créez un compte client gratuit pour enregistrer vos numéros de conteneurs dans une liste personnelle et suivre leurs statuts en un seul coup d'œil.",
         verbose_name="Texte bandeau espace client",
     )
+    # Version créole haïtien (Kreyòl ayisyen) des textes publics
+    portal_subtitle_ht = models.CharField(
+        max_length=160,
+        blank=True,
+        default="Verifikasyon ladwàn pou kontenè yo",
+        verbose_name="Sous-titre du portail (Kreyòl)",
+    )
+    location_label_ht = models.CharField(
+        max_length=120,
+        blank=True,
+        default="Pò Okap",
+        verbose_name="Localisation (Kreyòl)",
+    )
+    footer_about_ht = models.TextField(
+        blank=True,
+        default="Operatè tèminal kontenè Pò Okap depi 1998. Pò ki sètifye pa OMI ak ISPS.",
+        verbose_name="Présentation pied de page (Kreyòl)",
+    )
+    hero_title_ht = models.CharField(
+        max_length=180,
+        blank=True,
+        default="Verifye si kontenè ou a disponib",
+        verbose_name="Titre principal (Kreyòl)",
+    )
+    hero_subtitle_ht = models.TextField(
+        blank=True,
+        default="Konsilte an tan reyèl si kontenè ou a pwograme epi konfime pou verifikasyon ladwàn jodi a anvan ou deplase vin nan tèminal la.",
+        verbose_name="Sous-titre d'accueil (Kreyòl)",
+    )
+    search_note_ht = models.CharField(
+        max_length=180,
+        blank=True,
+        default="Cap Terminal S.A. mete lis la ajou chak jou.",
+        verbose_name="Mention sous la recherche (Kreyòl)",
+    )
+    step1_title_ht = models.CharField(
+        max_length=80,
+        blank=True,
+        default="Antre nimewo a",
+        verbose_name="Étape 1 — Titre (Kreyòl)",
+    )
+    step1_text_ht = models.CharField(
+        max_length=220,
+        blank=True,
+        default="Ekri 4 lèt ak 7 chif ki sou konèsman maritim ou a (Bill of Lading).",
+        verbose_name="Étape 1 — Description (Kreyòl)",
+    )
+    step2_title_ht = models.CharField(
+        max_length=80,
+        blank=True,
+        default="Gade fich la",
+        verbose_name="Étape 2 — Titre (Kreyòl)",
+    )
+    step2_text_ht = models.CharField(
+        max_length=220,
+        blank=True,
+        default="Wè touswit stati jodi a, liy maritim nan ak lè dènye mizajou a.",
+        verbose_name="Étape 2 — Description (Kreyòl)",
+    )
+    step3_title_ht = models.CharField(
+        max_length=80,
+        blank=True,
+        default="Ale nan RANP la",
+        verbose_name="Étape 3 — Titre (Kreyòl)",
+    )
+    step3_text_ht = models.CharField(
+        max_length=220,
+        blank=True,
+        default="Vin nan tèminal la sèlman lè kontenè ou a gen stati Konfime.",
+        verbose_name="Étape 3 — Description (Kreyòl)",
+    )
+    status_guide_title_ht = models.CharField(
+        max_length=160,
+        blank=True,
+        default="Kisa stati verifikasyon yo vle di",
+        verbose_name="Titre du guide des statuts (Kreyòl)",
+    )
+    status_guide_subtitle_ht = models.TextField(
+        blank=True,
+        default="Chak kontenè ki pwograme pase nan youn nan twa eta sa yo selon plas li nan RANP la.",
+        verbose_name="Sous-titre du guide des statuts (Kreyòl)",
+    )
+    confirmed_title_ht = models.CharField(
+        max_length=120,
+        blank=True,
+        default="Kontenè a plase nan RANP la",
+        verbose_name="Titre — Confirmé (Kreyòl)",
+    )
+    confirmed_description_ht = models.TextField(
+        blank=True,
+        default="Kontenè a disponib fizikman epi tèminal la valide li pou verifikasyon ladwàn jodi a.",
+        verbose_name="Description — Confirmé (Kreyòl)",
+    )
+    confirmed_instruction_ht = models.CharField(
+        max_length=240,
+        blank=True,
+        default="Vin nan tèminal la ak tout dokiman ladwàn ou yo.",
+        verbose_name="Consigne — Confirmé (Kreyòl)",
+    )
+    pending_title_ht = models.CharField(
+        max_length=120,
+        blank=True,
+        default="Ap tann konfimasyon",
+        verbose_name="Titre — En attente (Kreyòl)",
+    )
+    pending_description_ht = models.TextField(
+        blank=True,
+        default="Kontenè a nan pwogramasyon jodi a, men plasman final li nan RANP la poko konfime.",
+        verbose_name="Description — En attente (Kreyòl)",
+    )
+    pending_instruction_ht = models.CharField(
+        max_length=240,
+        blank=True,
+        default="Pasyante anvan ou deplase : fich la ap mete tèt li ajou otomatikman.",
+        verbose_name="Consigne — En attente (Kreyòl)",
+    )
+    unavailable_title_ht = models.CharField(
+        max_length=120,
+        blank=True,
+        default="Pa disponib jodi a",
+        verbose_name="Titre — Indisponible (Kreyòl)",
+    )
+    unavailable_description_ht = models.TextField(
+        blank=True,
+        default="Kontenè a pa ka prezante pou verifikasyon ladwàn jodi a. Rezon an ekri sou fich li.",
+        verbose_name="Description — Indisponible (Kreyòl)",
+    )
+    unavailable_instruction_ht = models.CharField(
+        max_length=240,
+        blank=True,
+        default="Gade rezon ki afiche a epi kontakte tranzitè ou a.",
+        verbose_name="Consigne — Indisponible (Kreyòl)",
+    )
+    client_cta_title_ht = models.CharField(
+        max_length=180,
+        blank=True,
+        default="Ou jere plizyè dosye enpòtasyon oswa tranzit ?",
+        verbose_name="Titre bandeau espace client (Kreyòl)",
+    )
+    client_cta_subtitle_ht = models.TextField(
+        blank=True,
+        default="Kreye yon kont kliyan gratis pou anrejistre nimewo kontenè ou yo nan yon lis pèsonèl epi swiv stati yo fasilman.",
+        verbose_name="Texte bandeau espace client (Kreyòl)",
+    )
+    hero_carousel_enabled = models.BooleanField(
+        default=True,
+        verbose_name="Activer le carrousel en fond du hero",
+    )
+    hero_carousel_limit = models.PositiveSmallIntegerField(
+        default=4,
+        validators=[MinValueValidator(1), MaxValueValidator(6)],
+        verbose_name="Nombre maximum d'images affichées",
+    )
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
@@ -550,7 +765,82 @@ class SiteSettings(models.Model):
         obj, _ = cls.objects.get_or_create(pk=1)
         return obj
 
+    def for_language(self, lang_code: str):
+        return LocalizedSiteSettings(self, lang_code)
+
     def __str__(self):
         return f"Paramètres du site ({self.company_name})"
+
+
+class LocalizedSiteSettings:
+    """Renvoie la version créole (suffixe `_ht`) lorsqu'elle est définie et que la langue est `ht`."""
+
+    def __init__(self, instance: SiteSettings, lang_code: str):
+        self._instance = instance
+        self._is_ht = (lang_code or '').startswith('ht')
+
+    def __getattr__(self, name: str):
+        if self._is_ht:
+            ht_attr = f"{name}_ht"
+            if hasattr(self._instance, ht_attr):
+                val = getattr(self._instance, ht_attr)
+                if val:
+                    return val
+        return getattr(self._instance, name)
+
+
+class HeroSlide(models.Model):
+    """Image d'arrière-plan du carrousel d'accueil, gérée depuis le portail."""
+
+    title = models.CharField(
+        max_length=120,
+        blank=True,
+        verbose_name="Légende / description",
+    )
+    image = models.ImageField(
+        upload_to='hero_slides/',
+        verbose_name="Image",
+    )
+    display_order = models.PositiveSmallIntegerField(
+        default=1,
+        verbose_name="Ordre d'affichage",
+    )
+    is_active = models.BooleanField(
+        default=True,
+        verbose_name="Active",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'hero_slides'
+        ordering = ['display_order', 'id']
+        verbose_name = "Image du carrousel d'accueil"
+        verbose_name_plural = "Images du carrousel d'accueil"
+
+    def __str__(self):
+        return self.title or f"Image #{self.pk}"
+
+    def save(self, *args, **kwargs):
+        if self.image and not getattr(self.image, '_committed', True):
+            self._optimize_image()
+        super().save(*args, **kwargs)
+
+    def _optimize_image(self):
+        """Redimensionne (max 1600 px) et compresse en WebP pour le chargement rapide."""
+        try:
+            self.image.seek(0)
+            img = ImageOps.exif_transpose(Image.open(self.image))
+            if img.mode not in ('RGB', 'RGBA'):
+                img = img.convert('RGB')
+            max_width = 1600
+            if img.width > max_width:
+                ratio = max_width / float(img.width)
+                img = img.resize((max_width, int(img.height * ratio)), Image.Resampling.LANCZOS)
+            buf = io.BytesIO()
+            img.save(buf, format='WEBP', quality=82, method=4)
+            base_name = os.path.splitext(os.path.basename(self.image.name))[0] or 'slide'
+            self.image.save(f"{base_name}.webp", ContentFile(buf.getvalue()), save=False)
+        except Exception:
+            pass
 
 
