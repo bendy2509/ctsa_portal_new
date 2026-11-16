@@ -601,6 +601,12 @@ class SiteSettings(models.Model):
         verbose_name="Texte bandeau espace client",
     )
     # Version créole haïtien (Kreyòl ayisyen) des textes publics
+    portal_title_ht = models.CharField(
+        max_length=120,
+        blank=True,
+        default="Pòtay RANP",
+        verbose_name="Titre du portail (Kreyòl)",
+    )
     portal_subtitle_ht = models.CharField(
         max_length=160,
         blank=True,
@@ -612,6 +618,12 @@ class SiteSettings(models.Model):
         blank=True,
         default="Pò Okap",
         verbose_name="Localisation (Kreyòl)",
+    )
+    address_line_ht = models.CharField(
+        max_length=220,
+        blank=True,
+        default="Pò Okap, Depatman Nò, Ayiti",
+        verbose_name="Adresse complète (Kreyòl)",
     )
     footer_about_ht = models.TextField(
         blank=True,
