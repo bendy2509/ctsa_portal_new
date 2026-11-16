@@ -598,6 +598,22 @@ class ShippingLinesAndStatisticsTests(TestCase):
         self.assertContains(home_ht, 'Verifye stati a')
         self.assertContains(home_ht, 'Akèy')
 
+        verif_ht = self.client_http.get('/ht/verification/')
+        self.assertEqual(verif_ht.status_code, 200)
+        self.assertContains(verif_ht, 'Verifye stati yon kontenè')
+        self.assertContains(verif_ht, 'Chèche')
+
+        login_ht = self.client_http.get('/ht/auth/connexion/')
+        self.assertEqual(login_ht.status_code, 200)
+        self.assertContains(login_ht, 'Non itilizatè oswa imèl')
+        self.assertContains(login_ht, 'Modpas')
+        self.assertContains(login_ht, 'Konekte')
+
+        register_ht = self.client_http.get('/ht/auth/inscription/')
+        self.assertEqual(register_ht.status_code, 200)
+        self.assertContains(register_ht, 'Kreye yon kont kliyan')
+        self.assertContains(register_ht, 'Kreye kont mwen')
+
         home_fr = self.client_http.get('/fr/')
         self.assertEqual(home_fr.status_code, 200)
         self.assertContains(home_fr, site_obj.hero_title)

@@ -1,30 +1,31 @@
 {% extends 'base.html' %}
+{% load i18n %}
 
-{% block title %}Mes Conteneurs — Cap Terminal S.A.{% endblock %}
+{% block title %}{% trans "Mes Conteneurs" %} — Cap Terminal S.A.{% endblock %}
 
 {% block content %}
 <section class="bg-slate-100 border-b border-slate-200/80 py-8 sm:py-10">
   <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
     <div>
       <div class="text-xs font-heading uppercase tracking-widest text-ctsa-bluehover font-bold mb-1">
-        Espace Client · Cap Terminal S.A.
+        {% trans "Espace Client · Cap Terminal S.A." %}
       </div>
       <h1 class="font-heading text-2xl sm:text-3xl font-extrabold text-ctsa-slate m-0">
-        Mes conteneurs suivis
+        {% trans "Mes conteneurs suivis" %}
       </h1>
       <p class="text-sm text-slate-600 mt-1 mb-0">
-        Enregistrez vos numéros de conteneurs pour consulter leur statut douanier à la RAMPE en un coup d'œil.
+        {% trans "Enregistrez vos numéros de conteneurs pour consulter leur statut douanier à la RAMPE en un coup d'œil." %}
       </p>
     </div>
 
     <div class="bg-white rounded-2xl p-5 sm:p-6 border border-slate-200/90 border-t-4 border-t-ctsa-blue shadow-sm">
       <h2 id="watchlist-add-title" class="font-heading text-base font-extrabold text-ctsa-slate mb-4 mt-0">
-        Ajouter un conteneur à ma liste de suivi
+        {% trans "Ajouter un conteneur à ma liste de suivi" %}
       </h2>
       <form action="{% url 'terminal:client_watchlist' %}" method="post" aria-labelledby="watchlist-add-title" class="grid grid-cols-1 md:grid-cols-12 gap-4 items-start">
         {% csrf_token %}
         <div class="md:col-span-4 form-field mb-0">
-          <label for="wl-number">Numéro du conteneur <span aria-hidden="true" class="text-red-600">*</span></label>
+          <label for="wl-number">{% trans "Numéro du conteneur" %} <span aria-hidden="true" class="text-red-600">*</span></label>
           <input
             type="text"
             id="wl-number"
@@ -34,30 +35,30 @@
             autocorrect="off"
             autocapitalize="characters"
             spellcheck="false"
-            placeholder="ex. CMAU4052450"
+            placeholder="{% trans 'ex. CMAU4052450' %}"
             data-error="wl-num-error"
             class="form-control font-mono uppercase"
           >
           <div id="wl-num-error" class="error-msg">
-            Saisissez 4 lettres et 7 chiffres.
+            {% trans "Saisissez 4 lettres et 7 chiffres." %}
           </div>
         </div>
 
         <div class="md:col-span-5 form-field mb-0">
-          <label for="wl-label">Référence ou dossier (optionnel)</label>
+          <label for="wl-label">{% trans "Référence ou dossier (optionnel)" %}</label>
           <input
             type="text"
             id="wl-label"
             name="label"
             maxlength="120"
-            placeholder="Ex. Dossier d'importation"
+            placeholder="{% trans "Ex. Dossier d'importation" %}"
             class="form-control"
           >
         </div>
 
         <div class="md:col-span-3 md:pt-6">
           <button type="submit" class="ui-btn ui-btn-primary w-full">
-            Ajouter à ma liste
+            {% trans "Ajouter à ma liste" %}
           </button>
         </div>
       </form>
@@ -157,13 +158,13 @@
           <table class="ctsa-table w-full">
             <thead class="bg-slate-50/95">
               <tr>
-                <th scope="col">Conteneur</th>
-                <th scope="col">Ligne maritime</th>
-                <th scope="col">Séance</th>
-                <th scope="col">Statut</th>
-                <th scope="col">Référence / Motif</th>
-                <th scope="col">Mise à jour</th>
-                <th scope="col" class="text-right">Action</th>
+                <th scope="col">{% trans "Conteneur" %}</th>
+                <th scope="col">{% trans "Ligne maritime" %}</th>
+                <th scope="col">{% trans "Séance" %}</th>
+                <th scope="col">{% trans "Statut" %}</th>
+                <th scope="col">{% trans "Référence / Motif" %}</th>
+                <th scope="col">{% trans "Mise à jour" %}</th>
+                <th scope="col" class="text-right">{% trans "Action" %}</th>
               </tr>
             </thead>
             <tbody>
@@ -247,7 +248,9 @@
         </div>
       </section>
     {% else %}
-      {% include 'components/empty_state.html' with title='Aucun conteneur suivi' message='Utilisez le formulaire ci-dessus pour ajouter vos numéros de conteneurs et suivre leur statut douanier.' %}
+      {% trans "Aucun conteneur suivi" as empty_wl_title %}
+      {% trans "Utilisez le formulaire ci-dessus pour ajouter vos numéros de conteneurs et suivre leur statut douanier." as empty_wl_msg %}
+      {% include 'components/empty_state.html' with title=empty_wl_title message=empty_wl_msg %}
     {% endif %}
   </div>
 </section>

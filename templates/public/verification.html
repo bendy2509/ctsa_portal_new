@@ -69,7 +69,7 @@
     {% if normalized %}
       {% if format_warning %}
         <div class="p-5 rounded-xl bg-red-50 border border-red-200 border-l-4 border-l-red-600 text-red-900" role="alert">
-          <h2 class="font-heading text-base font-extrabold text-red-800 mb-1 mt-0">Format de numéro invalide</h2>
+          <h2 class="font-heading text-base font-extrabold text-red-800 mb-1 mt-0">{% trans "Format de numéro invalide" %}</h2>
           <p class="text-sm font-medium m-0">{{ format_warning }}</p>
         </div>
       {% elif result %}
@@ -183,7 +183,7 @@
             <dl class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 m-0">
               <div class="p-4 rounded-xl bg-slate-50 border border-slate-200/80">
                 <dt class="text-[11px] uppercase font-heading font-bold tracking-wider text-slate-500">
-                  Numéro de conteneur
+                  {% trans "Numéro de conteneur" %}
                 </dt>
                 <dd class="text-base font-mono font-extrabold text-ctsa-slate mt-1 m-0 tabular-nums">
                   {{ result.container_number }}
@@ -192,16 +192,16 @@
 
               <div class="p-4 rounded-xl bg-slate-50 border border-slate-200/80">
                 <dt class="text-[11px] uppercase font-heading font-bold tracking-wider text-slate-500">
-                  Ligne maritime
+                  {% trans "Ligne maritime" %}
                 </dt>
                 <dd class="text-sm font-bold text-ctsa-slate mt-1 m-0">
-                  {% if result.shipping_line %}{{ result.shipping_line.name }}{% else %}Non spécifiée{% endif %}
+                  {% if result.shipping_line %}{{ result.shipping_line.name }}{% else %}{% trans "Non spécifiée" %}{% endif %}
                 </dd>
               </div>
 
               <div class="p-4 rounded-xl bg-slate-50 border border-slate-200/80">
                 <dt class="text-[11px] uppercase font-heading font-bold tracking-wider text-slate-500">
-                  {% if result.timing == 'past' %}Dernière séance{% else %}Date programmée{% endif %}
+                  {% if result.timing == 'past' %}{% trans "Dernière séance" %}{% else %}{% trans "Date programmée" %}{% endif %}
                 </dt>
                 <dd class="text-sm font-bold text-ctsa-slate mt-1 m-0 tabular-nums">
                   {{ result.scheduled_date|date:"d/m/Y" }}
@@ -210,7 +210,7 @@
 
               <div class="p-4 rounded-xl bg-slate-50 border border-slate-200/80">
                 <dt class="text-[11px] uppercase font-heading font-bold tracking-wider text-slate-500">
-                  Dernière mise à jour
+                  {% trans "Dernière mise à jour" %}
                 </dt>
                 <dd class="text-sm font-bold text-ctsa-slate mt-1 m-0 tabular-nums">
                   {{ result.updated_at|date:"d/m/Y à H:i" }}
@@ -224,29 +224,29 @@
                 {% if user.is_authenticated %}
                   {% if is_saved %}
                     <span class="text-xs text-emerald-700 font-bold">
-                      Ce conteneur figure déjà dans « Mes conteneurs suivis ».
+                      {% trans "Ce conteneur figure déjà dans « Mes conteneurs suivis »." %}
                     </span>
                   {% else %}
                     <form action="{% url 'terminal:client_watchlist' %}" method="post" class="inline">
                       {% csrf_token %}
                       <input type="hidden" name="container_number" value="{{ result.container_number }}">
                       <button type="submit" class="ui-btn ui-btn-secondary ui-btn-sm">
-                        Enregistrer dans mes conteneurs suivis
+                        {% trans "Enregistrer dans mes conteneurs suivis" %}
                       </button>
                     </form>
                   {% endif %}
                 {% else %}
                   <span class="text-xs text-slate-600">
-                    Vous souhaitez suivre ce conteneur ?
+                    {% trans "Vous souhaitez suivre ce conteneur ?" %}
                     <a href="{% url 'accounts:login' %}?next={{ request.get_full_path|urlencode:'' }}" class="font-bold text-ctsa-bluehover hover:underline ml-1">
-                      Connectez-vous à votre espace client
+                      {% trans "Connectez-vous à votre espace client" %}
                     </a>
                   </span>
                 {% endif %}
               </div>
 
               <a href="{% url 'terminal:verification' %}" class="text-xs font-bold text-slate-600 hover:text-ctsa-bluehover underline">
-                Effacer la recherche
+                {% trans "Effacer la recherche" %}
               </a>
             </div>
           </div>
@@ -255,20 +255,20 @@
         <!-- État vide lorsque le conteneur n'est pas programmé -->
         <div class="bg-slate-50 rounded-2xl p-6 sm:p-8 border border-slate-200/90 border-t-4 border-t-slate-500">
           <h2 class="font-heading text-lg font-extrabold text-ctsa-slate mb-2 mt-0">
-            Aucune programmation trouvée pour « {{ normalized }} »
+            {% blocktrans with num=normalized %}Aucune programmation trouvée pour « {{ num }} »{% endblocktrans %}
           </h2>
           <p class="text-sm text-slate-600 leading-relaxed mb-4">
-            Ce conteneur ne figure pas encore sur la liste de vérification douanière RAMPE publiée à la date du <strong>{{ today|date:"d/m/Y" }}</strong>.
+            {% blocktrans with today_str=today|date:"d/m/Y" %}Ce conteneur ne figure pas encore sur la liste de vérification douanière RAMPE publiée à la date du <strong>{{ today_str }}</strong>.{% endblocktrans %}
           </p>
           <div class="bg-white rounded-xl p-4 sm:p-5 border border-slate-200/80 text-sm text-slate-700 space-y-2">
-            <div class="font-bold text-ctsa-slate">Que faire ?</div>
+            <div class="font-bold text-ctsa-slate">{% trans "Que faire ?" %}</div>
             <ul class="list-disc pl-5 space-y-1.5 text-slate-600 m-0">
-              <li>Vérifiez que les 4 lettres et les 7 chiffres correspondent exactement à votre connaissement (Bill of Lading).</li>
-              <li>La liste du jour est complétée au fil de la journée : cette page se met à jour toute seule si votre conteneur y est ajouté.</li>
+              <li>{% trans "Vérifiez que les 4 lettres et les 7 chiffres correspondent exactement à votre connaissement (Bill of Lading)." %}</li>
+              <li>{% trans "La liste du jour est complétée au fil de la journée : cette page se met à jour toute seule si votre conteneur y est ajouté." %}</li>
               <li>
-                Pour toute question, appelez {{ site_settings.company_name }} au
+                {% trans "Pour toute question, appelez" %} {{ site_settings.company_name }} :
                 <a href="tel:{{ site_settings.contact_phone_primary }}" class="font-bold text-ctsa-bluehover underline underline-offset-2 tabular-nums">{{ site_settings.contact_phone_primary }}</a>
-                ou écrivez à
+                /
                 <a href="mailto:{{ site_settings.contact_email }}" class="font-bold text-ctsa-bluehover underline underline-offset-2">{{ site_settings.contact_email }}</a>.
               </li>
             </ul>
@@ -282,29 +282,32 @@
            data-refresh-url="{% url 'terminal:verification_state' %}?q={{ normalized|urlencode:'' }}"
            data-refresh-signature="{{ refresh_signature }}"
            aria-live="polite">
-          Cette page se met à jour toute seule.
-          <span data-refresh-status>Dernière actualisation à <time data-refresh-time>{% now "H:i" %}</time>.</span>
+          {% trans "Cette page se met à jour toute seule." %}
+          <span data-refresh-status>{% trans "Dernière actualisation à" %} <time data-refresh-time>{% now "H:i" %}</time>.</span>
         </p>
       {% endif %}
     {% else %}
       <!-- Rappel des 3 statuts avant recherche -->
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div class="bg-slate-50 rounded-xl p-5 border border-slate-200/80 border-t-4 border-t-emerald-600 space-y-2">
-          {% include 'components/badge.html' with variant='confirmed' label='Confirmé' %}
+          {% trans "Confirmé" as lbl_c %}
+          {% include 'components/badge.html' with variant='confirmed' label=lbl_c %}
           <p class="text-xs sm:text-sm text-slate-600 leading-relaxed m-0">
-            Conteneur disponible à la RAMPE. Déplacement au terminal autorisé.
+            {% trans "Conteneur disponible à la RAMPE. Déplacement au terminal autorisé." %}
           </p>
         </div>
         <div class="bg-slate-50 rounded-xl p-5 border border-slate-200/80 border-t-4 border-t-amber-500 space-y-2">
-          {% include 'components/badge.html' with variant='pending' label='En attente' %}
+          {% trans "En attente" as lbl_p %}
+          {% include 'components/badge.html' with variant='pending' label=lbl_p %}
           <p class="text-xs sm:text-sm text-slate-600 leading-relaxed m-0">
-            Conteneur programmé mais en attente de positionnement à la RAMPE.
+            {% trans "Conteneur programmé mais en attente de positionnement à la RAMPE." %}
           </p>
         </div>
         <div class="bg-slate-50 rounded-xl p-5 border border-slate-200/80 border-t-4 border-t-red-600 space-y-2">
-          {% include 'components/badge.html' with variant='unavailable' label='Indisponible' %}
+          {% trans "Indisponible" as lbl_u %}
+          {% include 'components/badge.html' with variant='unavailable' label=lbl_u %}
           <p class="text-xs sm:text-sm text-slate-600 leading-relaxed m-0">
-            Non présentable ce jour. Le motif communiqué est indiqué sur la fiche.
+            {% trans "Non présentable ce jour. Le motif communiqué est indiqué sur la fiche." %}
           </p>
         </div>
       </div>

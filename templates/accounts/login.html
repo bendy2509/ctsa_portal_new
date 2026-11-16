@@ -30,7 +30,7 @@
       {% csrf_token %}
 
       <div class="form-field mb-0">
-        <label for="id_username">Identifiant ou courriel</label>
+        <label for="id_username">{% trans "Identifiant ou courriel" %}</label>
         <input
           type="text"
           id="id_username"
@@ -46,21 +46,21 @@
           class="form-control"
         >
         <div id="login-user-error" class="error-msg">
-          Veuillez saisir votre identifiant ou votre adresse courriel.
+          {% trans "Veuillez saisir votre identifiant ou votre adresse courriel." %}
         </div>
       </div>
 
       <div class="form-field mb-0">
         <div class="flex items-center justify-between mb-1">
-          <label for="id_password" class="mb-0">Mot de passe</label>
+          <label for="id_password" class="mb-0">{% trans "Mot de passe" %}</label>
           <button
             type="button"
             data-toggle-password="id_password"
             aria-pressed="false"
-            aria-label="Afficher le mot de passe"
+            aria-label="{% trans 'Afficher le mot de passe' %}"
             class="text-xs font-bold text-ctsa-bluehover hover:underline bg-transparent border-0 cursor-pointer p-0"
           >
-            <span data-toggle-label>Afficher</span>
+            <span data-toggle-label>{% trans "Afficher" %}</span>
           </button>
         </div>
         <input
@@ -74,7 +74,7 @@
           class="form-control"
         >
         <div id="login-pass-error" class="error-msg">
-          Veuillez saisir votre mot de passe.
+          {% trans "Veuillez saisir votre mot de passe." %}
         </div>
       </div>
 
