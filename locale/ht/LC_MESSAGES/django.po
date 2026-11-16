@@ -377,3 +377,36 @@ msgstr "Pa gen kontenè w ap swiv"
 
 msgid "Utilisez le formulaire ci-dessus pour ajouter vos numéros de conteneurs et suivre leur statut douanier."
 msgstr "Sèvi ak fòmilè ki anlè a pou ajoute nimewo kontenè ou yo epi swiv stati ladwàn yo."
+
+msgid "Cap Terminal S.A. · Fiche de Vérification RAMPE"
+msgstr "Cap Terminal S.A. · Fich Verifikasyon RANP"
+
+msgid "Numéro de conteneur"
+msgstr "Nimewo kontenè a"
+
+msgid "à"
+msgstr "a"
+
+msgid "Non programmé"
+msgstr "Pa pwograme"
+
+msgid "MàJ"
+msgstr "Mizajou"
+
+msgid "En attente de programmation"
+msgstr "Ap tann pwogramasyon"
+
+msgid "Dernier statut connu"
+msgstr "Dènye stati li te genyen"
+
+msgid "Voir la fiche"
+msgstr "Gade fich la"
+
+msgid "Retirer"
+msgstr "Retire"
+
+msgid "Retirer ce conteneur de votre liste ?"
+msgstr "Retire kontenè sa a nan lis ou a ?"
+
+msgid "%(num)s ne sera plus suivi dans « Mes conteneurs ». Vous pourrez l'ajouter à nouveau à tout moment."
+msgstr "Ou p ap swiv %(num)s ankò nan « Kontenè mwen yo ». Ou ka ajoute l ankò nenpòt ki lè."

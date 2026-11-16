@@ -87,7 +87,7 @@
           <div class="px-5 py-4 sm:px-6 sm:py-5 bg-slate-50 border-b border-slate-200/80 flex flex-wrap items-center justify-between gap-4">
             <div class="min-w-0">
               <div class="text-[11px] uppercase tracking-widest text-slate-500 font-heading font-bold">
-                Cap Terminal S.A. · Fiche de Vérification RAMPE
+                {% trans "Cap Terminal S.A. · Fiche de Vérification RAMPE" %}
               </div>
               <h2 id="slip-container-heading" class="text-2xl sm:text-3xl font-mono font-extrabold text-ctsa-slate tracking-wider mt-1 mb-0 tabular-nums">
                 {{ result.container_number }}
@@ -213,7 +213,7 @@
                   {% trans "Dernière mise à jour" %}
                 </dt>
                 <dd class="text-sm font-bold text-ctsa-slate mt-1 m-0 tabular-nums">
-                  {{ result.updated_at|date:"d/m/Y à H:i" }}
+                  {{ result.updated_at|date:"d/m/Y" }} {% trans "à" %} {{ result.updated_at|date:"H:i" }}
                 </dd>
               </div>
             </dl>

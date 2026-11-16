@@ -132,7 +132,7 @@ class CTSAPortalBusinessTests(TestCase):
             reverse('terminal:client_watchlist'), {'container_number': 'CMAU4052450'}
         )
         wl = self.client_http.get(reverse('terminal:client_watchlist'))
-        self.assertContains(wl, "Non programmé aujourd'hui")
+        self.assertContains(wl, "Pa pwograme jodi a")
         self.assertNotContains(wl, 'status-confirmed')
 
     def test_schedule_priority_today_then_next_upcoming_then_last_past(self):
