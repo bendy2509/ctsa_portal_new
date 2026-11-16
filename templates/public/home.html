@@ -87,9 +87,9 @@
           01
         </span>
         <div class="min-w-0">
-          <h2 class="font-heading text-sm font-extrabold text-ctsa-slate mb-1 mt-0">Saisir le numéro</h2>
+          <h2 class="font-heading text-sm font-extrabold text-ctsa-slate mb-1 mt-0">{{ site_settings.step1_title }}</h2>
           <p class="text-xs sm:text-sm text-slate-600 leading-relaxed m-0">
-            Reportez les 4 lettres et 7 chiffres inscrits sur votre connaissement maritime (Bill of Lading).
+            {{ site_settings.step1_text }}
           </p>
         </div>
       </li>
@@ -99,9 +99,9 @@
           02
         </span>
         <div class="min-w-0">
-          <h2 class="font-heading text-sm font-extrabold text-ctsa-slate mb-1 mt-0">Consulter la fiche</h2>
+          <h2 class="font-heading text-sm font-extrabold text-ctsa-slate mb-1 mt-0">{{ site_settings.step2_title }}</h2>
           <p class="text-xs sm:text-sm text-slate-600 leading-relaxed m-0">
-            Visualisez instantanément le statut du jour, la ligne maritime associée et l'heure de mise à jour.
+            {{ site_settings.step2_text }}
           </p>
         </div>
       </li>
@@ -111,9 +111,9 @@
           03
         </span>
         <div class="min-w-0">
-          <h2 class="font-heading text-sm font-extrabold text-ctsa-slate mb-1 mt-0">Se présenter à la RAMPE</h2>
+          <h2 class="font-heading text-sm font-extrabold text-ctsa-slate mb-1 mt-0">{{ site_settings.step3_title }}</h2>
           <p class="text-xs sm:text-sm text-slate-600 leading-relaxed m-0">
-            Déplacez-vous au terminal uniquement lorsque votre conteneur affiche le statut Confirmé.
+            {{ site_settings.step3_text }}
           </p>
         </div>
       </li>
@@ -147,10 +147,10 @@
             </span>
           </div>
           <h3 class="font-heading text-base font-extrabold text-ctsa-slate mb-1.5 mt-0">
-            Conteneur positionné à la RAMPE
+            {{ site_settings.confirmed_title }}
           </h3>
           <p class="text-sm text-slate-600 leading-relaxed m-0">
-            Le conteneur est physiquement disponible et validé par le terminal pour la séance de vérification douanière du jour.
+            {{ site_settings.confirmed_description }}
           </p>
         </div>
         <div class="bg-white rounded-xl p-3.5 border border-slate-200/80 text-xs sm:text-sm text-slate-700">
@@ -169,10 +169,10 @@
             </span>
           </div>
           <h3 class="font-heading text-base font-extrabold text-ctsa-slate mb-1.5 mt-0">
-            En attente de confirmation
+            {{ site_settings.pending_title }}
           </h3>
           <p class="text-sm text-slate-600 leading-relaxed m-0">
-            Le conteneur figure sur la programmation quotidienne, mais son positionnement final à la RAMPE n'est pas encore confirmé.
+            {{ site_settings.pending_description }}
           </p>
         </div>
         <div class="bg-white rounded-xl p-3.5 border border-slate-200/80 text-xs sm:text-sm text-slate-700">
@@ -191,10 +191,10 @@
             </span>
           </div>
           <h3 class="font-heading text-base font-extrabold text-ctsa-slate mb-1.5 mt-0">
-            Non disponible ce jour
+            {{ site_settings.unavailable_title }}
           </h3>
           <p class="text-sm text-slate-600 leading-relaxed m-0">
-            Le conteneur ne peut pas être présenté à la vérification douanière pour la séance en cours. Le motif exact est indiqué sur sa fiche.
+            {{ site_settings.unavailable_description }}
           </p>
         </div>
         <div class="bg-white rounded-xl p-3.5 border border-slate-200/80 text-xs sm:text-sm text-slate-700">

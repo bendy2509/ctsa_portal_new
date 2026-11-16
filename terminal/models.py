@@ -505,6 +505,36 @@ class SiteSettings(models.Model):
         default="Liste mise à jour chaque jour par Cap Terminal S.A.",
         verbose_name="Mention sous la recherche",
     )
+    step1_title = models.CharField(
+        max_length=80,
+        default="Saisir le numéro",
+        verbose_name="Étape 1 — Titre",
+    )
+    step1_text = models.CharField(
+        max_length=220,
+        default="Reportez les 4 lettres et 7 chiffres inscrits sur votre connaissement maritime (Bill of Lading).",
+        verbose_name="Étape 1 — Description",
+    )
+    step2_title = models.CharField(
+        max_length=80,
+        default="Consulter la fiche",
+        verbose_name="Étape 2 — Titre",
+    )
+    step2_text = models.CharField(
+        max_length=220,
+        default="Visualisez instantanément le statut du jour, la ligne maritime associée et l'heure de mise à jour.",
+        verbose_name="Étape 2 — Description",
+    )
+    step3_title = models.CharField(
+        max_length=80,
+        default="Se présenter à la RAMPE",
+        verbose_name="Étape 3 — Titre",
+    )
+    step3_text = models.CharField(
+        max_length=220,
+        default="Déplacez-vous au terminal uniquement lorsque votre conteneur affiche le statut Confirmé.",
+        verbose_name="Étape 3 — Description",
+    )
     status_guide_title = models.CharField(
         max_length=160,
         default="Signification des statuts de vérification",
@@ -514,15 +544,42 @@ class SiteSettings(models.Model):
         default="Chaque conteneur programmé passe par l'un des trois états suivants selon son positionnement physique à la RAMPE.",
         verbose_name="Sous-titre du guide des statuts",
     )
+    confirmed_title = models.CharField(
+        max_length=120,
+        default="Conteneur positionné à la RAMPE",
+        verbose_name="Titre — Confirmé",
+    )
+    confirmed_description = models.TextField(
+        default="Le conteneur est physiquement disponible et validé par le terminal pour la séance de vérification douanière du jour.",
+        verbose_name="Description — Confirmé",
+    )
     confirmed_instruction = models.CharField(
         max_length=240,
         default="Présentez-vous au terminal muni de vos documents douaniers.",
         verbose_name="Consigne — Confirmé",
     )
+    pending_title = models.CharField(
+        max_length=120,
+        default="En attente de confirmation",
+        verbose_name="Titre — En attente",
+    )
+    pending_description = models.TextField(
+        default="Le conteneur figure sur la programmation quotidienne, mais son positionnement final à la RAMPE n'est pas encore confirmé.",
+        verbose_name="Description — En attente",
+    )
     pending_instruction = models.CharField(
         max_length=240,
         default="Patientez avant de vous déplacer : la fiche se met à jour automatiquement.",
         verbose_name="Consigne — En attente",
+    )
+    unavailable_title = models.CharField(
+        max_length=120,
+        default="Non disponible ce jour",
+        verbose_name="Titre — Indisponible",
+    )
+    unavailable_description = models.TextField(
+        default="Le conteneur ne peut pas être présenté à la vérification douanière pour la séance en cours. Le motif exact est indiqué sur sa fiche.",
+        verbose_name="Description — Indisponible",
     )
     unavailable_instruction = models.CharField(
         max_length=240,

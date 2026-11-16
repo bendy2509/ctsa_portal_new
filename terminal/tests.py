@@ -472,10 +472,22 @@ class ShippingLinesAndStatisticsTests(TestCase):
                 'hero_title': 'Titre personnalisé RAMPE',
                 'hero_subtitle': 'Sous-titre personnalisé.',
                 'search_note': 'Mise à jour quotidienne.',
+                'step1_title': 'Étape 1 perso',
+                'step1_text': 'Texte étape 1.',
+                'step2_title': 'Étape 2 perso',
+                'step2_text': 'Texte étape 2.',
+                'step3_title': 'Étape 3 perso',
+                'step3_text': 'Texte étape 3.',
                 'status_guide_title': 'Statuts RAMPE',
                 'status_guide_subtitle': 'Explication des statuts.',
+                'confirmed_title': 'Titre confirmé perso',
+                'confirmed_description': 'Desc confirmé perso.',
                 'confirmed_instruction': 'Venez avec vos documents.',
+                'pending_title': 'Titre attente perso',
+                'pending_description': 'Desc attente perso.',
                 'pending_instruction': 'Patientez.',
+                'unavailable_title': 'Titre indispo perso',
+                'unavailable_description': 'Desc indispo perso.',
                 'unavailable_instruction': 'Contactez votre transitaire.',
                 'client_cta_title': 'Suivi multi-conteneurs',
                 'client_cta_subtitle': 'Créez un compte client.',
@@ -490,6 +502,8 @@ class ShippingLinesAndStatisticsTests(TestCase):
         self.assertContains(home_resp, 'rampe@bendyservilus.com')
         self.assertContains(home_resp, '+50941705257')
         self.assertContains(home_resp, 'Titre personnalisé RAMPE')
+        self.assertContains(home_resp, 'Étape 1 perso')
+        self.assertContains(home_resp, 'Titre confirmé perso')
 
     def test_pwa_manifest_and_service_worker(self):
         manifest_resp = self.client_http.get(reverse('terminal:pwa_manifest'))

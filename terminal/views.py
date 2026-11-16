@@ -1743,10 +1743,22 @@ class SiteSettingsForm(forms.ModelForm):
             'hero_title',
             'hero_subtitle',
             'search_note',
+            'step1_title',
+            'step1_text',
+            'step2_title',
+            'step2_text',
+            'step3_title',
+            'step3_text',
             'status_guide_title',
             'status_guide_subtitle',
+            'confirmed_title',
+            'confirmed_description',
             'confirmed_instruction',
+            'pending_title',
+            'pending_description',
             'pending_instruction',
+            'unavailable_title',
+            'unavailable_description',
             'unavailable_instruction',
             'client_cta_title',
             'client_cta_subtitle',
@@ -1754,12 +1766,19 @@ class SiteSettingsForm(forms.ModelForm):
         widgets = {
             'footer_about': forms.Textarea(attrs={'rows': 3}),
             'hero_subtitle': forms.Textarea(attrs={'rows': 3}),
+            'step1_text': forms.Textarea(attrs={'rows': 2}),
+            'step2_text': forms.Textarea(attrs={'rows': 2}),
+            'step3_text': forms.Textarea(attrs={'rows': 2}),
             'status_guide_subtitle': forms.Textarea(attrs={'rows': 2}),
+            'confirmed_description': forms.Textarea(attrs={'rows': 2}),
+            'pending_description': forms.Textarea(attrs={'rows': 2}),
+            'unavailable_description': forms.Textarea(attrs={'rows': 2}),
             'client_cta_subtitle': forms.Textarea(attrs={'rows': 2}),
         }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.fields['hero_badge'].required = False
         for field in self.fields.values():
             field.widget.attrs.setdefault('class', 'form-control')
 
