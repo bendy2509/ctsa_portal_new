@@ -193,11 +193,11 @@ LANG_INFO['ht'] = {
     'name_local': 'Kreyòl ayisyen',
 }
 
-LANGUAGE_CODE = 'fr'
+LANGUAGE_CODE = 'ht'
 
 LANGUAGES = [
-    ('fr', 'Français'),
     ('ht', 'Kreyòl'),
+    ('fr', 'Français'),
 ]
 
 LOCALE_PATHS = [BASE_DIR / 'locale']

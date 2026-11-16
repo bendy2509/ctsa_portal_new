@@ -1838,8 +1838,10 @@ class SiteSettingsForm(forms.ModelForm):
             'hero_carousel_enabled',
             'hero_carousel_limit',
             # Champs Kreyòl
+            'portal_title_ht',
             'portal_subtitle_ht',
             'location_label_ht',
+            'address_line_ht',
             'footer_about_ht',
             'hero_title_ht',
             'hero_subtitle_ht',

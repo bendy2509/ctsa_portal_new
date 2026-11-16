@@ -9,28 +9,38 @@ const STATIC_ASSETS = [
   "{% static 'img/icon-512.png' %}",
 ];
 
-const OFFLINE_HTML = `<!DOCTYPE html>
-<html lang="fr">
+function buildOfflineHtml(isHt) {
+  const lang = isHt ? 'ht' : 'fr';
+  const title = isHt ? 'Pa gen entènèt — Pòtay RANP' : 'Hors ligne — Portail RAMPE';
+  const heading = isHt ? 'Koneksyon an pa disponib' : 'Connexion indisponible';
+  const body = isHt
+    ? 'Ou pa konekte sou entènèt kounye a. Retabli koneksyon entènèt ou pou konsilte stati RANP yo an tan reyèl.'
+    : 'Vous êtes actuellement hors ligne. Rétablissez votre connexion Internet pour consulter les statuts RAMPE en temps réel.';
+  const btn = isHt ? 'Eseye ankò' : 'Réessayer';
+
+  return `<!DOCTYPE html>
+<html lang="${lang}">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Hors ligne — Portail RAMPE</title>
+  <title>${title}</title>
   <style>
     body { margin: 0; font-family: system-ui, -apple-system, sans-serif; background: #f8fafc; color: #2c3741; display: grid; place-items: center; min-height: 100vh; padding: 1.5rem; }
-    .card { max-width: 26rem; background: #fff; border: 1px solid #e2e8f0; border-top: 4px solid #3498db; border-radius: 1rem; padding: 1.75rem; text-align: center; box-shadow: 0 4px 16px rgba(15, 23, 42, 0.06); }
+    .card { max-width: 26rem; background: #fff; border: 1px solid #e2e8f0; border-top: 4px solid #1a6394; border-radius: 1rem; padding: 1.75rem; text-align: center; box-shadow: 0 4px 16px rgba(15, 23, 42, 0.06); }
     h1 { font-size: 1.25rem; margin: 0 0 0.5rem; }
     p { font-size: 0.925rem; color: #475569; line-height: 1.5; margin: 0 0 1.25rem; }
-    button { background: #217dbb; color: #fff; border: 0; border-radius: 0.5rem; padding: 0.7rem 1.25rem; font-weight: 700; font-size: 0.9rem; cursor: pointer; }
+    button { background: #1a6394; color: #fff; border: 0; border-radius: 0.5rem; padding: 0.7rem 1.25rem; font-weight: 700; font-size: 0.9rem; cursor: pointer; }
   </style>
 </head>
 <body>
   <div class="card">
-    <h1>Connexion indisponible</h1>
-    <p>Vous êtes actuellement hors ligne. Rétablissez votre connexion Internet pour consulter les statuts RAMPE en temps réel.</p>
-    <button type="button" onclick="window.location.reload()">Réessayer</button>
+    <h1>${heading}</h1>
+    <p>${body}</p>
+    <button type="button" onclick="window.location.reload()">${btn}</button>
   </div>
 </body>
 </html>`;
+}
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
@@ -75,9 +85,10 @@ self.addEventListener('fetch', (event) => {
 
   // Pages HTML : réseau prioritaire (statuts et formulaires toujours frais), sinon message hors ligne
   if (req.mode === 'navigate') {
+    const isHt = url.pathname === '/ht' || url.pathname.startsWith('/ht/');
     event.respondWith(
       fetch(req).catch(() =>
-        new Response(OFFLINE_HTML, {
+        new Response(buildOfflineHtml(isHt), {
           status: 503,
           headers: { 'Content-Type': 'text/html; charset=utf-8' },
         })

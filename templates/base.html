@@ -62,7 +62,7 @@
                onerror="this.style.display='none'; this.nextElementSibling.style.display='inline-flex';">
           <span style="display:none" class="portal-brand-mark shrink-0">CTSA</span>
           <div class="min-w-0 border-l border-white/15 pl-2.5 sm:pl-3">
-            <div class="font-heading font-extrabold text-xs sm:text-sm tracking-wide uppercase text-white truncate whitespace-nowrap">{{ site_settings.portal_title }}</div>
+            <div class="font-heading font-extrabold text-xs sm:text-sm tracking-wide uppercase text-white truncate whitespace-nowrap">{{ site_t.portal_title }}</div>
             <div class="text-[11px] text-slate-300 truncate hidden xl:block">{{ site_t.portal_subtitle }}</div>
           </div>
         </a>
@@ -245,7 +245,7 @@
       <div class="md:col-span-4 space-y-2.5">
         <h2 class="font-heading text-xs font-bold uppercase tracking-wider text-slate-400 m-0">{% trans "Contact" %}</h2>
         <p class="text-slate-300 text-sm leading-relaxed m-0">
-          {{ site_settings.address_line }}<br>
+          {{ site_t.address_line }}<br>
           {% trans "Tél." %} : <a href="tel:{{ site_settings.contact_phone_primary }}" class="text-white hover:underline tabular-nums">{{ site_settings.contact_phone_primary }}</a><br>
           {% if site_settings.contact_phone_secondary %}
             {% trans "Tél. 2" %} : <a href="tel:{{ site_settings.contact_phone_secondary }}" class="text-white hover:underline tabular-nums">{{ site_settings.contact_phone_secondary }}</a><br>
@@ -257,7 +257,7 @@
     <div class="border-t border-white/10 py-4 bg-[#1a222b]">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-xs text-slate-400 flex flex-wrap items-center justify-between gap-2">
         <span>© {% now "Y" %} <strong class="text-slate-200">{{ site_settings.company_name }}</strong> — {% trans "Tous droits réservés." %}</span>
-        <span>{{ site_settings.portal_title }} · {{ site_t.location_label }}</span>
+        <span>{{ site_t.portal_title }} · {{ site_t.location_label }}</span>
       </div>
     </div>
   </footer>

@@ -97,7 +97,7 @@ class CTSAPortalBusinessTests(TestCase):
         )
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'CMAU4052450')
-        self.assertContains(response, 'Confirmé')
+        self.assertContains(response, 'Konfime')
         self.assertContains(response, 'CMA CGM')
 
         # Test PDF export for confirmed containers
@@ -121,7 +121,7 @@ class CTSAPortalBusinessTests(TestCase):
         )
         response = self.client_http.get(reverse('terminal:verification'), {'q': 'CMAU4052450'})
         self.assertEqual(response.context['result'].timing, 'past')
-        self.assertContains(response, "Non programmé aujourd'hui")
+        self.assertContains(response, "Pa pwograme jodi a")
         self.assertNotContains(response, 'Déplacement autorisé')
         self.assertNotContains(response, 'Vous pouvez vous présenter')
         self.assertNotContains(response, 'status-confirmed')
@@ -132,7 +132,7 @@ class CTSAPortalBusinessTests(TestCase):
             reverse('terminal:client_watchlist'), {'container_number': 'CMAU4052450'}
         )
         wl = self.client_http.get(reverse('terminal:client_watchlist'))
-        self.assertContains(wl, "Non programmé aujourd'hui")
+        self.assertContains(wl, "Pa pwograme jodi a")
         self.assertNotContains(wl, 'status-confirmed')
 
     def test_schedule_priority_today_then_next_upcoming_then_last_past(self):
@@ -154,7 +154,7 @@ class CTSAPortalBusinessTests(TestCase):
         result = response.context['result']
         self.assertEqual(result.timing, 'upcoming')
         self.assertEqual(result.scheduled_date, today + datetime.timedelta(days=1))
-        self.assertContains(response, "Ne pas se déplacer aujourd'hui")
+        self.assertContains(response, "Pa deplase vin jodi a")
         self.assertNotContains(response, 'status-pending')
 
         Container.objects.create(
@@ -165,7 +165,7 @@ class CTSAPortalBusinessTests(TestCase):
         )
         response = self.client_http.get(url, {'q': 'CMAU4052450'})
         self.assertEqual(response.context['result'].timing, 'today')
-        self.assertContains(response, 'Déplacement autorisé')
+        self.assertContains(response, 'Ou ka vini')
 
     def test_shipping_lines_add_rename_delete_and_dashboard_quick_actions(self):
         self.client_http.login(username='admin_test', password='Password123!')
@@ -499,9 +499,9 @@ class ShippingLinesAndStatisticsTests(TestCase):
         )
         self.assertRedirects(post_resp, reverse('terminal:site_settings'))
 
-        # Public home renders the updated settings
+        # Public home renders the updated settings (French route)
         self.client_http.logout()
-        home_resp = self.client_http.get(reverse('terminal:home'))
+        home_resp = self.client_http.get('/fr/')
         self.assertEqual(home_resp.status_code, 200)
         self.assertContains(home_resp, 'rampe@bendyservilus.com')
         self.assertContains(home_resp, '+50941705257')
@@ -571,7 +571,9 @@ class ShippingLinesAndStatisticsTests(TestCase):
         sw_resp = self.client_http.get(reverse('terminal:pwa_sw'))
         self.assertEqual(sw_resp.status_code, 200)
         self.assertIn('application/javascript', sw_resp['Content-Type'])
-        self.assertIn('ctsa-rampe-v1', sw_resp.content.decode('utf-8'))
+        sw_body = sw_resp.content.decode('utf-8')
+        self.assertIn('ctsa-rampe-v1', sw_body)
+        self.assertIn('Koneksyon an pa disponib', sw_body)
 
     def test_verified_container_search_shows_already_verified(self):
         Container.objects.create(
@@ -582,10 +584,10 @@ class ShippingLinesAndStatisticsTests(TestCase):
             verified_at=timezone.now(),
             created_by=self.admin_user,
         )
-        resp = self.client_http.get(reverse('terminal:verification'), {'q': 'MSCU7778889'})
+        resp = self.client_http.get('/ht/verification/', {'q': 'MSCU7778889'})
         self.assertEqual(resp.status_code, 200)
-        self.assertContains(resp, 'Déjà vérifié')
-        self.assertContains(resp, 'Conteneur déjà vérifié')
+        self.assertContains(resp, 'Deja verifye')
+        self.assertContains(resp, 'Kontenè sa a deja verifye')
 
     def test_creole_language_switch_and_localized_site_settings(self):
         from .models import SiteSettings
