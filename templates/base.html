@@ -132,8 +132,8 @@
         </button>
       </div>
 
-      <!-- Menu déroulant mobile -->
-      <nav id="primary-nav-links" aria-label="{% trans 'Navigation mobile' %}" hidden class="lg:hidden pb-4 pt-3 border-t border-white/10 space-y-2">
+      <!-- Menu déroulant mobile (superposé au-dessus du contenu) -->
+      <nav id="primary-nav-links" aria-label="{% trans 'Navigation mobile' %}" hidden class="lg:hidden absolute inset-x-0 top-full z-40 bg-[#1e293b] border-t border-white/10 border-b border-white/15 shadow-2xl px-4 sm:px-6 pb-5 pt-3 max-h-[calc(100dvh-4.25rem)] overflow-y-auto space-y-2">
         <div class="px-1 text-[11px] font-heading font-bold uppercase tracking-wider text-slate-400">Navigation</div>
         <a href="{% url 'terminal:home' %}"
            class="flex items-center min-h-[44px] px-3.5 py-2 rounded-lg text-sm font-semibold no-underline {% if request.resolver_match.url_name == 'home' %}bg-white/15 text-white border border-white/15{% else %}text-slate-200 hover:bg-white/8{% endif %}">
