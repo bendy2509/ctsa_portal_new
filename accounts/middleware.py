@@ -21,7 +21,7 @@ class InactivityTimeoutMiddleware:
 
     def __call__(self, request):
         if request.user.is_authenticated:
-            if request.path not in self.BACKGROUND_PATHS:
+            if not request.path.endswith(self.BACKGROUND_PATHS):
                 now = time.time()
                 timeout = getattr(settings, 'SESSION_COOKIE_AGE', 300)
                 last_activity = request.session.get('_last_activity')

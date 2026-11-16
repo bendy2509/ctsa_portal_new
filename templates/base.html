@@ -1,4 +1,4 @@
-{% load static i18n %}
+{% load static i18n i18n_extras %}
 {% get_current_language as CURRENT_LANG %}
 <!DOCTYPE html>
 <html lang="{{ CURRENT_LANG|default:'fr' }}">
@@ -35,18 +35,16 @@
         </div>
 
         <div class="flex items-center gap-3">
-          <form action="{% url 'set_language' %}" method="post" class="inline-flex items-center rounded-md bg-white/8 border border-white/12 p-0.5" aria-label="{% trans 'Choisir la langue' %}">
-            {% csrf_token %}
-            <input type="hidden" name="next" value="{{ request.get_full_path }}">
-            <button type="submit" name="language" value="fr"
-                    class="px-2 py-0.5 rounded text-[11px] font-bold border-0 cursor-pointer transition {% if CURRENT_LANG|slice:':2' == 'fr' %}bg-[#3498db] text-white{% else %}bg-transparent text-slate-300 hover:text-white{% endif %}">
+          <div class="inline-flex items-center rounded-md bg-white/8 border border-white/12 p-0.5" role="group" aria-label="{% trans 'Choisir la langue' %}">
+            <a href="{% switch_lang_url 'fr' %}"
+               class="px-2 py-0.5 rounded text-[11px] font-bold no-underline transition {% if CURRENT_LANG|slice:':2' == 'fr' %}bg-[#3498db] text-white{% else %}text-slate-300 hover:text-white{% endif %}">
               FR
-            </button>
-            <button type="submit" name="language" value="ht"
-                    class="px-2 py-0.5 rounded text-[11px] font-bold border-0 cursor-pointer transition {% if CURRENT_LANG|slice:':2' == 'ht' %}bg-[#3498db] text-white{% else %}bg-transparent text-slate-300 hover:text-white{% endif %}">
+            </a>
+            <a href="{% switch_lang_url 'ht' %}"
+               class="px-2 py-0.5 rounded text-[11px] font-bold no-underline transition {% if CURRENT_LANG|slice:':2' == 'ht' %}bg-[#3498db] text-white{% else %}text-slate-300 hover:text-white{% endif %}">
               Kreyòl
-            </button>
-          </form>
+            </a>
+          </div>
           <span class="text-white/20" aria-hidden="true">|</span>
           {% if user.is_authenticated %}
             <span class="text-slate-300">
@@ -146,19 +144,17 @@
           </a>
         {% endif %}
 
-        <form action="{% url 'set_language' %}" method="post" class="pt-2 flex items-center gap-2 px-1">
-          {% csrf_token %}
-          <input type="hidden" name="next" value="{{ request.get_full_path }}">
+        <div class="pt-2 flex items-center gap-2 px-1">
           <span class="text-xs text-slate-300 font-semibold">{% trans "Langue" %} :</span>
-          <button type="submit" name="language" value="fr"
-                  class="min-h-[36px] px-3 py-1 rounded-lg text-xs font-bold border cursor-pointer {% if CURRENT_LANG|slice:':2' == 'fr' %}bg-[#3498db] border-[#3498db] text-white{% else %}bg-transparent border-white/25 text-slate-200{% endif %}">
+          <a href="{% switch_lang_url 'fr' %}"
+             class="inline-flex items-center min-h-[36px] px-3 py-1 rounded-lg text-xs font-bold border no-underline {% if CURRENT_LANG|slice:':2' == 'fr' %}bg-[#3498db] border-[#3498db] text-white{% else %}bg-transparent border-white/25 text-slate-200{% endif %}">
             Français
-          </button>
-          <button type="submit" name="language" value="ht"
-                  class="min-h-[36px] px-3 py-1 rounded-lg text-xs font-bold border cursor-pointer {% if CURRENT_LANG|slice:':2' == 'ht' %}bg-[#3498db] border-[#3498db] text-white{% else %}bg-transparent border-white/25 text-slate-200{% endif %}">
+          </a>
+          <a href="{% switch_lang_url 'ht' %}"
+             class="inline-flex items-center min-h-[36px] px-3 py-1 rounded-lg text-xs font-bold border no-underline {% if CURRENT_LANG|slice:':2' == 'ht' %}bg-[#3498db] border-[#3498db] text-white{% else %}bg-transparent border-white/25 text-slate-200{% endif %}">
             Kreyòl
-          </button>
-        </form>
+          </a>
+        </div>
 
         <div class="pt-2.5 mt-2.5 border-t border-white/10 space-y-1.5">
           {% if user.is_authenticated %}

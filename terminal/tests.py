@@ -592,25 +592,14 @@ class ShippingLinesAndStatisticsTests(TestCase):
         site_obj.hero_title_ht = 'Verifye kontenè ou an Kreyòl'
         site_obj.save()
 
-        # Switch to Haitian Creole
-        set_resp = self.client_http.post(
-            reverse('set_language'),
-            {'language': 'ht', 'next': reverse('terminal:home')},
-        )
-        self.assertRedirects(set_resp, reverse('terminal:home'))
-
-        home_ht = self.client_http.get(reverse('terminal:home'))
+        home_ht = self.client_http.get('/ht/')
         self.assertEqual(home_ht.status_code, 200)
         self.assertContains(home_ht, 'Verifye kontenè ou an Kreyòl')
         self.assertContains(home_ht, 'Verifye stati a')
         self.assertContains(home_ht, 'Akèy')
 
-        # Switch back to French
-        self.client_http.post(
-            reverse('set_language'),
-            {'language': 'fr', 'next': reverse('terminal:home')},
-        )
-        home_fr = self.client_http.get(reverse('terminal:home'))
+        home_fr = self.client_http.get('/fr/')
+        self.assertEqual(home_fr.status_code, 200)
         self.assertContains(home_fr, site_obj.hero_title)
         self.assertContains(home_fr, 'Vérifier le statut')
 
