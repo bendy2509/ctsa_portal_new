@@ -22,26 +22,30 @@
 <body class="min-h-screen flex flex-col bg-slate-50 text-slate-800 {% block body_class %}{% endblock %}">
 
   {% block chrome_top %}
-  <header class="bg-[#222b35] text-white sticky top-0 z-30 border-b border-white/10 shadow-sm">
+  <header class="bg-[#1e293b] text-white sticky top-0 z-30 border-t-[3px] border-t-[#008751] border-b border-white/10 shadow-md">
     <!-- Bandeau utilitaire desktop uniquement (libère la hauteur sur mobile) -->
-    <div class="hidden lg:block bg-[#1a222b] border-b border-white/10">
+    <div class="hidden lg:block bg-[#0f172a] border-b border-white/10">
       <div class="max-w-7xl mx-auto px-6 lg:px-8 h-9 flex items-center justify-between gap-4 text-xs text-slate-300">
         <div class="flex items-center gap-3 font-medium">
-          <span class="font-semibold text-white/90">{{ site_t.location_label }}</span>
+          <span class="inline-flex items-center gap-1.5 font-semibold text-white/95">
+            <svg class="w-3.5 h-3.5 text-[#008751]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+            <span>{{ site_t.location_label }}</span>
+          </span>
           <span class="text-white/25" aria-hidden="true">·</span>
           <a href="mailto:{{ site_settings.contact_email }}" class="hover:text-white transition no-underline text-slate-300">{{ site_settings.contact_email }}</a>
           <span class="text-white/25" aria-hidden="true">·</span>
           <a href="tel:{{ site_settings.contact_phone_primary }}" class="hover:text-white transition no-underline text-slate-300 tabular-nums">{{ site_settings.contact_phone_primary }}</a>
         </div>
 
-        <div class="flex items-center gap-3">
-          <div class="inline-flex items-center rounded-md bg-white/8 border border-white/12 p-0.5" role="group" aria-label="{% trans 'Choisir la langue' %}">
+        <div class="flex items-center gap-3.5">
+          <div class="inline-flex items-center gap-1 rounded-md bg-white/8 border border-white/15 p-0.5" role="group" aria-label="{% trans 'Choisir la langue' %}">
+            <svg class="w-3.5 h-3.5 text-slate-300 ml-1.5 mr-0.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>
             <a href="{% switch_lang_url 'fr' %}"
-               class="px-2 py-0.5 rounded text-[11px] font-bold no-underline transition {% if CURRENT_LANG|slice:':2' == 'fr' %}bg-[#3498db] text-white{% else %}text-slate-300 hover:text-white{% endif %}">
+               class="px-2 py-0.5 rounded text-[11px] font-bold no-underline transition {% if CURRENT_LANG|slice:':2' == 'fr' %}bg-[#1a6394] text-white shadow-xs{% else %}text-slate-300 hover:text-white{% endif %}">
               FR
             </a>
             <a href="{% switch_lang_url 'ht' %}"
-               class="px-2 py-0.5 rounded text-[11px] font-bold no-underline transition {% if CURRENT_LANG|slice:':2' == 'ht' %}bg-[#3498db] text-white{% else %}text-slate-300 hover:text-white{% endif %}">
+               class="px-2 py-0.5 rounded text-[11px] font-bold no-underline transition {% if CURRENT_LANG|slice:':2' == 'ht' %}bg-[#1a6394] text-white shadow-xs{% else %}text-slate-300 hover:text-white{% endif %}">
               Kreyòl
             </a>
           </div>
@@ -71,7 +75,7 @@
     <!-- Barre principale compacte -->
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div class="h-16 flex items-center justify-between gap-4">
-        <a href="{% url 'terminal:home' %}" class="flex items-center gap-2.5 sm:gap-3 min-w-0 no-underline text-white">
+        <a href="{% url 'terminal:home' %}" class="flex items-center gap-2.5 sm:gap-3 min-w-0 no-underline text-white group">
           <img src="{% static 'img/cap-terminal-logo.png' %}"
                alt="Cap Terminal S.A."
                class="h-8 sm:h-10 w-auto object-contain shrink-0"
@@ -84,28 +88,29 @@
         </a>
 
         <!-- Navigation desktop -->
-        <nav aria-label="{% trans 'Navigation principale' %}" class="hidden lg:flex items-center gap-1">
+        <nav aria-label="{% trans 'Navigation principale' %}" class="hidden lg:flex items-center gap-1.5">
           <a href="{% url 'terminal:home' %}"
              {% if request.resolver_match.url_name == 'home' %}aria-current="page"{% endif %}
-             class="px-3.5 py-2 rounded-lg text-sm font-semibold transition no-underline {% if request.resolver_match.url_name == 'home' %}bg-white/12 text-white{% else %}text-slate-200 hover:text-white hover:bg-white/8{% endif %}">
+             class="px-3.5 py-2 rounded-lg text-sm font-semibold transition no-underline border {% if request.resolver_match.url_name == 'home' %}bg-white/12 text-white border-white/15 shadow-xs{% else %}text-slate-200 border-transparent hover:text-white hover:bg-white/8{% endif %}">
             {% trans "Accueil" %}
           </a>
           <a href="{% url 'terminal:verification' %}"
              {% if request.resolver_match.url_name == 'verification' %}aria-current="page"{% endif %}
-             class="px-3.5 py-2 rounded-lg text-sm font-semibold transition no-underline {% if request.resolver_match.url_name == 'verification' %}bg-white/12 text-white{% else %}text-slate-200 hover:text-white hover:bg-white/8{% endif %}">
+             class="px-3.5 py-2 rounded-lg text-sm font-semibold transition no-underline border {% if request.resolver_match.url_name == 'verification' %}bg-white/12 text-white border-white/15 shadow-xs{% else %}text-slate-200 border-transparent hover:text-white hover:bg-white/8{% endif %}">
             {% trans "Vérifier un conteneur" %}
           </a>
           {% if user.is_authenticated %}
             <a href="{% url 'terminal:client_watchlist' %}"
                {% if request.resolver_match.url_name == 'client_watchlist' %}aria-current="page"{% endif %}
-               class="px-3.5 py-2 rounded-lg text-sm font-semibold transition no-underline {% if request.resolver_match.url_name == 'client_watchlist' %}bg-white/12 text-white{% else %}text-slate-200 hover:text-white hover:bg-white/8{% endif %}">
+               class="px-3.5 py-2 rounded-lg text-sm font-semibold transition no-underline border {% if request.resolver_match.url_name == 'client_watchlist' %}bg-white/12 text-white border-white/15 shadow-xs{% else %}text-slate-200 border-transparent hover:text-white hover:bg-white/8{% endif %}">
               {% trans "Mes conteneurs" %}
             </a>
           {% endif %}
           {% if user.is_authenticated and user.is_staff_member %}
             <a href="{% url 'terminal:dashboard' %}"
-               class="ml-2 inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-[#3498db] hover:bg-[#217dbb] text-white text-sm font-bold transition no-underline shadow-xs">
-              {% trans "Exploitation RAMPE" %}
+               class="ml-2 inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[#1a6394] hover:bg-[#144d73] text-white text-sm font-bold transition no-underline shadow-xs border border-white/10">
+              <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>
+              <span>{% trans "Exploitation RAMPE" %}</span>
             </a>
           {% endif %}
         </nav>
@@ -115,45 +120,49 @@
                 id="mobile-menu-toggle"
                 aria-expanded="false"
                 aria-controls="primary-nav-links"
-                class="lg:hidden inline-flex items-center gap-2 min-h-[42px] px-3.5 py-2 rounded-lg border border-white/20 bg-white/8 text-sm font-semibold text-white hover:bg-white/15 transition cursor-pointer">
+                class="lg:hidden inline-flex items-center gap-2 min-h-[44px] px-3.5 py-2 rounded-lg border border-white/20 bg-white/8 text-sm font-semibold text-white hover:bg-white/15 transition cursor-pointer">
           <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="18" y2="18"/></svg>
           <span>{% trans "Menu" %}</span>
         </button>
       </div>
 
       <!-- Menu déroulant mobile -->
-      <nav id="primary-nav-links" aria-label="{% trans 'Navigation mobile' %}" hidden class="lg:hidden pb-4 pt-3 border-t border-white/10 space-y-1.5">
+      <nav id="primary-nav-links" aria-label="{% trans 'Navigation mobile' %}" hidden class="lg:hidden pb-4 pt-3 border-t border-white/10 space-y-2">
+        <div class="px-1 text-[11px] font-heading font-bold uppercase tracking-wider text-slate-400">Navigation</div>
         <a href="{% url 'terminal:home' %}"
-           class="flex items-center min-h-[44px] px-3.5 py-2 rounded-lg text-sm font-semibold no-underline {% if request.resolver_match.url_name == 'home' %}bg-white/15 text-white{% else %}text-slate-200 hover:bg-white/8{% endif %}">
+           class="flex items-center min-h-[44px] px-3.5 py-2 rounded-lg text-sm font-semibold no-underline {% if request.resolver_match.url_name == 'home' %}bg-white/15 text-white border border-white/15{% else %}text-slate-200 hover:bg-white/8{% endif %}">
           {% trans "Accueil" %}
         </a>
         <a href="{% url 'terminal:verification' %}"
-           class="flex items-center min-h-[44px] px-3.5 py-2 rounded-lg text-sm font-semibold no-underline {% if request.resolver_match.url_name == 'verification' %}bg-white/15 text-white{% else %}text-slate-200 hover:bg-white/8{% endif %}">
+           class="flex items-center min-h-[44px] px-3.5 py-2 rounded-lg text-sm font-semibold no-underline {% if request.resolver_match.url_name == 'verification' %}bg-white/15 text-white border border-white/15{% else %}text-slate-200 hover:bg-white/8{% endif %}">
           {% trans "Vérifier un conteneur" %}
         </a>
         {% if user.is_authenticated %}
           <a href="{% url 'terminal:client_watchlist' %}"
-             class="flex items-center min-h-[44px] px-3.5 py-2 rounded-lg text-sm font-semibold no-underline {% if request.resolver_match.url_name == 'client_watchlist' %}bg-white/15 text-white{% else %}text-slate-200 hover:bg-white/8{% endif %}">
+             class="flex items-center min-h-[44px] px-3.5 py-2 rounded-lg text-sm font-semibold no-underline {% if request.resolver_match.url_name == 'client_watchlist' %}bg-white/15 text-white border border-white/15{% else %}text-slate-200 hover:bg-white/8{% endif %}">
             {% trans "Mes conteneurs" %}
           </a>
         {% endif %}
         {% if user.is_authenticated and user.is_staff_member %}
           <a href="{% url 'terminal:dashboard' %}"
-             class="flex items-center min-h-[44px] px-3.5 py-2 rounded-lg text-sm font-bold bg-[#3498db] text-white no-underline">
-            {% trans "Exploitation RAMPE" %}
+             class="flex items-center gap-2 min-h-[44px] px-3.5 py-2 rounded-lg text-sm font-bold bg-[#1a6394] hover:bg-[#144d73] text-white no-underline">
+            <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>
+            <span>{% trans "Exploitation RAMPE" %}</span>
           </a>
         {% endif %}
 
-        <div class="pt-2 flex items-center gap-2 px-1">
-          <span class="text-xs text-slate-300 font-semibold">{% trans "Langue" %} :</span>
-          <a href="{% switch_lang_url 'fr' %}"
-             class="inline-flex items-center min-h-[36px] px-3 py-1 rounded-lg text-xs font-bold border no-underline {% if CURRENT_LANG|slice:':2' == 'fr' %}bg-[#3498db] border-[#3498db] text-white{% else %}bg-transparent border-white/25 text-slate-200{% endif %}">
-            Français
-          </a>
-          <a href="{% switch_lang_url 'ht' %}"
-             class="inline-flex items-center min-h-[36px] px-3 py-1 rounded-lg text-xs font-bold border no-underline {% if CURRENT_LANG|slice:':2' == 'ht' %}bg-[#3498db] border-[#3498db] text-white{% else %}bg-transparent border-white/25 text-slate-200{% endif %}">
-            Kreyòl
-          </a>
+        <div class="pt-2.5 mt-2 border-t border-white/10">
+          <div class="px-1 mb-2 text-[11px] font-heading font-bold uppercase tracking-wider text-slate-400">{% trans "Langue" %}</div>
+          <div class="grid grid-cols-2 gap-2">
+            <a href="{% switch_lang_url 'fr' %}"
+               class="flex items-center justify-center min-h-[40px] px-3 py-1.5 rounded-lg text-xs font-bold border no-underline {% if CURRENT_LANG|slice:':2' == 'fr' %}bg-[#1a6394] border-[#1a6394] text-white{% else %}bg-transparent border-white/25 text-slate-200{% endif %}">
+              Français
+            </a>
+            <a href="{% switch_lang_url 'ht' %}"
+               class="flex items-center justify-center min-h-[40px] px-3 py-1.5 rounded-lg text-xs font-bold border no-underline {% if CURRENT_LANG|slice:':2' == 'ht' %}bg-[#1a6394] border-[#1a6394] text-white{% else %}bg-transparent border-white/25 text-slate-200{% endif %}">
+              Kreyòl
+            </a>
+          </div>
         </div>
 
         <div class="pt-2.5 mt-2.5 border-t border-white/10 space-y-1.5">

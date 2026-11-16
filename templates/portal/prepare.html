@@ -62,17 +62,17 @@
         </p>
       </div>
       <div class="list-tabs" role="tablist" aria-label="Mode d'enregistrement" style="border:0;padding:0">
-        <button type="button" data-tab-target="panel-single-add" aria-selected="true" class="tab-btn list-tab" style="border-top:0;border-inline:0;background:none;cursor:pointer">
+        <button type="button" data-tab-target="panel-single-add" aria-selected="{% if active_tab == 'bulk' %}false{% else %}true{% endif %}" class="tab-btn list-tab" style="border-top:0;border-inline:0;background:none;cursor:pointer">
           Un conteneur
         </button>
-        <button type="button" data-tab-target="panel-bulk-add" aria-selected="false" class="tab-btn list-tab" style="border-top:0;border-inline:0;background:none;cursor:pointer">
+        <button type="button" data-tab-target="panel-bulk-add" aria-selected="{% if active_tab == 'bulk' %}true{% else %}false{% endif %}" class="tab-btn list-tab" style="border-top:0;border-inline:0;background:none;cursor:pointer">
           Coller une liste
         </button>
       </div>
     </div>
 
     <!-- Un seul conteneur -->
-    <div id="panel-single-add" class="p-4 sm:p-6">
+    <div id="panel-single-add" {% if active_tab == 'bulk' %}hidden{% endif %} class="p-4 sm:p-6">
       <form action="{% url 'terminal:container_add_single' %}" method="post" class="space-y-4">
         {% csrf_token %}
         <input type="hidden" name="scheduled_date" value="{{ selected_date|date:'Y-m-d' }}">
@@ -86,6 +86,7 @@
           <input type="text"
                  id="add-single-number"
                  name="container_number"
+                 value="{{ single_number_value }}"
                  required
                  autofocus
                  pattern="\s*[A-Za-z]{4}(?:[\s-]*[0-9]){7}\s*"
@@ -94,22 +95,23 @@
                  spellcheck="false"
                  placeholder="ex. CMAU4052450"
                  data-error="add-single-err"
-                 class="w-full min-h-[44px] rounded-lg border border-slate-300 px-3.5 py-2 text-sm font-mono uppercase text-ctsa-slate bg-white focus:outline-none focus:ring-2 focus:ring-ctsa-blue/30 focus:border-ctsa-blue">
+                 class="w-full min-h-[44px] rounded-lg border border-slate-300 px-3.5 py-2 text-base font-mono uppercase text-ctsa-slate bg-white focus:outline-none focus:ring-2 focus:ring-ctsa-blue/30 focus:border-ctsa-blue">
           <p class="text-xs text-slate-500 m-0">4 lettres + 7 chiffres (tirets et espaces acceptés).</p>
           <div id="add-single-err" class="error-msg">4 lettres et 7 chiffres requis.</div>
         </div>
 
         <div class="space-y-1.5">
           <label for="add-single-line" class="block text-sm font-bold text-ctsa-slate">
-            Ligne maritime <span class="text-xs font-normal text-slate-500">(optionnel)</span>
+            Ligne maritime {% if shipping_lines %}<span class="text-ctsa-red-text" aria-hidden="true">*</span>{% endif %}
           </label>
           <select id="add-single-line"
                   name="shipping_line"
+                  {% if shipping_lines %}required{% endif %}
                   class="w-full min-h-[44px] rounded-lg border border-slate-300 px-3.5 py-2 text-sm font-semibold text-ctsa-slate bg-white focus:outline-none focus:ring-2 focus:ring-ctsa-blue/30 focus:border-ctsa-blue">
             {% if shipping_lines %}
-              <option value="" selected>— Aucune / Non renseignée —</option>
+              <option value="" disabled {% if not single_line_value %}selected{% endif %}>Choisir une ligne maritime</option>
               {% for line in shipping_lines %}
-                <option value="{{ line.id }}">{{ line.name }}</option>
+                <option value="{{ line.id }}" {% if line.id|stringformat:'s' == single_line_value %}selected{% endif %}>{{ line.name }}</option>
               {% endfor %}
             {% else %}
               <option value="">Aucune ligne configurée</option>
@@ -126,7 +128,7 @@
     </div>
 
     <!-- Coller une liste -->
-    <div id="panel-bulk-add" hidden class="p-4 sm:p-6">
+    <div id="panel-bulk-add" {% if active_tab != 'bulk' %}hidden{% endif %} class="p-4 sm:p-6">
       <form action="{% url 'terminal:container_add_bulk' %}" method="post" class="space-y-4">
         {% csrf_token %}
         <input type="hidden" name="scheduled_date" value="{{ selected_date|date:'Y-m-d' }}">
@@ -145,21 +147,22 @@
                     autocapitalize="characters"
                     spellcheck="false"
                     placeholder="CMAU4052450&#10;ASJU2190841"
-                    class="w-full rounded-lg border border-slate-300 px-3.5 py-2 text-sm font-mono uppercase text-ctsa-slate bg-white focus:outline-none focus:ring-2 focus:ring-ctsa-blue/30 focus:border-ctsa-blue"></textarea>
+                    class="w-full rounded-lg border border-slate-300 px-3.5 py-2 text-sm font-mono uppercase text-ctsa-slate bg-white focus:outline-none focus:ring-2 focus:ring-ctsa-blue/30 focus:border-ctsa-blue">{{ bulk_list_value }}</textarea>
           <p class="text-xs text-slate-500 m-0">Séparez les numéros par retour à la ligne, virgule ou point-virgule.</p>
         </div>
 
         <div class="space-y-1.5">
           <label for="bulk-line" class="block text-sm font-bold text-ctsa-slate">
-            Ligne maritime <span class="text-xs font-normal text-slate-500">(optionnel)</span>
+            Ligne maritime {% if shipping_lines %}<span class="text-ctsa-red-text" aria-hidden="true">*</span>{% endif %}
           </label>
           <select id="bulk-line"
                   name="shipping_line"
+                  {% if shipping_lines %}required{% endif %}
                   class="w-full min-h-[44px] rounded-lg border border-slate-300 px-3.5 py-2 text-sm font-semibold text-ctsa-slate bg-white focus:outline-none focus:ring-2 focus:ring-ctsa-blue/30 focus:border-ctsa-blue">
             {% if shipping_lines %}
-              <option value="" selected>— Aucune / Non renseignée —</option>
+              <option value="" disabled {% if not bulk_line_value %}selected{% endif %}>Choisir une ligne maritime</option>
               {% for line in shipping_lines %}
-                <option value="{{ line.id }}">{{ line.name }}</option>
+                <option value="{{ line.id }}" {% if line.id|stringformat:'s' == bulk_line_value %}selected{% endif %}>{{ line.name }}</option>
               {% endfor %}
             {% else %}
               <option value="">Aucune ligne configurée</option>

@@ -603,6 +603,26 @@ class ShippingLinesAndStatisticsTests(TestCase):
         self.assertContains(home_fr, site_obj.hero_title)
         self.assertContains(home_fr, 'Vérifier le statut')
 
+    def test_prepare_preserves_fields_on_error(self):
+        from .models import ShippingLine
+
+        line = ShippingLine.objects.create(name='CMA CGM', code='CMA', is_active=True)
+        self.client_http.force_login(self.admin_user)
+        prepare_url = reverse('terminal:prepare')
+        resp = self.client_http.post(
+            reverse('terminal:container_add_single'),
+            {
+                'container_number': 'BAD123',
+                'shipping_line': str(line.pk),
+                'scheduled_date': timezone.localdate().isoformat(),
+                'next': prepare_url,
+            },
+            follow=True,
+        )
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, 'BAD123')
+        self.assertContains(resp, f'value="{line.pk}" selected')
+
 
 
 

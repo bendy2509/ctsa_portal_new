@@ -367,6 +367,7 @@ def prepare_view(request):
     session_qs = Container.objects.filter(scheduled_date=selected_date).select_related('shipping_line')
     registered_count = session_qs.count()
     backlog_qs = unverified_backlog(selected_date)
+    draft = request.session.pop('_prepare_form_draft', None) or {}
 
     return render(request, 'portal/prepare.html', {
         'today': today,
@@ -379,6 +380,11 @@ def prepare_view(request):
         'backlog_rows': list(backlog_qs.order_by('first_scheduled_date', 'container_number')[:40]),
         'shipping_lines': ShippingLine.objects.filter(is_active=True),
         'status_choices': Container.Status.choices,
+        'active_tab': draft.get('active_tab', 'single'),
+        'single_number_value': draft.get('single_number', ''),
+        'single_line_value': draft.get('single_line', ''),
+        'bulk_list_value': draft.get('bulk_list', ''),
+        'bulk_line_value': draft.get('bulk_line', ''),
     })
 
 
@@ -560,6 +566,11 @@ def container_add_single_view(request):
     note = request.POST.get('unavailability_note', '').strip()
 
     if not CONTAINER_NUMBER_REGEX.match(normalized):
+        request.session['_prepare_form_draft'] = {
+            'active_tab': 'single',
+            'single_number': raw_number,
+            'single_line': shipping_line_id,
+        }
         messages.error(
             request,
             f"Numéro « {raw_number} » invalide : il doit comporter 4 lettres et 7 chiffres (ex. CMAU4052450)."
@@ -569,6 +580,11 @@ def container_add_single_view(request):
     # Ligne maritime obligatoire dès qu'au moins une ligne active existe.
     line_id = int(shipping_line_id) if shipping_line_id.isdigit() else None
     if line_id is None and ShippingLine.objects.filter(is_active=True).exists():
+        request.session['_prepare_form_draft'] = {
+            'active_tab': 'single',
+            'single_number': raw_number,
+            'single_line': shipping_line_id,
+        }
         messages.error(request, "Veuillez sélectionner une ligne maritime.")
         return redirect(_safe_next(request, _dashboard_url(target_date)))
 
@@ -640,11 +656,21 @@ def container_add_bulk_view(request):
     default_status = Container.Status.PENDING
     resolved_line_id = int(shipping_line_id) if shipping_line_id.isdigit() else None
     if resolved_line_id is None and ShippingLine.objects.filter(is_active=True).exists():
+        request.session['_prepare_form_draft'] = {
+            'active_tab': 'bulk',
+            'bulk_list': raw_list,
+            'bulk_line': shipping_line_id,
+        }
         messages.error(request, "Veuillez sélectionner une ligne maritime.")
         return redirect(_safe_next(request, _dashboard_url(target_date)))
 
     tokens = [t.strip() for t in re.split(r'[\r\n,;]+', raw_list) if t.strip()]
     if not tokens:
+        request.session['_prepare_form_draft'] = {
+            'active_tab': 'bulk',
+            'bulk_list': raw_list,
+            'bulk_line': shipping_line_id,
+        }
         messages.warning(request, "Aucun numéro de conteneur fourni dans la zone d'ajout massif.")
         return redirect(_safe_next(request, _dashboard_url(target_date)))
 
