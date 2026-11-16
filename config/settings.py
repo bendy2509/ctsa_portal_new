@@ -198,6 +198,9 @@ STATIC_URL = 'static/'
 STATICFILES_DIRS = [BASE_DIR / 'static']
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
+
 # En production, fichiers statiques compressés et nommés par empreinte (cache longue durée).
 # En développement et en test, le stockage par défaut suffit et n'exige pas collectstatic.
 STORAGES = {

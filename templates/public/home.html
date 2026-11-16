@@ -5,6 +5,20 @@
 {% block content %}
 <!-- Hero maritime + guichet de recherche flottant -->
 <section class="relative bg-[#1e2730] text-white pt-12 pb-20 sm:pt-16 sm:pb-24 overflow-hidden">
+  {% if hero_slides %}
+    <div class="pointer-events-none absolute inset-0 overflow-hidden" data-hero-carousel aria-hidden="true">
+      {% for slide in hero_slides %}
+        <img
+          src="{{ slide.image.url }}"
+          alt=""
+          data-hero-slide
+          {% if forloop.first %}fetchpriority="high"{% else %}loading="lazy"{% endif %}
+          class="absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ease-in-out {% if forloop.first %}opacity-100{% else %}opacity-0{% endif %}"
+        >
+      {% endfor %}
+      <div class="absolute inset-0 bg-[#1e2730]/78"></div>
+    </div>
+  {% endif %}
   <div class="pointer-events-none absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:32px_32px]" aria-hidden="true"></div>
   <div class="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(52,152,219,0.24),transparent_65%)]" aria-hidden="true"></div>
 

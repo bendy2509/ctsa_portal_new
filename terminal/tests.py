@@ -491,6 +491,8 @@ class ShippingLinesAndStatisticsTests(TestCase):
                 'unavailable_instruction': 'Contactez votre transitaire.',
                 'client_cta_title': 'Suivi multi-conteneurs',
                 'client_cta_subtitle': 'Créez un compte client.',
+                'hero_carousel_enabled': 'on',
+                'hero_carousel_limit': '4',
             },
         )
         self.assertRedirects(post_resp, reverse('terminal:site_settings'))
@@ -504,6 +506,56 @@ class ShippingLinesAndStatisticsTests(TestCase):
         self.assertContains(home_resp, 'Titre personnalisé RAMPE')
         self.assertContains(home_resp, 'Étape 1 perso')
         self.assertContains(home_resp, 'Titre confirmé perso')
+
+    def test_hero_carousel_upload_limit_toggle_and_delete(self):
+        import io
+        import shutil
+        import tempfile
+        from PIL import Image
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        from django.test import override_settings
+        from .models import HeroSlide, SiteSettings
+
+        def make_png(name):
+            buf = io.BytesIO()
+            Image.new('RGB', (40, 24), (26, 99, 148)).save(buf, format='PNG')
+            return SimpleUploadedFile(name, buf.getvalue(), content_type='image/png')
+
+        tmp_media = tempfile.mkdtemp()
+        try:
+            with override_settings(MEDIA_ROOT=tmp_media):
+                self.client_http.force_login(self.admin_user)
+                for idx in range(1, 4):
+                    resp = self.client_http.post(
+                        reverse('terminal:hero_slide_create'),
+                        {
+                            'title': f'Slide {idx}',
+                            'display_order': idx,
+                            'is_active': 'on',
+                            'image': make_png(f'slide_{idx}.png'),
+                        },
+                    )
+                    self.assertRedirects(resp, reverse('terminal:site_settings'))
+
+                self.assertEqual(HeroSlide.objects.count(), 3)
+                site_obj = SiteSettings.get_solo()
+                site_obj.hero_carousel_limit = 2
+                site_obj.hero_carousel_enabled = True
+                site_obj.save()
+
+                home_resp = self.client_http.get(reverse('terminal:home'))
+                self.assertEqual(home_resp.status_code, 200)
+                self.assertEqual(len(home_resp.context['hero_slides']), 2)
+
+                first_slide = HeroSlide.objects.first()
+                self.client_http.post(reverse('terminal:hero_slide_toggle', args=[first_slide.pk]))
+                first_slide.refresh_from_db()
+                self.assertFalse(first_slide.is_active)
+
+                self.client_http.post(reverse('terminal:hero_slide_delete', args=[first_slide.pk]))
+                self.assertEqual(HeroSlide.objects.count(), 2)
+        finally:
+            shutil.rmtree(tmp_media, ignore_errors=True)
 
     def test_pwa_manifest_and_service_worker(self):
         manifest_resp = self.client_http.get(reverse('terminal:pwa_manifest'))

@@ -1,8 +1,13 @@
+import io
+import os
 import re
 from django.conf import settings
 from django.core.exceptions import ValidationError
+from django.core.files.base import ContentFile
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.utils import timezone
+from PIL import Image, ImageOps
 
 # Create your models here.
 
@@ -595,6 +600,15 @@ class SiteSettings(models.Model):
         default="Créez un compte client gratuit pour enregistrer vos numéros de conteneurs dans une liste personnelle et suivre leurs statuts en un seul coup d'œil.",
         verbose_name="Texte bandeau espace client",
     )
+    hero_carousel_enabled = models.BooleanField(
+        default=True,
+        verbose_name="Activer le carrousel en fond du hero",
+    )
+    hero_carousel_limit = models.PositiveSmallIntegerField(
+        default=4,
+        validators=[MinValueValidator(1), MaxValueValidator(6)],
+        verbose_name="Nombre maximum d'images affichées",
+    )
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
@@ -609,5 +623,60 @@ class SiteSettings(models.Model):
 
     def __str__(self):
         return f"Paramètres du site ({self.company_name})"
+
+
+class HeroSlide(models.Model):
+    """Image d'arrière-plan du carrousel d'accueil, gérée depuis le portail."""
+
+    title = models.CharField(
+        max_length=120,
+        blank=True,
+        verbose_name="Légende / description",
+    )
+    image = models.ImageField(
+        upload_to='hero_slides/',
+        verbose_name="Image",
+    )
+    display_order = models.PositiveSmallIntegerField(
+        default=1,
+        verbose_name="Ordre d'affichage",
+    )
+    is_active = models.BooleanField(
+        default=True,
+        verbose_name="Active",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'hero_slides'
+        ordering = ['display_order', 'id']
+        verbose_name = "Image du carrousel d'accueil"
+        verbose_name_plural = "Images du carrousel d'accueil"
+
+    def __str__(self):
+        return self.title or f"Image #{self.pk}"
+
+    def save(self, *args, **kwargs):
+        if self.image and not getattr(self.image, '_committed', True):
+            self._optimize_image()
+        super().save(*args, **kwargs)
+
+    def _optimize_image(self):
+        """Redimensionne (max 1600 px) et compresse en WebP pour le chargement rapide."""
+        try:
+            self.image.seek(0)
+            img = ImageOps.exif_transpose(Image.open(self.image))
+            if img.mode not in ('RGB', 'RGBA'):
+                img = img.convert('RGB')
+            max_width = 1600
+            if img.width > max_width:
+                ratio = max_width / float(img.width)
+                img = img.resize((max_width, int(img.height * ratio)), Image.Resampling.LANCZOS)
+            buf = io.BytesIO()
+            img.save(buf, format='WEBP', quality=82, method=4)
+            base_name = os.path.splitext(os.path.basename(self.image.name))[0] or 'slide'
+            self.image.save(f"{base_name}.webp", ContentFile(buf.getvalue()), save=False)
+        except Exception:
+            pass
 
 

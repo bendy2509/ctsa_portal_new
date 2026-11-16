@@ -48,7 +48,7 @@
     {{ form.hero_badge.as_hidden }}
 
     <!-- Navigation par onglets responsive -->
-    <nav class="bg-white rounded-xl border border-slate-200/80 shadow-xs p-1.5 grid grid-cols-1 sm:grid-cols-3 gap-1.5" role="tablist" aria-label="Sections de configuration">
+    <nav class="bg-white rounded-xl border border-slate-200/80 shadow-xs p-1.5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-1.5" role="tablist" aria-label="Sections de configuration">
       <button type="button" role="tab" aria-selected="true" aria-controls="panel-identity" data-tab-target="panel-identity"
               class="tab-btn min-h-[44px] px-3.5 py-2 rounded-lg text-xs font-heading font-bold uppercase tracking-wider bg-[#3498db] text-white transition cursor-pointer border-0 flex items-center justify-center gap-2 text-center">
         <span>1. Identité &amp; Coordonnées</span>
@@ -60,6 +60,10 @@
       <button type="button" role="tab" aria-selected="false" aria-controls="panel-statuses" data-tab-target="panel-statuses"
               class="tab-btn min-h-[44px] px-3.5 py-2 rounded-lg text-xs font-heading font-bold uppercase tracking-wider bg-transparent text-[#2c3741] hover:bg-[#f4f4f4] transition cursor-pointer border-0 flex items-center justify-center gap-2 text-center">
         <span>3. Guide des statuts</span>
+      </button>
+      <button type="button" role="tab" aria-selected="false" aria-controls="panel-carousel" data-tab-target="panel-carousel"
+              class="tab-btn min-h-[44px] px-3.5 py-2 rounded-lg text-xs font-heading font-bold uppercase tracking-wider bg-transparent text-[#2c3741] hover:bg-[#f4f4f4] transition cursor-pointer border-0 flex items-center justify-center gap-2 text-center">
+        <span>4. Carrousel ({{ active_slides_count }})</span>
       </button>
     </nav>
 
@@ -202,6 +206,19 @@
             <div class="form-field mb-0">
               <label for="{{ form.search_note.id_for_label }}">{{ form.search_note.label }}</label>
               {{ form.search_note }}
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-3 border-t border-slate-100 items-center">
+              <label class="inline-flex items-center gap-2.5 text-sm font-semibold text-ctsa-slate cursor-pointer">
+                {{ form.hero_carousel_enabled }}
+                <span>{{ form.hero_carousel_enabled.label }}</span>
+              </label>
+
+              <div class="form-field mb-0">
+                <label for="{{ form.hero_carousel_limit.id_for_label }}">{{ form.hero_carousel_limit.label }}</label>
+                {{ form.hero_carousel_limit }}
+                <p class="text-xs text-slate-500 mt-1 mb-0">Entre 1 et 6 images actives maximum affichées sur l'accueil.</p>
+              </div>
             </div>
           </section>
         </div>
@@ -402,6 +419,112 @@
       </div>
     </div>
   </form>
+
+  <!-- ONGLET 4 : Carrousel d'arrière-plan du hero (formulaires indépendants) -->
+  <div id="panel-carousel" role="tabpanel" hidden class="space-y-5">
+    <section aria-labelledby="carousel-admin-title" class="bg-white rounded-xl border border-slate-200/80 shadow-xs p-4 sm:p-6 space-y-5">
+      <div class="flex flex-wrap items-start justify-between gap-3 pb-3 border-b border-slate-100">
+        <div>
+          <h2 id="carousel-admin-title" class="text-base font-heading font-extrabold text-ctsa-slate m-0">
+            Images du carrousel d'accueil (hero)
+          </h2>
+          <p class="text-xs text-slate-500 mt-0.5 mb-0">
+            {{ active_slides_count }} image{{ active_slides_count|pluralize }} active{{ active_slides_count|pluralize }} ·
+            Limite actuelle : <strong>{{ site_obj.hero_carousel_limit }}</strong> image{{ site_obj.hero_carousel_limit|pluralize }} affichée{{ site_obj.hero_carousel_limit|pluralize }}
+            {% if not site_obj.hero_carousel_enabled %}(carrousel désactivé dans l'onglet 2){% endif %}.
+          </p>
+        </div>
+      </div>
+
+      {% if active_slides_count > site_obj.hero_carousel_limit %}
+        <div class="p-3.5 rounded-xl bg-amber-50 border border-amber-200 text-xs font-semibold text-amber-900">
+          Vous avez {{ active_slides_count }} images actives, mais seules les {{ site_obj.hero_carousel_limit }} premières (selon l'ordre d'affichage) sont montrées sur la page d'accueil.
+        </div>
+      {% endif %}
+
+      <!-- Formulaire d'ajout d'image -->
+      <form action="{% url 'terminal:hero_slide_create' %}" method="post" enctype="multipart/form-data" class="rounded-xl bg-slate-50 border border-slate-200/80 p-4 space-y-4">
+        {% csrf_token %}
+        <div class="grid grid-cols-1 md:grid-cols-12 gap-4 items-start">
+          <div class="md:col-span-5 form-field mb-0">
+            <label for="{{ slide_form.image.id_for_label }}">{{ slide_form.image.label }} <span aria-hidden="true" class="text-red-600">*</span></label>
+            {{ slide_form.image }}
+          </div>
+          <div class="md:col-span-4 form-field mb-0">
+            <label for="{{ slide_form.title.id_for_label }}">{{ slide_form.title.label }}</label>
+            {{ slide_form.title }}
+          </div>
+          <div class="md:col-span-3 form-field mb-0">
+            <label for="{{ slide_form.display_order.id_for_label }}">{{ slide_form.display_order.label }}</label>
+            {{ slide_form.display_order }}
+          </div>
+        </div>
+
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <label class="inline-flex items-center gap-2 text-xs font-semibold text-ctsa-slate cursor-pointer">
+            {{ slide_form.is_active }}
+            <span>Afficher immédiatement sur l'accueil</span>
+          </label>
+          <button type="submit" data-submit-guard class="ui-btn ui-btn-primary ui-btn-sm">
+            Ajouter l'image
+          </button>
+        </div>
+      </form>
+
+      <!-- Liste des images existantes -->
+      {% if slides %}
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {% for slide in slides %}
+            <article class="rounded-xl border border-slate-200/80 overflow-hidden bg-white flex flex-col shadow-xs">
+              <div class="relative aspect-[16/9] bg-[#1e2730] overflow-hidden">
+                <img src="{{ slide.image.url }}" alt="{{ slide.title|default:'Image du terminal CTSA' }}" class="w-full h-full object-cover">
+                <span class="absolute top-2 left-2 px-2 py-0.5 rounded bg-slate-900/85 text-white text-[11px] font-mono font-bold tabular-nums">
+                  #{{ slide.display_order }}
+                </span>
+              </div>
+              <div class="p-3.5 flex-1 flex flex-col justify-between gap-3">
+                <div>
+                  <div class="text-sm font-bold text-ctsa-slate truncate">
+                    {{ slide.title|default:"Sans légende" }}
+                  </div>
+                  <div class="mt-1.5">
+                    {% if slide.is_active %}
+                      {% include 'components/badge.html' with variant='confirmed' label='Active' %}
+                    {% else %}
+                      {% include 'components/badge.html' with variant='neutral' label='Masquée' %}
+                    {% endif %}
+                  </div>
+                </div>
+                <div class="flex items-center justify-between gap-2 pt-2 border-t border-slate-100">
+                  <form action="{% url 'terminal:hero_slide_toggle' slide.pk %}" method="post" class="inline">
+                    {% csrf_token %}
+                    <button type="submit" class="ui-btn ui-btn-secondary ui-btn-sm">
+                      {% if slide.is_active %}Masquer{% else %}Activer{% endif %}
+                    </button>
+                  </form>
+                  <form action="{% url 'terminal:hero_slide_delete' slide.pk %}" method="post" class="inline">
+                    {% csrf_token %}
+                    <button type="submit"
+                            data-confirm-title="Supprimer cette image ?"
+                            data-confirm="L'image « {{ slide }} » sera définitivement retirée du carrousel."
+                            data-confirm-label="Supprimer"
+                            data-confirm-tone="danger"
+                            class="ui-btn ui-btn-ghost ui-btn-sm text-red-700 hover:bg-red-50">
+                      Supprimer
+                    </button>
+                  </form>
+                </div>
+              </div>
+            </article>
+          {% endfor %}
+        </div>
+      {% else %}
+        <p class="text-xs text-slate-500 m-0">
+          Aucune image configurée pour le moment. Le fond maritime uni reste affiché par défaut.
+        </p>
+      {% endif %}
+    </section>
+  </div>
 </div>
 
 <script>

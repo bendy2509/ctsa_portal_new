@@ -22,6 +22,7 @@ from .models import (
     ContainerStatusLog,
     SavedContainer,
     SiteSettings,
+    HeroSlide,
     normalize_container_number,
     CONTAINER_NUMBER_REGEX,
 )
@@ -185,9 +186,16 @@ def _backlog_breakdown(queryset) -> dict:
 def home_view(request):
     today = timezone.localdate()
     shipping_lines = ShippingLine.objects.filter(is_active=True).order_by('name')
+    site_obj = SiteSettings.get_solo()
+    hero_slides = (
+        list(HeroSlide.objects.filter(is_active=True)[: site_obj.hero_carousel_limit])
+        if site_obj.hero_carousel_enabled
+        else []
+    )
     return render(request, 'public/home.html', {
         'today': today,
         'shipping_lines': shipping_lines,
+        'hero_slides': hero_slides,
     })
 
 
@@ -1762,6 +1770,8 @@ class SiteSettingsForm(forms.ModelForm):
             'unavailable_instruction',
             'client_cta_title',
             'client_cta_subtitle',
+            'hero_carousel_enabled',
+            'hero_carousel_limit',
         ]
         widgets = {
             'footer_about': forms.Textarea(attrs={'rows': 4}),
@@ -1774,13 +1784,36 @@ class SiteSettingsForm(forms.ModelForm):
             'pending_description': forms.Textarea(attrs={'rows': 3}),
             'unavailable_description': forms.Textarea(attrs={'rows': 3}),
             'client_cta_subtitle': forms.Textarea(attrs={'rows': 3}),
+            'hero_carousel_limit': forms.NumberInput(attrs={'min': 1, 'max': 6}),
         }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['hero_badge'].required = False
-        for field in self.fields.values():
-            field.widget.attrs.setdefault('class', 'form-control')
+        for name, field in self.fields.items():
+            if name == 'hero_carousel_enabled':
+                field.widget.attrs.setdefault('class', 'w-4 h-4 rounded border-slate-300 text-ctsa-blue focus:ring-ctsa-blue')
+            else:
+                field.widget.attrs.setdefault('class', 'form-control')
+
+
+class HeroSlideForm(forms.ModelForm):
+    class Meta:
+        model = HeroSlide
+        fields = ['image', 'title', 'display_order', 'is_active']
+        widgets = {
+            'image': forms.ClearableFileInput(attrs={'accept': 'image/*'}),
+            'title': forms.TextInput(attrs={'placeholder': 'Ex. Vue aérienne du terminal RAMPE'}),
+            'display_order': forms.NumberInput(attrs={'min': 1, 'max': 99}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for name, field in self.fields.items():
+            if name == 'is_active':
+                field.widget.attrs.setdefault('class', 'w-4 h-4 rounded border-slate-300 text-ctsa-blue focus:ring-ctsa-blue')
+            else:
+                field.widget.attrs.setdefault('class', 'form-control')
 
 
 @login_required
@@ -1801,10 +1834,66 @@ def site_settings_view(request):
     else:
         form = SiteSettingsForm(instance=instance)
 
+    slides = list(HeroSlide.objects.all())
+    active_slides_count = sum(1 for s in slides if s.is_active)
+
     return render(request, 'portal/site_settings.html', {
         'form': form,
         'site_obj': instance,
+        'slides': slides,
+        'active_slides_count': active_slides_count,
+        'slide_form': HeroSlideForm(initial={'display_order': len(slides) + 1}),
     })
+
+
+@login_required
+@require_POST
+def hero_slide_create_view(request):
+    """Ajoute une image au carrousel d'arrière-plan de l'accueil."""
+    if not request.user.is_portal_admin:
+        messages.error(request, "Accès réservé aux administrateurs.")
+        return redirect('terminal:dashboard')
+
+    form = HeroSlideForm(request.POST, request.FILES)
+    if form.is_valid():
+        slide = form.save()
+        messages.success(request, f"Image « {slide} » ajoutée au carrousel.")
+    else:
+        messages.error(request, "Impossible d'ajouter l'image. Vérifiez le format du fichier.")
+    return redirect('terminal:site_settings')
+
+
+@login_required
+@require_POST
+def hero_slide_toggle_view(request, pk):
+    """Active ou désactive une image du carrousel."""
+    if not request.user.is_portal_admin:
+        messages.error(request, "Accès réservé aux administrateurs.")
+        return redirect('terminal:dashboard')
+
+    slide = get_object_or_404(HeroSlide, pk=pk)
+    slide.is_active = not slide.is_active
+    slide.save(update_fields=['is_active'])
+    state = "activée" if slide.is_active else "masquée"
+    messages.info(request, f"Image « {slide} » {state}.")
+    return redirect('terminal:site_settings')
+
+
+@login_required
+@require_POST
+def hero_slide_delete_view(request, pk):
+    """Supprime une image du carrousel."""
+    if not request.user.is_portal_admin:
+        messages.error(request, "Accès réservé aux administrateurs.")
+        return redirect('terminal:dashboard')
+
+    slide = get_object_or_404(HeroSlide, pk=pk)
+    label = str(slide)
+    if slide.image:
+        slide.image.delete(save=False)
+    slide.delete()
+    messages.info(request, f"Image « {label} » supprimée du carrousel.")
+    return redirect('terminal:site_settings')
 
 
 def pwa_manifest_view(request):
