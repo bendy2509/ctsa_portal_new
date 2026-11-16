@@ -154,7 +154,7 @@ class CTSAPortalBusinessTests(TestCase):
         result = response.context['result']
         self.assertEqual(result.timing, 'upcoming')
         self.assertEqual(result.scheduled_date, today + datetime.timedelta(days=1))
-        self.assertContains(response, "Pa vini jodi a")
+        self.assertContains(response, "Pa deplase vin jodi a")
         self.assertNotContains(response, 'status-pending')
 
         Container.objects.create(

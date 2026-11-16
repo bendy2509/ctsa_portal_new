@@ -121,7 +121,7 @@ msgid "Indisponible"
 msgstr "Pa disponib"
 
 msgid "Ne pas se déplacer"
-msgstr "Pa vini ankò"
+msgstr "Poko deplase vin nan tèminal la"
 
 msgid "Consigne client"
 msgstr "Sa pou w fè"
@@ -166,13 +166,13 @@ msgid "Ce conteneur a déjà été vérifié à la RAMPE le <strong>%(date_str)s
 msgstr "Kontenè sa a te deja verifye nan RANP la jou ki te <strong>%(date_str)s</strong>. Pa gen lòt verifikasyon ki pwograme."
 
 msgid "Programmé le %(date_str)s — Ne pas se déplacer aujourd'hui"
-msgstr "Pwograme pou %(date_str)s — Pa vini jodi a"
+msgstr "Pwograme pou %(date_str)s — Pa deplase vin jodi a"
 
 msgid "Ce conteneur n'est pas prévu aujourd'hui (<strong>%(today_str)s</strong>). Il est programmé pour le <strong>%(sched_str)s</strong> (statut provisoire : %(status_str)s)."
 msgstr "Kontenè sa a pa pwograme pou jodi a (<strong>%(today_str)s</strong>). Li pwograme pou <strong>%(sched_str)s</strong> (stati pwovizwa : %(status_str)s)."
 
 msgid "Non programmé aujourd'hui — Ne pas se déplacer"
-msgstr "Pa pwograme jodi a — Pa vini"
+msgstr "Pa pwograme jodi a — Pa deplase vin nan tèminal la"
 
 msgid "Ce conteneur n'est pas sur la liste du jour (<strong>%(today_str)s</strong>). Dernière séance connue : <strong>%(sched_str)s</strong>."
 msgstr "Kontenè sa a pa sou lis jodi a (<strong>%(today_str)s</strong>). Dènye dat li te parèt : <strong>%(sched_str)s</strong>."
@@ -184,13 +184,13 @@ msgid "Ce conteneur est confirmé pour la séance du <strong>%(sched_str)s</stro
 msgstr "Kontenè sa a konfime pou jou <strong>%(sched_str)s</strong>. Vin nan tèminal la ak tout dokiman ladwàn ou yo."
 
 msgid "En attente de confirmation — Ne pas se déplacer"
-msgstr "Ap tann konfimasyon — Pa vini ankò"
+msgstr "Ap tann konfimasyon — Poko deplase vin nan tèminal la"
 
 msgid "Ce conteneur est programmé pour le <strong>%(sched_str)s</strong>, mais n'est pas encore positionné à la RAMPE. La page se met à jour automatiquement."
 msgstr "Kontenè sa a pwograme pou <strong>%(sched_str)s</strong>, men li poko plase nan RANP la. Paj la ap mete tèt li ajou otomatikman."
 
 msgid "Conteneur indisponible — Ne pas se déplacer"
-msgstr "Kontenè a pa disponib — Pa vini"
+msgstr "Kontenè a pa disponib — Pa deplase vin nan tèminal la"
 
 msgid "Motif"
 msgstr "Rezon"
