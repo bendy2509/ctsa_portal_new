@@ -383,8 +383,10 @@ def prepare_view(request):
         'active_tab': draft.get('active_tab', 'single'),
         'single_number_value': draft.get('single_number', ''),
         'single_line_value': draft.get('single_line', ''),
+        'confirm_verified': draft.get('confirm_verified'),
         'bulk_list_value': draft.get('bulk_list', ''),
         'bulk_line_value': draft.get('bulk_line', ''),
+        'confirm_verified_bulk': draft.get('confirm_verified_bulk'),
     })
 
 
@@ -579,6 +581,32 @@ def container_add_single_view(request):
 
     line_id = int(shipping_line_id) if shipping_line_id.isdigit() else None
 
+    already_verified = (
+        Container.objects.filter(
+            container_number=normalized,
+            verification_result=Container.Verification.VERIFIED,
+        )
+        .order_by('-verified_at', '-scheduled_date')
+        .first()
+    )
+    if already_verified and request.POST.get('confirm_already_verified') != '1':
+        verif_dt = already_verified.verified_at.date() if already_verified.verified_at else already_verified.scheduled_date
+        verif_date_str = verif_dt.strftime('%d/%m/%Y')
+        request.session['_prepare_form_draft'] = {
+            'active_tab': 'single',
+            'single_number': raw_number,
+            'single_line': shipping_line_id,
+            'confirm_verified': {
+                'number': normalized,
+                'verified_date': verif_date_str,
+            },
+        }
+        messages.warning(
+            request,
+            f"Le conteneur {normalized} a déjà été vérifié le {verif_date_str}. Confirmez ci-dessous pour l'inscrire à nouveau."
+        )
+        return redirect(_safe_next(request, _dashboard_url(target_date)))
+
     existing = Container.objects.filter(
         container_number=normalized, scheduled_date=target_date
     ).first()
@@ -656,6 +684,33 @@ def container_add_bulk_view(request):
         }
         messages.warning(request, "Aucun numéro de conteneur fourni dans la zone d'ajout massif.")
         return redirect(_safe_next(request, _dashboard_url(target_date)))
+
+    if request.POST.get('confirm_already_verified') != '1':
+        valid_norms = [normalize_container_number(t) for t in tokens if CONTAINER_NUMBER_REGEX.match(normalize_container_number(t))]
+        verified_map = {}
+        for vc in (
+            Container.objects.filter(
+                container_number__in=valid_norms,
+                verification_result=Container.Verification.VERIFIED,
+            )
+            .order_by('-verified_at', '-scheduled_date')
+        ):
+            if vc.container_number not in verified_map:
+                vdate = vc.verified_at.date() if vc.verified_at else vc.scheduled_date
+                verified_map[vc.container_number] = vdate.strftime('%d/%m/%Y')
+        if verified_map:
+            details = ', '.join(f"{num} (vérifié le {dt})" for num, dt in verified_map.items())
+            request.session['_prepare_form_draft'] = {
+                'active_tab': 'bulk',
+                'bulk_list': raw_list,
+                'bulk_line': shipping_line_id,
+                'confirm_verified_bulk': details,
+            }
+            messages.warning(
+                request,
+                f"Conteneur(s) déjà vérifié(s) détecté(s) : {details}. Confirmez ci-dessous pour poursuivre l'enregistrement."
+            )
+            return redirect(_safe_next(request, _dashboard_url(target_date)))
 
     created_count = 0
     skipped_duplicates = []

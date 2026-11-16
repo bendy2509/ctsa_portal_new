@@ -118,10 +118,21 @@
           </select>
         </div>
 
-        <div class="pt-2">
-          <button type="submit" data-submit-guard class="ui-btn ui-btn-primary w-full sm:w-auto">
-            Ajouter le conteneur
-          </button>
+        <div class="pt-2 flex flex-wrap items-center gap-3">
+          {% if confirm_verified %}
+            <div class="w-full rounded-xl bg-amber-50 border border-amber-300 p-3.5 space-y-2.5">
+              <p class="text-xs sm:text-sm font-semibold text-amber-950 m-0">
+                Le conteneur <strong class="font-mono">{{ confirm_verified.number }}</strong> a déjà été marqué vérifié le <strong>{{ confirm_verified.verified_date }}</strong>. Voulez-vous tout de même l'enregistrer ?
+              </p>
+              <button type="submit" name="confirm_already_verified" value="1" data-submit-guard class="ui-btn ui-btn-primary w-full sm:w-auto">
+                Confirmer l'inscription (déjà vérifié le {{ confirm_verified.verified_date }})
+              </button>
+            </div>
+          {% else %}
+            <button type="submit" data-submit-guard class="ui-btn ui-btn-primary w-full sm:w-auto">
+              Ajouter le conteneur
+            </button>
+          {% endif %}
         </div>
       </form>
     </div>
@@ -169,9 +180,20 @@
         </div>
 
         <div class="pt-2">
-          <button type="submit" data-submit-guard class="ui-btn ui-btn-primary w-full sm:w-auto">
-            Enregistrer la liste
-          </button>
+          {% if confirm_verified_bulk %}
+            <div class="w-full rounded-xl bg-amber-50 border border-amber-300 p-3.5 space-y-2.5">
+              <p class="text-xs sm:text-sm font-semibold text-amber-950 m-0">
+                Conteneur(s) déjà vérifié(s) : <strong>{{ confirm_verified_bulk }}</strong>. Voulez-vous tout de même enregistrer cette liste ?
+              </p>
+              <button type="submit" name="confirm_already_verified" value="1" data-submit-guard class="ui-btn ui-btn-primary w-full sm:w-auto">
+                Confirmer l'enregistrement de la liste
+              </button>
+            </div>
+          {% else %}
+            <button type="submit" data-submit-guard class="ui-btn ui-btn-primary w-full sm:w-auto">
+              Enregistrer la liste
+            </button>
+          {% endif %}
         </div>
       </form>
     </div>

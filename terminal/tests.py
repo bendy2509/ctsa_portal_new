@@ -641,6 +641,50 @@ class ShippingLinesAndStatisticsTests(TestCase):
         self.assertContains(resp, 'BAD123')
         self.assertContains(resp, f'value="{line.pk}" selected')
 
+    def test_prepare_warns_and_confirms_already_verified_container(self):
+        import datetime
+        from .models import Container
+
+        yesterday = timezone.localdate() - datetime.timedelta(days=1)
+        today = timezone.localdate()
+        Container.objects.create(
+            container_number='CMAU9998881',
+            scheduled_date=yesterday,
+            status=Container.Status.CONFIRMED,
+            verification_result=Container.Verification.VERIFIED,
+            verified_at=timezone.now() - datetime.timedelta(days=1),
+            created_by=self.admin_user,
+        )
+
+        self.client_http.force_login(self.admin_user)
+        prepare_url = reverse('terminal:prepare')
+        warn_resp = self.client_http.post(
+            reverse('terminal:container_add_single'),
+            {
+                'container_number': 'CMAU9998881',
+                'scheduled_date': today.isoformat(),
+                'next': prepare_url,
+            },
+            follow=True,
+        )
+        self.assertEqual(warn_resp.status_code, 200)
+        self.assertContains(warn_resp, yesterday.strftime('%d/%m/%Y'))
+        self.assertContains(warn_resp, 'confirm_already_verified')
+        self.assertFalse(Container.objects.filter(container_number='CMAU9998881', scheduled_date=today).exists())
+
+        ok_resp = self.client_http.post(
+            reverse('terminal:container_add_single'),
+            {
+                'container_number': 'CMAU9998881',
+                'scheduled_date': today.isoformat(),
+                'confirm_already_verified': '1',
+                'next': prepare_url,
+            },
+            follow=True,
+        )
+        self.assertEqual(ok_resp.status_code, 200)
+        self.assertTrue(Container.objects.filter(container_number='CMAU9998881', scheduled_date=today).exists())
+
 
 
 
