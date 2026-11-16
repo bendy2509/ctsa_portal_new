@@ -600,6 +600,150 @@ class SiteSettings(models.Model):
         default="Créez un compte client gratuit pour enregistrer vos numéros de conteneurs dans une liste personnelle et suivre leurs statuts en un seul coup d'œil.",
         verbose_name="Texte bandeau espace client",
     )
+    # Version créole haïtien (Kreyòl ayisyen) des textes publics
+    portal_subtitle_ht = models.CharField(
+        max_length=160,
+        blank=True,
+        default="Verifikasyon ladwann pou kontenè yo",
+        verbose_name="Sous-titre du portail (Kreyòl)",
+    )
+    location_label_ht = models.CharField(
+        max_length=120,
+        blank=True,
+        default="Pò Okap",
+        verbose_name="Localisation (Kreyòl)",
+    )
+    footer_about_ht = models.TextField(
+        blank=True,
+        default="Operatè tèminal kontenè Pò Okap depi 1998. Pò ki sètifye pa OMI ak ISPS.",
+        verbose_name="Présentation pied de page (Kreyòl)",
+    )
+    hero_title_ht = models.CharField(
+        max_length=180,
+        blank=True,
+        default="Verifye si kontenè ou a disponib",
+        verbose_name="Titre principal (Kreyòl)",
+    )
+    hero_subtitle_ht = models.TextField(
+        blank=True,
+        default="Konsilte an tan reyèl si kontenè ou a pwograme epi konfime pou verifikasyon ladwann jodi a anvan ou deplase vin nan tèminal la.",
+        verbose_name="Sous-titre d'accueil (Kreyòl)",
+    )
+    search_note_ht = models.CharField(
+        max_length=180,
+        blank=True,
+        default="Cap Terminal S.A. mete lis la ajou chak jou.",
+        verbose_name="Mention sous la recherche (Kreyòl)",
+    )
+    step1_title_ht = models.CharField(
+        max_length=80,
+        blank=True,
+        default="Antre nimewo a",
+        verbose_name="Étape 1 — Titre (Kreyòl)",
+    )
+    step1_text_ht = models.CharField(
+        max_length=220,
+        blank=True,
+        default="Ekri 4 lèt ak 7 chif ki sou konèsman maritim ou a (Bill of Lading).",
+        verbose_name="Étape 1 — Description (Kreyòl)",
+    )
+    step2_title_ht = models.CharField(
+        max_length=80,
+        blank=True,
+        default="Gade fich la",
+        verbose_name="Étape 2 — Titre (Kreyòl)",
+    )
+    step2_text_ht = models.CharField(
+        max_length=220,
+        blank=True,
+        default="Wè touswit stati jodi a, liy maritim nan ak lè dènye mizajou a.",
+        verbose_name="Étape 2 — Description (Kreyòl)",
+    )
+    step3_title_ht = models.CharField(
+        max_length=80,
+        blank=True,
+        default="Ale nan RAMPE la",
+        verbose_name="Étape 3 — Titre (Kreyòl)",
+    )
+    step3_text_ht = models.CharField(
+        max_length=220,
+        blank=True,
+        default="Vin nan tèminal la sèlman lè kontenè ou a gen stati Konfime.",
+        verbose_name="Étape 3 — Description (Kreyòl)",
+    )
+    status_guide_title_ht = models.CharField(
+        max_length=160,
+        blank=True,
+        default="Kisa stati verifikasyon yo vle di",
+        verbose_name="Titre du guide des statuts (Kreyòl)",
+    )
+    status_guide_subtitle_ht = models.TextField(
+        blank=True,
+        default="Chak kontenè ki pwograme pase nan youn nan twa eta sa yo selon plas li nan RAMPE la.",
+        verbose_name="Sous-titre du guide des statuts (Kreyòl)",
+    )
+    confirmed_title_ht = models.CharField(
+        max_length=120,
+        blank=True,
+        default="Kontenè a plase nan RAMPE la",
+        verbose_name="Titre — Confirmé (Kreyòl)",
+    )
+    confirmed_description_ht = models.TextField(
+        blank=True,
+        default="Kontenè a disponib fizikman epi tèminal la valide li pou verifikasyon ladwann jodi a.",
+        verbose_name="Description — Confirmé (Kreyòl)",
+    )
+    confirmed_instruction_ht = models.CharField(
+        max_length=240,
+        blank=True,
+        default="Vin nan tèminal la ak tout dokiman ladwann ou yo.",
+        verbose_name="Consigne — Confirmé (Kreyòl)",
+    )
+    pending_title_ht = models.CharField(
+        max_length=120,
+        blank=True,
+        default="Ap tann konfimasyon",
+        verbose_name="Titre — En attente (Kreyòl)",
+    )
+    pending_description_ht = models.TextField(
+        blank=True,
+        default="Kontenè a nan pwogramasyon jodi a, men plasman final li nan RAMPE la poko konfime.",
+        verbose_name="Description — En attente (Kreyòl)",
+    )
+    pending_instruction_ht = models.CharField(
+        max_length=240,
+        blank=True,
+        default="Pasyante anvan ou deplase : fich la ap mete tèt li ajou otomatikman.",
+        verbose_name="Consigne — En attente (Kreyòl)",
+    )
+    unavailable_title_ht = models.CharField(
+        max_length=120,
+        blank=True,
+        default="Pa disponib jodi a",
+        verbose_name="Titre — Indisponible (Kreyòl)",
+    )
+    unavailable_description_ht = models.TextField(
+        blank=True,
+        default="Kontenè a pa ka prezante pou verifikasyon ladwann jodi a. Rezon an ekri sou fich li.",
+        verbose_name="Description — Indisponible (Kreyòl)",
+    )
+    unavailable_instruction_ht = models.CharField(
+        max_length=240,
+        blank=True,
+        default="Gade rezon ki afiche a epi kontakte tranzitè ou a.",
+        verbose_name="Consigne — Indisponible (Kreyòl)",
+    )
+    client_cta_title_ht = models.CharField(
+        max_length=180,
+        blank=True,
+        default="Ou jere plizyè dosye enpòtasyon oswa tranzit ?",
+        verbose_name="Titre bandeau espace client (Kreyòl)",
+    )
+    client_cta_subtitle_ht = models.TextField(
+        blank=True,
+        default="Kreye yon kont kliyan gratis pou anrejistre nimewo kontenè ou yo nan yon lis pèsonèl epi swiv stati yo fasilman.",
+        verbose_name="Texte bandeau espace client (Kreyòl)",
+    )
     hero_carousel_enabled = models.BooleanField(
         default=True,
         verbose_name="Activer le carrousel en fond du hero",
@@ -621,8 +765,28 @@ class SiteSettings(models.Model):
         obj, _ = cls.objects.get_or_create(pk=1)
         return obj
 
+    def for_language(self, lang_code: str):
+        return LocalizedSiteSettings(self, lang_code)
+
     def __str__(self):
         return f"Paramètres du site ({self.company_name})"
+
+
+class LocalizedSiteSettings:
+    """Renvoie la version créole (suffixe `_ht`) lorsqu'elle est définie et que la langue est `ht`."""
+
+    def __init__(self, instance: SiteSettings, lang_code: str):
+        self._instance = instance
+        self._is_ht = (lang_code or '').startswith('ht')
+
+    def __getattr__(self, name: str):
+        if self._is_ht:
+            ht_attr = f"{name}_ht"
+            if hasattr(self._instance, ht_attr):
+                val = getattr(self._instance, ht_attr)
+                if val:
+                    return val
+        return getattr(self._instance, name)
 
 
 class HeroSlide(models.Model):

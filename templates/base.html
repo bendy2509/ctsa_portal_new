@@ -1,6 +1,7 @@
-{% load static %}
+{% load static i18n %}
+{% get_current_language as CURRENT_LANG %}
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="{{ CURRENT_LANG|default:'fr' }}">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -26,7 +27,7 @@
     <div class="hidden lg:block bg-[#1a222b] border-b border-white/10">
       <div class="max-w-7xl mx-auto px-6 lg:px-8 h-9 flex items-center justify-between gap-4 text-xs text-slate-300">
         <div class="flex items-center gap-3 font-medium">
-          <span class="font-semibold text-white/90">{{ site_settings.location_label }}</span>
+          <span class="font-semibold text-white/90">{{ site_t.location_label }}</span>
           <span class="text-white/25" aria-hidden="true">·</span>
           <a href="mailto:{{ site_settings.contact_email }}" class="hover:text-white transition no-underline text-slate-300">{{ site_settings.contact_email }}</a>
           <span class="text-white/25" aria-hidden="true">·</span>
@@ -34,23 +35,36 @@
         </div>
 
         <div class="flex items-center gap-3">
+          <form action="{% url 'set_language' %}" method="post" class="inline-flex items-center rounded-md bg-white/8 border border-white/12 p-0.5" aria-label="{% trans 'Choisir la langue' %}">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{{ request.get_full_path }}">
+            <button type="submit" name="language" value="fr"
+                    class="px-2 py-0.5 rounded text-[11px] font-bold border-0 cursor-pointer transition {% if CURRENT_LANG|slice:':2' == 'fr' %}bg-[#3498db] text-white{% else %}bg-transparent text-slate-300 hover:text-white{% endif %}">
+              FR
+            </button>
+            <button type="submit" name="language" value="ht"
+                    class="px-2 py-0.5 rounded text-[11px] font-bold border-0 cursor-pointer transition {% if CURRENT_LANG|slice:':2' == 'ht' %}bg-[#3498db] text-white{% else %}bg-transparent text-slate-300 hover:text-white{% endif %}">
+              Kreyòl
+            </button>
+          </form>
+          <span class="text-white/20" aria-hidden="true">|</span>
           {% if user.is_authenticated %}
             <span class="text-slate-300">
               <strong class="text-white font-semibold">{{ user.display_name }}</strong>
               <span class="text-sky-300">({{ user.get_role_display }})</span>
             </span>
             <span class="text-white/20" aria-hidden="true">|</span>
-            <a href="{% url 'accounts:profile' %}" class="text-slate-200 hover:text-white font-semibold no-underline">Mon profil</a>
+            <a href="{% url 'accounts:profile' %}" class="text-slate-200 hover:text-white font-semibold no-underline">{% trans "Mon profil" %}</a>
             <form action="{% url 'accounts:logout' %}" method="post" class="inline">
               {% csrf_token %}
               <button type="submit" class="text-slate-300 hover:text-red-300 font-semibold bg-transparent border-0 cursor-pointer p-0 text-xs">
-                Déconnexion
+                {% trans "Déconnexion" %}
               </button>
             </form>
           {% else %}
-            <a href="{% url 'accounts:login' %}" class="text-slate-200 hover:text-white font-semibold no-underline">Connexion</a>
+            <a href="{% url 'accounts:login' %}" class="text-slate-200 hover:text-white font-semibold no-underline">{% trans "Connexion" %}</a>
             <span class="text-white/20" aria-hidden="true">·</span>
-            <a href="{% url 'accounts:register' %}" class="text-sky-300 hover:text-white font-semibold no-underline">Créer un compte</a>
+            <a href="{% url 'accounts:register' %}" class="text-sky-300 hover:text-white font-semibold no-underline">{% trans "Créer un compte" %}</a>
           {% endif %}
         </div>
       </div>
@@ -67,33 +81,33 @@
           <span style="display:none" class="portal-brand-mark shrink-0">CTSA</span>
           <div class="min-w-0 border-l border-white/15 pl-2.5 sm:pl-3">
             <div class="font-heading font-extrabold text-xs sm:text-sm tracking-wide uppercase text-white truncate">{{ site_settings.portal_title }}</div>
-            <div class="text-[11px] text-slate-300 truncate hidden sm:block">{{ site_settings.portal_subtitle }}</div>
+            <div class="text-[11px] text-slate-300 truncate hidden sm:block">{{ site_t.portal_subtitle }}</div>
           </div>
         </a>
 
         <!-- Navigation desktop -->
-        <nav aria-label="Navigation principale" class="hidden lg:flex items-center gap-1">
+        <nav aria-label="{% trans 'Navigation principale' %}" class="hidden lg:flex items-center gap-1">
           <a href="{% url 'terminal:home' %}"
              {% if request.resolver_match.url_name == 'home' %}aria-current="page"{% endif %}
              class="px-3.5 py-2 rounded-lg text-sm font-semibold transition no-underline {% if request.resolver_match.url_name == 'home' %}bg-white/12 text-white{% else %}text-slate-200 hover:text-white hover:bg-white/8{% endif %}">
-            Accueil
+            {% trans "Accueil" %}
           </a>
           <a href="{% url 'terminal:verification' %}"
              {% if request.resolver_match.url_name == 'verification' %}aria-current="page"{% endif %}
              class="px-3.5 py-2 rounded-lg text-sm font-semibold transition no-underline {% if request.resolver_match.url_name == 'verification' %}bg-white/12 text-white{% else %}text-slate-200 hover:text-white hover:bg-white/8{% endif %}">
-            Vérifier un conteneur
+            {% trans "Vérifier un conteneur" %}
           </a>
           {% if user.is_authenticated %}
             <a href="{% url 'terminal:client_watchlist' %}"
                {% if request.resolver_match.url_name == 'client_watchlist' %}aria-current="page"{% endif %}
                class="px-3.5 py-2 rounded-lg text-sm font-semibold transition no-underline {% if request.resolver_match.url_name == 'client_watchlist' %}bg-white/12 text-white{% else %}text-slate-200 hover:text-white hover:bg-white/8{% endif %}">
-              Mes conteneurs
+              {% trans "Mes conteneurs" %}
             </a>
           {% endif %}
           {% if user.is_authenticated and user.is_staff_member %}
             <a href="{% url 'terminal:dashboard' %}"
                class="ml-2 inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-[#3498db] hover:bg-[#217dbb] text-white text-sm font-bold transition no-underline shadow-xs">
-              Exploitation RAMPE
+              {% trans "Exploitation RAMPE" %}
             </a>
           {% endif %}
         </nav>
@@ -105,54 +119,68 @@
                 aria-controls="primary-nav-links"
                 class="lg:hidden inline-flex items-center gap-2 min-h-[42px] px-3.5 py-2 rounded-lg border border-white/20 bg-white/8 text-sm font-semibold text-white hover:bg-white/15 transition cursor-pointer">
           <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="18" y2="18"/></svg>
-          <span>Menu</span>
+          <span>{% trans "Menu" %}</span>
         </button>
       </div>
 
       <!-- Menu déroulant mobile -->
-      <nav id="primary-nav-links" aria-label="Navigation mobile" hidden class="lg:hidden pb-4 pt-3 border-t border-white/10 space-y-1.5">
+      <nav id="primary-nav-links" aria-label="{% trans 'Navigation mobile' %}" hidden class="lg:hidden pb-4 pt-3 border-t border-white/10 space-y-1.5">
         <a href="{% url 'terminal:home' %}"
            class="flex items-center min-h-[44px] px-3.5 py-2 rounded-lg text-sm font-semibold no-underline {% if request.resolver_match.url_name == 'home' %}bg-white/15 text-white{% else %}text-slate-200 hover:bg-white/8{% endif %}">
-          Accueil
+          {% trans "Accueil" %}
         </a>
         <a href="{% url 'terminal:verification' %}"
            class="flex items-center min-h-[44px] px-3.5 py-2 rounded-lg text-sm font-semibold no-underline {% if request.resolver_match.url_name == 'verification' %}bg-white/15 text-white{% else %}text-slate-200 hover:bg-white/8{% endif %}">
-          Vérifier un conteneur
+          {% trans "Vérifier un conteneur" %}
         </a>
         {% if user.is_authenticated %}
           <a href="{% url 'terminal:client_watchlist' %}"
              class="flex items-center min-h-[44px] px-3.5 py-2 rounded-lg text-sm font-semibold no-underline {% if request.resolver_match.url_name == 'client_watchlist' %}bg-white/15 text-white{% else %}text-slate-200 hover:bg-white/8{% endif %}">
-            Mes conteneurs
+            {% trans "Mes conteneurs" %}
           </a>
         {% endif %}
         {% if user.is_authenticated and user.is_staff_member %}
           <a href="{% url 'terminal:dashboard' %}"
              class="flex items-center min-h-[44px] px-3.5 py-2 rounded-lg text-sm font-bold bg-[#3498db] text-white no-underline">
-            Exploitation RAMPE
+            {% trans "Exploitation RAMPE" %}
           </a>
         {% endif %}
+
+        <form action="{% url 'set_language' %}" method="post" class="pt-2 flex items-center gap-2 px-1">
+          {% csrf_token %}
+          <input type="hidden" name="next" value="{{ request.get_full_path }}">
+          <span class="text-xs text-slate-300 font-semibold">{% trans "Langue" %} :</span>
+          <button type="submit" name="language" value="fr"
+                  class="min-h-[36px] px-3 py-1 rounded-lg text-xs font-bold border cursor-pointer {% if CURRENT_LANG|slice:':2' == 'fr' %}bg-[#3498db] border-[#3498db] text-white{% else %}bg-transparent border-white/25 text-slate-200{% endif %}">
+            Français
+          </button>
+          <button type="submit" name="language" value="ht"
+                  class="min-h-[36px] px-3 py-1 rounded-lg text-xs font-bold border cursor-pointer {% if CURRENT_LANG|slice:':2' == 'ht' %}bg-[#3498db] border-[#3498db] text-white{% else %}bg-transparent border-white/25 text-slate-200{% endif %}">
+            Kreyòl
+          </button>
+        </form>
 
         <div class="pt-2.5 mt-2.5 border-t border-white/10 space-y-1.5">
           {% if user.is_authenticated %}
             <div class="px-3.5 py-1.5 text-xs text-slate-300">
-              Connecté : <strong class="text-white">{{ user.display_name }}</strong> ({{ user.get_role_display }})
+              {% trans "Connecté" %} : <strong class="text-white">{{ user.display_name }}</strong> ({{ user.get_role_display }})
             </div>
             <a href="{% url 'accounts:profile' %}" class="flex items-center min-h-[44px] px-3.5 py-2 rounded-lg text-sm font-semibold text-slate-200 hover:bg-white/8 no-underline">
-              Mon profil
+              {% trans "Mon profil" %}
             </a>
             <form action="{% url 'accounts:logout' %}" method="post">
               {% csrf_token %}
               <button type="submit" class="w-full text-left flex items-center min-h-[44px] px-3.5 py-2 rounded-lg text-sm font-semibold text-red-200 hover:bg-red-500/15 bg-transparent border-0 cursor-pointer">
-                Déconnexion
+                {% trans "Déconnexion" %}
               </button>
             </form>
           {% else %}
             <div class="grid grid-cols-2 gap-2 pt-1">
               <a href="{% url 'accounts:login' %}" class="flex items-center justify-center min-h-[44px] px-3 py-2 rounded-lg border border-white/25 text-sm font-semibold text-white hover:bg-white/10 no-underline">
-                Connexion
+                {% trans "Connexion" %}
               </a>
               <a href="{% url 'accounts:register' %}" class="flex items-center justify-center min-h-[44px] px-3 py-2 rounded-lg bg-[#3498db] text-sm font-bold text-white hover:bg-[#217dbb] no-underline">
-                Inscription
+                {% trans "Inscription" %}
               </a>
             </div>
           {% endif %}
@@ -186,30 +214,30 @@
           <span class="font-heading font-bold text-sm text-white">{{ site_settings.company_name }}</span>
         </div>
         <p class="text-slate-300 text-sm leading-relaxed m-0 max-w-md">
-          {{ site_settings.footer_about }}
+          {{ site_t.footer_about }}
         </p>
       </div>
 
       <div class="md:col-span-3 space-y-2.5">
-        <h2 class="font-heading text-xs font-bold uppercase tracking-wider text-slate-400 m-0">Accès rapide</h2>
+        <h2 class="font-heading text-xs font-bold uppercase tracking-wider text-slate-400 m-0">{% trans "Accès rapide" %}</h2>
         <ul class="list-none p-0 m-0 space-y-2 text-sm">
-          <li><a href="{% url 'terminal:home' %}" class="text-slate-200 hover:text-white no-underline">Accueil</a></li>
-          <li><a href="{% url 'terminal:verification' %}" class="text-slate-200 hover:text-white no-underline">Vérifier un conteneur</a></li>
+          <li><a href="{% url 'terminal:home' %}" class="text-slate-200 hover:text-white no-underline">{% trans "Accueil" %}</a></li>
+          <li><a href="{% url 'terminal:verification' %}" class="text-slate-200 hover:text-white no-underline">{% trans "Vérifier un conteneur" %}</a></li>
           {% if user.is_authenticated %}
-            <li><a href="{% url 'terminal:client_watchlist' %}" class="text-slate-200 hover:text-white no-underline">Mes conteneurs</a></li>
+            <li><a href="{% url 'terminal:client_watchlist' %}" class="text-slate-200 hover:text-white no-underline">{% trans "Mes conteneurs" %}</a></li>
           {% else %}
-            <li><a href="{% url 'accounts:login' %}" class="text-slate-200 hover:text-white no-underline">Espace client</a></li>
+            <li><a href="{% url 'accounts:login' %}" class="text-slate-200 hover:text-white no-underline">{% trans "Espace client" %}</a></li>
           {% endif %}
         </ul>
       </div>
 
       <div class="md:col-span-4 space-y-2.5">
-        <h2 class="font-heading text-xs font-bold uppercase tracking-wider text-slate-400 m-0">Contact</h2>
+        <h2 class="font-heading text-xs font-bold uppercase tracking-wider text-slate-400 m-0">{% trans "Contact" %}</h2>
         <p class="text-slate-300 text-sm leading-relaxed m-0">
           {{ site_settings.address_line }}<br>
-          Tél. : <a href="tel:{{ site_settings.contact_phone_primary }}" class="text-white hover:underline tabular-nums">{{ site_settings.contact_phone_primary }}</a><br>
+          {% trans "Tél." %} : <a href="tel:{{ site_settings.contact_phone_primary }}" class="text-white hover:underline tabular-nums">{{ site_settings.contact_phone_primary }}</a><br>
           {% if site_settings.contact_phone_secondary %}
-            Tél. 2 : <a href="tel:{{ site_settings.contact_phone_secondary }}" class="text-white hover:underline tabular-nums">{{ site_settings.contact_phone_secondary }}</a><br>
+            {% trans "Tél. 2" %} : <a href="tel:{{ site_settings.contact_phone_secondary }}" class="text-white hover:underline tabular-nums">{{ site_settings.contact_phone_secondary }}</a><br>
           {% endif %}
           <a href="mailto:{{ site_settings.contact_email }}" class="text-sky-300 hover:underline">{{ site_settings.contact_email }}</a>
         </p>
@@ -217,8 +245,8 @@
     </div>
     <div class="border-t border-white/10 py-4 bg-[#1a222b]">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-xs text-slate-400 flex flex-wrap items-center justify-between gap-2">
-        <span>© {% now "Y" %} <strong class="text-slate-200">{{ site_settings.company_name }}</strong> — Tous droits réservés.</span>
-        <span>{{ site_settings.portal_title }} · {{ site_settings.location_label }}</span>
+        <span>© {% now "Y" %} <strong class="text-slate-200">{{ site_settings.company_name }}</strong> — {% trans "Tous droits réservés." %}</span>
+        <span>{{ site_settings.portal_title }} · {{ site_t.location_label }}</span>
       </div>
     </div>
   </footer>

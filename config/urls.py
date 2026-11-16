@@ -24,6 +24,7 @@ admin.site.site_title = "CTSA Portal Admin"
 admin.site.index_title = "Cap Terminal S.A. — Back-office"
 
 urlpatterns = [
+    path('i18n/', include('django.conf.urls.i18n')),
     path('django-admin/', admin.site.urls),
     path('auth/', include('accounts.urls')),
     path('', include('terminal.urls')),

@@ -1,0 +1,202 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: CTSA Portail RAMPE\n"
+"Language: ht\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+msgid "Choisir la langue"
+msgstr "Chwazi lang lan"
+
+msgid "Langue"
+msgstr "Lang"
+
+msgid "Mon profil"
+msgstr "Pwofil mwen"
+
+msgid "Déconnexion"
+msgstr "Dekoneksyon"
+
+msgid "Connexion"
+msgstr "Koneksyon"
+
+msgid "Créer un compte"
+msgstr "Kreye yon kont"
+
+msgid "Navigation principale"
+msgstr "Navigasyon prensipal"
+
+msgid "Navigation mobile"
+msgstr "Navigasyon mobil"
+
+msgid "Accueil"
+msgstr "Akèy"
+
+msgid "Vérifier un conteneur"
+msgstr "Verifye yon kontenè"
+
+msgid "Mes conteneurs"
+msgstr "Kontenè mwen yo"
+
+msgid "Exploitation RAMPE"
+msgstr "Jesyon RAMPE"
+
+msgid "Menu"
+msgstr "Meni"
+
+msgid "Connecté"
+msgstr "Konekte"
+
+msgid "Inscription"
+msgstr "Enskripsyon"
+
+msgid "Accès rapide"
+msgstr "Aksè rapid"
+
+msgid "Espace client"
+msgstr "Espas kliyan"
+
+msgid "Contact"
+msgstr "Kontak"
+
+msgid "Tél."
+msgstr "Tel."
+
+msgid "Tél. 2"
+msgstr "Tel. 2"
+
+msgid "Tous droits réservés."
+msgstr "Tout dwa rezève."
+
+msgid "Numéro du conteneur"
+msgstr "Nimewo kontenè a"
+
+msgid "4 lettres + 7 chiffres (ex. CMAU4052450)"
+msgstr "4 lèt + 7 chif (egz. CMAU4052450)"
+
+msgid "4 lettres + 7 chiffres du connaissement"
+msgstr "4 lèt + 7 chif ki sou konèsman an"
+
+msgid "ex. CMAU4052450"
+msgstr "egz. CMAU4052450"
+
+msgid "Veuillez saisir un numéro composé de 4 lettres suivies de 7 chiffres."
+msgstr "Tanpri antre yon nimewo ki gen 4 lèt ak 7 chif."
+
+msgid "Veuillez saisir un numéro valide composé de 4 lettres et 7 chiffres."
+msgstr "Tanpri antre yon nimewo valid ki gen 4 lèt ak 7 chif."
+
+msgid "Le numéro de conteneur doit comporter exactement 4 lettres suivies de 7 chiffres (exemple : CMAU4052450)."
+msgstr "Nimewo kontenè a dwe gen egzakteman 4 lèt ak 7 chif (egzanp : CMAU4052450)."
+
+msgid "Vérifier le statut"
+msgstr "Verifye stati a"
+
+msgid "Rechercher"
+msgstr "Chèche"
+
+msgid "Accéder à mes conteneurs suivis"
+msgstr "Ale nan kontenè m ap swiv yo"
+
+msgid "Espace client : suivre plusieurs conteneurs"
+msgstr "Espas kliyan : swiv plizyè kontenè"
+
+msgid "Guide d'interprétation"
+msgstr "Gid pou konprann stati yo"
+
+msgid "Confirmé"
+msgstr "Konfime"
+
+msgid "Déplacement autorisé"
+msgstr "Ou ka vin chèche l"
+
+msgid "En attente"
+msgstr "Ap tann"
+
+msgid "Mise en place en cours"
+msgstr "Y ap mete l an plas"
+
+msgid "Indisponible"
+msgstr "Pa disponib"
+
+msgid "Ne pas se déplacer"
+msgstr "Pa vini ankò"
+
+msgid "Consigne client"
+msgstr "Sa pou w fè"
+
+msgid "Suivi multi-conteneurs"
+msgstr "Swiv plizyè kontenè"
+
+msgid "Voir mes conteneurs suivis"
+msgstr "Gade kontenè m ap swiv yo"
+
+msgid "Créer un compte client"
+msgstr "Kreye yon kont kliyan"
+
+msgid "Se connecter"
+msgstr "Konekte"
+
+msgid "Vérification de Conteneur"
+msgstr "Verifikasyon Kontenè"
+
+msgid "Port du Cap-Haïtien · Vérification douanière RAMPE"
+msgstr "Pò Okap · Verifikasyon ladwann RAMPE"
+
+msgid "Vérification du statut d'un conteneur"
+msgstr "Verifye stati yon kontenè"
+
+msgid "Déjà vérifié"
+msgstr "Deja verifye"
+
+msgid "Séance à venir"
+msgstr "Pwograme pou pita"
+
+msgid "Non programmé aujourd'hui"
+msgstr "Pa pwograme jodi a"
+
+msgid "Imprimer"
+msgstr "Enprime"
+
+msgid "Conteneur déjà vérifié"
+msgstr "Kontenè sa a deja verifye"
+
+msgid "Ce conteneur a déjà été vérifié à la RAMPE le <strong>%(date_str)s</strong>. Aucune nouvelle vérification n'est programmée."
+msgstr "Kontenè sa a te deja verifye nan RAMPE la jou ki te <strong>%(date_str)s</strong>. Pa gen lòt verifikasyon ki pwograme."
+
+msgid "Programmé le %(date_str)s — Ne pas se déplacer aujourd'hui"
+msgstr "Pwograme pou %(date_str)s — Pa vini jodi a"
+
+msgid "Ce conteneur n'est pas prévu aujourd'hui (<strong>%(today_str)s</strong>). Il est programmé pour le <strong>%(sched_str)s</strong> (statut provisoire : %(status_str)s)."
+msgstr "Kontenè sa a pa pwograme pou jodi a (<strong>%(today_str)s</strong>). Li pwograme pou <strong>%(sched_str)s</strong> (stati pwovizwa : %(status_str)s)."
+
+msgid "Non programmé aujourd'hui — Ne pas se déplacer"
+msgstr "Pa pwograme jodi a — Pa vini"
+
+msgid "Ce conteneur n'est pas sur la liste du jour (<strong>%(today_str)s</strong>). Dernière séance connue : <strong>%(sched_str)s</strong>."
+msgstr "Kontenè sa a pa sou lis jodi a (<strong>%(today_str)s</strong>). Dènye dat li te parèt : <strong>%(sched_str)s</strong>."
+
+msgid "Déplacement autorisé — Conteneur à la RAMPE"
+msgstr "Ou ka vini — Kontenè a nan RAMPE la"
+
+msgid "Ce conteneur est confirmé pour la séance du <strong>%(sched_str)s</strong>. Présentez-vous au terminal avec vos documents douaniers."
+msgstr "Kontenè sa a konfime pou jou <strong>%(sched_str)s</strong>. Vin nan tèminal la ak tout dokiman ladwann ou yo."
+
+msgid "En attente de confirmation — Ne pas se déplacer"
+msgstr "Ap tann konfimasyon — Pa vini ankò"
+
+msgid "Ce conteneur est programmé pour le <strong>%(sched_str)s</strong>, mais n'est pas encore positionné à la RAMPE. La page se met à jour automatiquement."
+msgstr "Kontenè sa a pwograme pou <strong>%(sched_str)s</strong>, men li poko plase nan RAMPE la. Paj la ap mete tèt li ajou otomatikman."
+
+msgid "Conteneur indisponible — Ne pas se déplacer"
+msgstr "Kontenè a pa disponib — Pa vini"
+
+msgid "Motif"
+msgstr "Rezon"
+
+msgid "Saisissez vos identifiants pour accéder à votre espace."
+msgstr "Antre non itilizatè ou ak modpas ou pou w konekte."
+
+msgid "Pas encore de compte client ?"
+msgstr "Ou poko gen yon kont kliyan ?"

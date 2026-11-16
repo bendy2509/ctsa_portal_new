@@ -12,6 +12,7 @@ from django.http import HttpResponse, JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse
 from django.utils import timezone
+from django.utils.translation import gettext as _
 from django.views.decorators.http import require_POST
 
 from accounts.utils import safe_next_url
@@ -240,7 +241,7 @@ def verification_view(request):
 
     if normalized:
         if not CONTAINER_NUMBER_REGEX.match(normalized):
-            format_warning = (
+            format_warning = _(
                 "Le numéro de conteneur doit comporter exactement 4 lettres suivies de 7 chiffres (exemple : CMAU4052450)."
             )
         else:
@@ -1772,6 +1773,32 @@ class SiteSettingsForm(forms.ModelForm):
             'client_cta_subtitle',
             'hero_carousel_enabled',
             'hero_carousel_limit',
+            # Champs Kreyòl
+            'portal_subtitle_ht',
+            'location_label_ht',
+            'footer_about_ht',
+            'hero_title_ht',
+            'hero_subtitle_ht',
+            'search_note_ht',
+            'step1_title_ht',
+            'step1_text_ht',
+            'step2_title_ht',
+            'step2_text_ht',
+            'step3_title_ht',
+            'step3_text_ht',
+            'status_guide_title_ht',
+            'status_guide_subtitle_ht',
+            'confirmed_title_ht',
+            'confirmed_description_ht',
+            'confirmed_instruction_ht',
+            'pending_title_ht',
+            'pending_description_ht',
+            'pending_instruction_ht',
+            'unavailable_title_ht',
+            'unavailable_description_ht',
+            'unavailable_instruction_ht',
+            'client_cta_title_ht',
+            'client_cta_subtitle_ht',
         ]
         widgets = {
             'footer_about': forms.Textarea(attrs={'rows': 4}),
@@ -1784,6 +1811,16 @@ class SiteSettingsForm(forms.ModelForm):
             'pending_description': forms.Textarea(attrs={'rows': 3}),
             'unavailable_description': forms.Textarea(attrs={'rows': 3}),
             'client_cta_subtitle': forms.Textarea(attrs={'rows': 3}),
+            'footer_about_ht': forms.Textarea(attrs={'rows': 4}),
+            'hero_subtitle_ht': forms.Textarea(attrs={'rows': 4}),
+            'step1_text_ht': forms.Textarea(attrs={'rows': 3}),
+            'step2_text_ht': forms.Textarea(attrs={'rows': 3}),
+            'step3_text_ht': forms.Textarea(attrs={'rows': 3}),
+            'status_guide_subtitle_ht': forms.Textarea(attrs={'rows': 3}),
+            'confirmed_description_ht': forms.Textarea(attrs={'rows': 3}),
+            'pending_description_ht': forms.Textarea(attrs={'rows': 3}),
+            'unavailable_description_ht': forms.Textarea(attrs={'rows': 3}),
+            'client_cta_subtitle_ht': forms.Textarea(attrs={'rows': 3}),
             'hero_carousel_limit': forms.NumberInput(attrs={'min': 1, 'max': 6}),
         }
 
@@ -1791,6 +1828,8 @@ class SiteSettingsForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         self.fields['hero_badge'].required = False
         for name, field in self.fields.items():
+            if name.endswith('_ht'):
+                field.required = False
             if name == 'hero_carousel_enabled':
                 field.widget.attrs.setdefault('class', 'w-4 h-4 rounded border-slate-300 text-ctsa-blue focus:ring-ctsa-blue')
             else:

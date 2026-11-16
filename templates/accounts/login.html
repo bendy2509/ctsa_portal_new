@@ -1,6 +1,7 @@
 {% extends 'base.html' %}
+{% load i18n %}
 
-{% block title %}Connexion — Cap Terminal S.A.{% endblock %}
+{% block title %}{% trans "Connexion" %} — Cap Terminal S.A.{% endblock %}
 
 {% block content %}
 <div class="max-w-md mx-auto px-4 sm:px-6 py-10 sm:py-14">
@@ -10,10 +11,10 @@
         Cap Terminal S.A.
       </div>
       <h1 id="signin-heading" class="font-heading text-2xl font-extrabold text-ctsa-slate m-0">
-        Connexion
+        {% trans "Connexion" %}
       </h1>
       <p class="text-sm text-slate-600 mt-1 mb-0">
-        Saisissez vos identifiants pour accéder à votre espace.
+        {% trans "Saisissez vos identifiants pour accéder à votre espace." %}
       </p>
     </div>
 
@@ -78,14 +79,14 @@
       </div>
 
       <button type="submit" class="ui-btn ui-btn-primary w-full mt-2" data-submit-guard>
-        Se connecter
+        {% trans "Se connecter" %}
       </button>
     </form>
 
     <div class="mt-6 pt-5 border-t border-slate-100 text-center text-xs text-slate-600">
-      Pas encore de compte client ?
+      {% trans "Pas encore de compte client ?" %}
       <a href="{% url 'accounts:register' %}" class="font-bold text-ctsa-bluehover hover:underline ml-1">
-        Créer un compte
+        {% trans "Créer un compte" %}
       </a>
     </div>
   </div>

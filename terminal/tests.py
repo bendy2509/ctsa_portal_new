@@ -585,6 +585,35 @@ class ShippingLinesAndStatisticsTests(TestCase):
         self.assertContains(resp, 'Déjà vérifié')
         self.assertContains(resp, 'Conteneur déjà vérifié')
 
+    def test_creole_language_switch_and_localized_site_settings(self):
+        from .models import SiteSettings
+
+        site_obj = SiteSettings.get_solo()
+        site_obj.hero_title_ht = 'Verifye kontenè ou an Kreyòl'
+        site_obj.save()
+
+        # Switch to Haitian Creole
+        set_resp = self.client_http.post(
+            reverse('set_language'),
+            {'language': 'ht', 'next': reverse('terminal:home')},
+        )
+        self.assertRedirects(set_resp, reverse('terminal:home'))
+
+        home_ht = self.client_http.get(reverse('terminal:home'))
+        self.assertEqual(home_ht.status_code, 200)
+        self.assertContains(home_ht, 'Verifye kontenè ou an Kreyòl')
+        self.assertContains(home_ht, 'Verifye stati a')
+        self.assertContains(home_ht, 'Akèy')
+
+        # Switch back to French
+        self.client_http.post(
+            reverse('set_language'),
+            {'language': 'fr', 'next': reverse('terminal:home')},
+        )
+        home_fr = self.client_http.get(reverse('terminal:home'))
+        self.assertContains(home_fr, site_obj.hero_title)
+        self.assertContains(home_fr, 'Vérifier le statut')
+
 
 
 

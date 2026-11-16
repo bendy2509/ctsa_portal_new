@@ -48,22 +48,26 @@
     {{ form.hero_badge.as_hidden }}
 
     <!-- Navigation par onglets responsive -->
-    <nav class="bg-white rounded-xl border border-slate-200/80 shadow-xs p-1.5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-1.5" role="tablist" aria-label="Sections de configuration">
+    <nav class="bg-white rounded-xl border border-slate-200/80 shadow-xs p-1.5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-1.5" role="tablist" aria-label="Sections de configuration">
       <button type="button" role="tab" aria-selected="true" aria-controls="panel-identity" data-tab-target="panel-identity"
-              class="tab-btn min-h-[44px] px-3.5 py-2 rounded-lg text-xs font-heading font-bold uppercase tracking-wider bg-[#3498db] text-white transition cursor-pointer border-0 flex items-center justify-center gap-2 text-center">
-        <span>1. Identité &amp; Coordonnées</span>
+              class="tab-btn min-h-[44px] px-3 py-2 rounded-lg text-xs font-heading font-bold uppercase tracking-wider bg-[#3498db] text-white transition cursor-pointer border-0 flex items-center justify-center gap-2 text-center">
+        <span>1. Identité</span>
       </button>
       <button type="button" role="tab" aria-selected="false" aria-controls="panel-home" data-tab-target="panel-home"
-              class="tab-btn min-h-[44px] px-3.5 py-2 rounded-lg text-xs font-heading font-bold uppercase tracking-wider bg-transparent text-[#2c3741] hover:bg-[#f4f4f4] transition cursor-pointer border-0 flex items-center justify-center gap-2 text-center">
-        <span>2. Accueil &amp; Parcours</span>
+              class="tab-btn min-h-[44px] px-3 py-2 rounded-lg text-xs font-heading font-bold uppercase tracking-wider bg-transparent text-[#2c3741] hover:bg-[#f4f4f4] transition cursor-pointer border-0 flex items-center justify-center gap-2 text-center">
+        <span>2. Accueil</span>
       </button>
       <button type="button" role="tab" aria-selected="false" aria-controls="panel-statuses" data-tab-target="panel-statuses"
-              class="tab-btn min-h-[44px] px-3.5 py-2 rounded-lg text-xs font-heading font-bold uppercase tracking-wider bg-transparent text-[#2c3741] hover:bg-[#f4f4f4] transition cursor-pointer border-0 flex items-center justify-center gap-2 text-center">
-        <span>3. Guide des statuts</span>
+              class="tab-btn min-h-[44px] px-3 py-2 rounded-lg text-xs font-heading font-bold uppercase tracking-wider bg-transparent text-[#2c3741] hover:bg-[#f4f4f4] transition cursor-pointer border-0 flex items-center justify-center gap-2 text-center">
+        <span>3. Statuts</span>
+      </button>
+      <button type="button" role="tab" aria-selected="false" aria-controls="panel-kreyol" data-tab-target="panel-kreyol"
+              class="tab-btn min-h-[44px] px-3 py-2 rounded-lg text-xs font-heading font-bold uppercase tracking-wider bg-transparent text-[#2c3741] hover:bg-[#f4f4f4] transition cursor-pointer border-0 flex items-center justify-center gap-2 text-center">
+        <span>4. Kreyòl</span>
       </button>
       <button type="button" role="tab" aria-selected="false" aria-controls="panel-carousel" data-tab-target="panel-carousel"
-              class="tab-btn min-h-[44px] px-3.5 py-2 rounded-lg text-xs font-heading font-bold uppercase tracking-wider bg-transparent text-[#2c3741] hover:bg-[#f4f4f4] transition cursor-pointer border-0 flex items-center justify-center gap-2 text-center">
-        <span>4. Carrousel ({{ active_slides_count }})</span>
+              class="tab-btn min-h-[44px] px-3 py-2 rounded-lg text-xs font-heading font-bold uppercase tracking-wider bg-transparent text-[#2c3741] hover:bg-[#f4f4f4] transition cursor-pointer border-0 flex items-center justify-center gap-2 text-center">
+        <span>5. Carrousel ({{ active_slides_count }})</span>
       </button>
     </nav>
 
@@ -401,13 +405,174 @@
       </div>
     </div>
 
+    <!-- ONGLET 4 : Traduction Kreyòl ayisyen -->
+    <div id="panel-kreyol" role="tabpanel" hidden class="space-y-5">
+      <section class="bg-white rounded-xl border border-slate-200/80 shadow-xs p-4 sm:p-6 space-y-4">
+        <div class="pb-3 border-b border-slate-100">
+          <h2 class="text-base font-heading font-extrabold text-ctsa-slate m-0">En-tête, pied de page &amp; accueil (Kreyòl ayisyen)</h2>
+          <p class="text-xs text-slate-500 mt-0.5 mb-0">Textes affichés aux visiteurs lorsque la langue Kreyòl est sélectionnée. Si un champ est vide, le texte français s'affiche par défaut.</p>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div class="form-field mb-0">
+            <label for="{{ form.portal_subtitle_ht.id_for_label }}">{{ form.portal_subtitle_ht.label }}</label>
+            {{ form.portal_subtitle_ht }}
+          </div>
+          <div class="form-field mb-0">
+            <label for="{{ form.location_label_ht.id_for_label }}">{{ form.location_label_ht.label }}</label>
+            {{ form.location_label_ht }}
+          </div>
+        </div>
+
+        <div class="form-field mb-0">
+          <label for="{{ form.footer_about_ht.id_for_label }}">{{ form.footer_about_ht.label }}</label>
+          {{ form.footer_about_ht }}
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-slate-100">
+          <div class="form-field mb-0">
+            <label for="{{ form.hero_title_ht.id_for_label }}">{{ form.hero_title_ht.label }}</label>
+            {{ form.hero_title_ht }}
+          </div>
+          <div class="form-field mb-0">
+            <label for="{{ form.search_note_ht.id_for_label }}">{{ form.search_note_ht.label }}</label>
+            {{ form.search_note_ht }}
+          </div>
+        </div>
+
+        <div class="form-field mb-0">
+          <label for="{{ form.hero_subtitle_ht.id_for_label }}">{{ form.hero_subtitle_ht.label }}</label>
+          {{ form.hero_subtitle_ht }}
+        </div>
+      </section>
+
+      <section class="bg-white rounded-xl border border-slate-200/80 shadow-xs p-4 sm:p-6 space-y-4">
+        <div class="pb-3 border-b border-slate-100">
+          <h2 class="text-base font-heading font-extrabold text-ctsa-slate m-0">Parcours en 3 étapes (Kreyòl)</h2>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+          <div class="rounded-xl bg-slate-50/80 border border-slate-200/80 p-4 space-y-3">
+            <span class="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-slate-900 text-white font-heading font-extrabold text-xs">01</span>
+            <div class="form-field mb-0">
+              <label for="{{ form.step1_title_ht.id_for_label }}">{{ form.step1_title_ht.label }}</label>
+              {{ form.step1_title_ht }}
+            </div>
+            <div class="form-field mb-0">
+              <label for="{{ form.step1_text_ht.id_for_label }}">{{ form.step1_text_ht.label }}</label>
+              {{ form.step1_text_ht }}
+            </div>
+          </div>
+
+          <div class="rounded-xl bg-slate-50/80 border border-slate-200/80 p-4 space-y-3">
+            <span class="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-ctsa-blue text-white font-heading font-extrabold text-xs">02</span>
+            <div class="form-field mb-0">
+              <label for="{{ form.step2_title_ht.id_for_label }}">{{ form.step2_title_ht.label }}</label>
+              {{ form.step2_title_ht }}
+            </div>
+            <div class="form-field mb-0">
+              <label for="{{ form.step2_text_ht.id_for_label }}">{{ form.step2_text_ht.label }}</label>
+              {{ form.step2_text_ht }}
+            </div>
+          </div>
+
+          <div class="rounded-xl bg-slate-50/80 border border-slate-200/80 p-4 space-y-3">
+            <span class="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-ctsa-green text-white font-heading font-extrabold text-xs">03</span>
+            <div class="form-field mb-0">
+              <label for="{{ form.step3_title_ht.id_for_label }}">{{ form.step3_title_ht.label }}</label>
+              {{ form.step3_title_ht }}
+            </div>
+            <div class="form-field mb-0">
+              <label for="{{ form.step3_text_ht.id_for_label }}">{{ form.step3_text_ht.label }}</label>
+              {{ form.step3_text_ht }}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="bg-white rounded-xl border border-slate-200/80 shadow-xs p-4 sm:p-6 space-y-4">
+        <div class="pb-3 border-b border-slate-100">
+          <h2 class="text-base font-heading font-extrabold text-ctsa-slate m-0">Guide des statuts &amp; Espace client (Kreyòl)</h2>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="form-field mb-0">
+            <label for="{{ form.status_guide_title_ht.id_for_label }}">{{ form.status_guide_title_ht.label }}</label>
+            {{ form.status_guide_title_ht }}
+          </div>
+          <div class="form-field mb-0">
+            <label for="{{ form.status_guide_subtitle_ht.id_for_label }}">{{ form.status_guide_subtitle_ht.label }}</label>
+            {{ form.status_guide_subtitle_ht }}
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+          <div class="rounded-xl border border-slate-200/80 border-t-4 border-t-emerald-600 p-4 space-y-3">
+            <div class="form-field mb-0">
+              <label for="{{ form.confirmed_title_ht.id_for_label }}">{{ form.confirmed_title_ht.label }}</label>
+              {{ form.confirmed_title_ht }}
+            </div>
+            <div class="form-field mb-0">
+              <label for="{{ form.confirmed_description_ht.id_for_label }}">{{ form.confirmed_description_ht.label }}</label>
+              {{ form.confirmed_description_ht }}
+            </div>
+            <div class="form-field mb-0">
+              <label for="{{ form.confirmed_instruction_ht.id_for_label }}">{{ form.confirmed_instruction_ht.label }}</label>
+              {{ form.confirmed_instruction_ht }}
+            </div>
+          </div>
+
+          <div class="rounded-xl border border-slate-200/80 border-t-4 border-t-amber-500 p-4 space-y-3">
+            <div class="form-field mb-0">
+              <label for="{{ form.pending_title_ht.id_for_label }}">{{ form.pending_title_ht.label }}</label>
+              {{ form.pending_title_ht }}
+            </div>
+            <div class="form-field mb-0">
+              <label for="{{ form.pending_description_ht.id_for_label }}">{{ form.pending_description_ht.label }}</label>
+              {{ form.pending_description_ht }}
+            </div>
+            <div class="form-field mb-0">
+              <label for="{{ form.pending_instruction_ht.id_for_label }}">{{ form.pending_instruction_ht.label }}</label>
+              {{ form.pending_instruction_ht }}
+            </div>
+          </div>
+
+          <div class="rounded-xl border border-slate-200/80 border-t-4 border-t-red-600 p-4 space-y-3">
+            <div class="form-field mb-0">
+              <label for="{{ form.unavailable_title_ht.id_for_label }}">{{ form.unavailable_title_ht.label }}</label>
+              {{ form.unavailable_title_ht }}
+            </div>
+            <div class="form-field mb-0">
+              <label for="{{ form.unavailable_description_ht.id_for_label }}">{{ form.unavailable_description_ht.label }}</label>
+              {{ form.unavailable_description_ht }}
+            </div>
+            <div class="form-field mb-0">
+              <label for="{{ form.unavailable_instruction_ht.id_for_label }}">{{ form.unavailable_instruction_ht.label }}</label>
+              {{ form.unavailable_instruction_ht }}
+            </div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t border-slate-100">
+          <div class="form-field mb-0">
+            <label for="{{ form.client_cta_title_ht.id_for_label }}">{{ form.client_cta_title_ht.label }}</label>
+            {{ form.client_cta_title_ht }}
+          </div>
+          <div class="form-field mb-0">
+            <label for="{{ form.client_cta_subtitle_ht.id_for_label }}">{{ form.client_cta_subtitle_ht.label }}</label>
+            {{ form.client_cta_subtitle_ht }}
+          </div>
+        </div>
+      </section>
+    </div>
+
     <!-- Barre d'action collante -->
     <div class="sticky bottom-16 lg:bottom-4 z-20 bg-white/95 backdrop-blur-xs rounded-xl border border-slate-200 shadow-md px-4 py-3 flex flex-wrap items-center justify-between gap-3">
       <div class="text-xs text-slate-500 flex items-center gap-2">
         <span id="unsaved-indicator" hidden class="inline-flex items-center px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-900 font-semibold">
           Modifications non enregistrées
         </span>
-        <span id="saved-hint">Les 3 onglets sont enregistrés en une seule fois.</span>
+        <span id="saved-hint">Les onglets FR &amp; Kreyòl sont enregistrés en une seule fois.</span>
       </div>
       <div class="flex flex-wrap items-center gap-2.5 w-full sm:w-auto justify-end">
         <a href="{% url 'terminal:dashboard' %}" class="ui-btn ui-btn-secondary flex-1 sm:flex-none">
