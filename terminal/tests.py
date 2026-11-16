@@ -571,6 +571,20 @@ class ShippingLinesAndStatisticsTests(TestCase):
         self.assertIn('application/javascript', sw_resp['Content-Type'])
         self.assertIn('ctsa-rampe-v1', sw_resp.content.decode('utf-8'))
 
+    def test_verified_container_search_shows_already_verified(self):
+        Container.objects.create(
+            container_number='MSCU7778889',
+            scheduled_date=timezone.localdate(),
+            status=Container.Status.CONFIRMED,
+            verification_result=Container.Verification.VERIFIED,
+            verified_at=timezone.now(),
+            created_by=self.admin_user,
+        )
+        resp = self.client_http.get(reverse('terminal:verification'), {'q': 'MSCU7778889'})
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, 'Déjà vérifié')
+        self.assertContains(resp, 'Conteneur déjà vérifié')
+
 
 
 

@@ -97,7 +97,7 @@
               </div>
               <div class="shrink-0">
                 {% if item.container and item.container.is_verified and item.container.timing != 'upcoming' %}
-                  {% include 'components/badge.html' with variant='verified' label='Vérifié' %}
+                  {% include 'components/badge.html' with variant='verified' label='Déjà vérifié' %}
                 {% elif item.container and item.container.timing == 'upcoming' %}
                   {% include 'components/badge.html' with variant='neutral' label='Séance à venir' %}
                 {% elif item.container and item.container.timing == 'past' %}
@@ -125,7 +125,7 @@
             </div>
 
             {% if item.container and item.container.is_verified and item.container.timing != 'upcoming' %}
-              <p class="text-xs text-emerald-700 font-semibold m-0">Vérification douanière effectuée</p>
+              <p class="text-xs text-emerald-700 font-semibold m-0">Conteneur déjà vérifié</p>
             {% elif item.container and item.container.status == 'unavailable' %}
               <p class="text-xs text-red-700 font-semibold m-0">{{ item.container.full_reason_display }}</p>
             {% endif %}
@@ -191,7 +191,7 @@
                   </td>
                   <td>
                     {% if item.container and item.container.is_verified and item.container.timing != 'upcoming' %}
-                      {% include 'components/badge.html' with variant='verified' label='Vérifié' %}
+                      {% include 'components/badge.html' with variant='verified' label='Déjà vérifié' %}
                     {% elif item.container and item.container.timing == 'upcoming' %}
                       {% include 'components/badge.html' with variant='neutral' label='Séance à venir' %}
                     {% elif item.container and item.container.timing == 'past' %}
@@ -207,7 +207,7 @@
                       <div class="font-semibold text-ctsa-slate">{{ item.saved.label }}</div>
                     {% endif %}
                     {% if item.container and item.container.is_verified and item.container.timing != 'upcoming' %}
-                      <div class="text-xs text-emerald-700 font-semibold">Vérification douanière effectuée</div>
+                      <div class="text-xs text-emerald-700 font-semibold">Conteneur déjà vérifié</div>
                     {% elif item.container and item.container.timing == 'past' %}
                       <div class="text-xs text-slate-500">Dernier statut connu : {{ item.container.get_status_display }}</div>
                     {% elif item.container and item.container.status == 'unavailable' %}

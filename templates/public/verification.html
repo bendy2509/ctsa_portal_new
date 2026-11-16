@@ -95,7 +95,7 @@
 
             <div class="flex flex-wrap items-center gap-2.5">
               {% if result.is_verified and result.timing != 'upcoming' %}
-                {% include 'components/badge.html' with variant='verified' label='Vérifié' %}
+                {% include 'components/badge.html' with variant='verified' label='Déjà vérifié' %}
               {% elif result.timing == 'upcoming' %}
                 {% with date_lbl=result.scheduled_date|date:"d/m/Y" %}
                   {% include 'components/badge.html' with variant='neutral' label='Séance à venir' %}
@@ -117,10 +117,10 @@
             {% if result.is_verified and result.timing != 'upcoming' %}
               <div class="p-4 sm:p-5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-950">
                 <h3 class="text-base sm:text-lg font-heading font-extrabold uppercase tracking-wide text-emerald-800 mb-1 mt-0">
-                  Vérification douanière effectuée
+                  Conteneur déjà vérifié
                 </h3>
                 <p class="text-sm leading-relaxed m-0">
-                  Ce conteneur a été vérifié à la RAMPE le <strong>{{ result.scheduled_date|date:"d/m/Y" }}</strong>. Aucune nouvelle vérification n'est programmée.
+                  Ce conteneur a déjà été vérifié à la RAMPE le <strong>{{ result.verified_at|default:result.scheduled_date|date:"d/m/Y" }}</strong>. Aucune nouvelle vérification n'est programmée.
                 </p>
               </div>
             {% elif result.timing == 'upcoming' %}
