@@ -3,51 +3,40 @@
 {% block title %}{{ site_settings.company_name }} — {{ site_settings.portal_title }}{% endblock %}
 
 {% block content %}
-<!-- En-tête portuaire sobre + guichet de vérification structuré -->
-<section class="bg-slate-50 border-b border-slate-200/80 py-10 sm:py-14">
-  <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-center">
-      <!-- Présentation institutionnelle -->
-      <div class="lg:col-span-7 space-y-4">
-        <p class="text-xs font-heading uppercase tracking-widest text-ctsa-bluehover font-bold m-0">
-          {{ site_settings.hero_badge }}
-        </p>
+<!-- Hero maritime + guichet de recherche flottant -->
+<section class="relative bg-[#1e2730] text-white pt-12 pb-20 sm:pt-16 sm:pb-24 overflow-hidden">
+  <div class="pointer-events-none absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:32px_32px]" aria-hidden="true"></div>
+  <div class="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(52,152,219,0.24),transparent_65%)]" aria-hidden="true"></div>
 
-        <h1 class="font-heading text-2xl sm:text-4xl font-extrabold text-ctsa-slate tracking-tight leading-[1.15] m-0">
-          {{ site_settings.hero_title }}
-        </h1>
+  <div class="relative max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+    <h1 class="font-heading text-2xl sm:text-4xl lg:text-[2.65rem] font-extrabold !text-white tracking-tight leading-[1.15] max-w-3xl mx-auto mb-4 mt-0">
+      {{ site_settings.hero_title }}
+    </h1>
 
-        <p class="text-slate-600 text-sm sm:text-base leading-relaxed max-w-2xl m-0">
-          {{ site_settings.hero_subtitle }}
-        </p>
+    <p class="text-slate-300 text-sm sm:text-base leading-relaxed max-w-2xl mx-auto m-0">
+      {{ site_settings.hero_subtitle }}
+    </p>
+  </div>
+</section>
 
-        <div class="pt-2 flex flex-wrap items-center gap-x-6 gap-y-2 text-xs sm:text-sm text-slate-600 font-medium">
-          <span class="inline-flex items-center gap-2">
-            <svg class="w-4 h-4 text-ctsa-green shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
-            <span>{{ site_settings.search_note }}</span>
-          </span>
-          <span class="inline-flex items-center gap-2">
-            <svg class="w-4 h-4 text-ctsa-blue shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-            <span>Actualisation en temps réel</span>
-          </span>
-        </div>
-      </div>
+<!-- Carte de recherche élevée chevauchant le hero -->
+<section class="bg-slate-50 pb-12 sm:pb-16 border-b border-slate-200/80">
+  <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="relative -mt-12 sm:-mt-14 max-w-3xl mx-auto bg-white rounded-2xl shadow-xl shadow-slate-900/10 border border-slate-200/90 border-t-[3px] border-t-ctsa-blue p-5 sm:p-8">
+      <search>
+        <form action="{% url 'terminal:verification' %}" method="get" aria-labelledby="home-search-label">
+          <div class="form-field mb-0">
+            <div class="flex flex-wrap items-baseline justify-between gap-1.5 mb-2.5">
+              <label id="home-search-label" for="home-container-q" class="font-heading text-sm sm:text-base font-extrabold text-ctsa-slate">
+                Numéro du conteneur <span aria-hidden="true" class="text-red-600">*</span>
+              </label>
+              <span id="home-format-hint" class="text-xs text-slate-500 font-medium">
+                4 lettres + 7 chiffres (ex. CMAU4052450)
+              </span>
+            </div>
 
-      <!-- Guichet de recherche -->
-      <div class="lg:col-span-5">
-        <div class="bg-white rounded-xl border border-slate-200/90 border-t-4 border-t-ctsa-blue shadow-sm p-5 sm:p-6">
-          <search>
-            <form action="{% url 'terminal:verification' %}" method="get" aria-labelledby="home-search-label" class="space-y-4">
-              <div class="form-field mb-0">
-                <div class="flex flex-wrap items-baseline justify-between gap-1.5 mb-2">
-                  <label id="home-search-label" for="home-container-q" class="font-heading text-sm sm:text-base font-extrabold text-ctsa-slate">
-                    Numéro du conteneur <span aria-hidden="true" class="text-red-600">*</span>
-                  </label>
-                  <span id="home-format-hint" class="text-xs text-slate-500 font-medium">
-                    4 lettres + 7 chiffres
-                  </span>
-                </div>
-
+            <div class="flex flex-col sm:flex-row gap-3 items-stretch sm:items-start">
+              <div class="flex-1 min-w-0">
                 <input
                   type="search"
                   id="home-container-q"
@@ -68,33 +57,33 @@
                   Veuillez saisir un numéro composé de 4 lettres suivies de 7 chiffres.
                 </div>
               </div>
-
-              <button type="submit" class="ui-btn ui-btn-primary h-12 w-full gap-2">
+              <button type="submit" class="ui-btn ui-btn-primary h-12 px-6 sm:w-auto w-full shrink-0 gap-2">
                 <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
                 <span>Vérifier le statut</span>
               </button>
-            </form>
-          </search>
-
-          <div class="mt-4 pt-3.5 border-t border-slate-100 flex items-center justify-between gap-3 text-xs text-slate-500">
-            {% if user.is_authenticated %}
-              <a href="{% url 'terminal:client_watchlist' %}" class="font-bold text-ctsa-bluehover hover:underline no-underline">
-                Accéder à mes conteneurs suivis →
-              </a>
-            {% else %}
-              <a href="{% url 'accounts:login' %}?next={% url 'terminal:client_watchlist' %}" class="font-bold text-ctsa-bluehover hover:underline no-underline">
-                Espace client : suivre plusieurs conteneurs →
-              </a>
-            {% endif %}
+            </div>
           </div>
-        </div>
+        </form>
+      </search>
+
+      <div class="mt-5 pt-4 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3 text-xs text-slate-500">
+        <span>{{ site_settings.search_note }}</span>
+        {% if user.is_authenticated %}
+          <a href="{% url 'terminal:client_watchlist' %}" class="font-bold text-ctsa-bluehover hover:underline no-underline">
+            Accéder à mes conteneurs suivis →
+          </a>
+        {% else %}
+          <a href="{% url 'accounts:login' %}?next={% url 'terminal:client_watchlist' %}" class="font-bold text-ctsa-bluehover hover:underline no-underline">
+            Espace client : suivre plusieurs conteneurs →
+          </a>
+        {% endif %}
       </div>
     </div>
 
     <!-- Parcours en 3 étapes -->
-    <ol class="mt-10 grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-5 list-none p-0 mb-0">
+    <ol class="max-w-4xl mx-auto mt-10 grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-5 list-none p-0 mb-0">
       <li class="bg-white rounded-xl p-5 border border-slate-200/80 shadow-xs flex items-start gap-3.5">
-        <span class="inline-flex items-center justify-center w-9 h-9 rounded-lg bg-slate-900 text-white font-heading font-extrabold text-xs shrink-0 tabular-nums">
+        <span class="inline-flex items-center justify-center w-9 h-9 rounded-xl bg-slate-900 text-white font-heading font-extrabold text-xs shrink-0">
           01
         </span>
         <div class="min-w-0">
@@ -106,7 +95,7 @@
       </li>
 
       <li class="bg-white rounded-xl p-5 border border-slate-200/80 shadow-xs flex items-start gap-3.5">
-        <span class="inline-flex items-center justify-center w-9 h-9 rounded-lg bg-ctsa-blue text-white font-heading font-extrabold text-xs shrink-0 tabular-nums">
+        <span class="inline-flex items-center justify-center w-9 h-9 rounded-xl bg-ctsa-blue text-white font-heading font-extrabold text-xs shrink-0">
           02
         </span>
         <div class="min-w-0">
@@ -118,7 +107,7 @@
       </li>
 
       <li class="bg-white rounded-xl p-5 border border-slate-200/80 shadow-xs flex items-start gap-3.5">
-        <span class="inline-flex items-center justify-center w-9 h-9 rounded-lg bg-ctsa-green text-white font-heading font-extrabold text-xs shrink-0 tabular-nums">
+        <span class="inline-flex items-center justify-center w-9 h-9 rounded-xl bg-ctsa-green text-white font-heading font-extrabold text-xs shrink-0">
           03
         </span>
         <div class="min-w-0">
@@ -149,7 +138,7 @@
 
     <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
       <!-- Confirmé -->
-      <article class="bg-slate-50/80 rounded-xl p-5 sm:p-6 border border-slate-200/80 border-t-4 border-t-emerald-600 flex flex-col justify-between gap-5">
+      <article class="bg-slate-50/80 rounded-2xl p-5 sm:p-6 border border-slate-200/80 border-t-4 border-t-emerald-600 flex flex-col justify-between gap-5">
         <div>
           <div class="flex items-center justify-between gap-2 mb-4">
             {% include 'components/badge.html' with variant='confirmed' label='Confirmé' %}
@@ -164,14 +153,14 @@
             Le conteneur est physiquement disponible et validé par le terminal pour la séance de vérification douanière du jour.
           </p>
         </div>
-        <div class="bg-white rounded-lg p-3.5 border border-slate-200/80 text-xs sm:text-sm text-slate-700">
+        <div class="bg-white rounded-xl p-3.5 border border-slate-200/80 text-xs sm:text-sm text-slate-700">
           <strong class="block font-heading uppercase tracking-wider text-emerald-800 text-[11px] mb-1">Consigne client</strong>
           {{ site_settings.confirmed_instruction }}
         </div>
       </article>
 
       <!-- En attente -->
-      <article class="bg-slate-50/80 rounded-xl p-5 sm:p-6 border border-slate-200/80 border-t-4 border-t-amber-500 flex flex-col justify-between gap-5">
+      <article class="bg-slate-50/80 rounded-2xl p-5 sm:p-6 border border-slate-200/80 border-t-4 border-t-amber-500 flex flex-col justify-between gap-5">
         <div>
           <div class="flex items-center justify-between gap-2 mb-4">
             {% include 'components/badge.html' with variant='pending' label='En attente' %}
@@ -186,14 +175,14 @@
             Le conteneur figure sur la programmation quotidienne, mais son positionnement final à la RAMPE n'est pas encore confirmé.
           </p>
         </div>
-        <div class="bg-white rounded-lg p-3.5 border border-slate-200/80 text-xs sm:text-sm text-slate-700">
+        <div class="bg-white rounded-xl p-3.5 border border-slate-200/80 text-xs sm:text-sm text-slate-700">
           <strong class="block font-heading uppercase tracking-wider text-amber-900 text-[11px] mb-1">Consigne client</strong>
           {{ site_settings.pending_instruction }}
         </div>
       </article>
 
       <!-- Indisponible -->
-      <article class="bg-slate-50/80 rounded-xl p-5 sm:p-6 border border-slate-200/80 border-t-4 border-t-red-600 flex flex-col justify-between gap-5">
+      <article class="bg-slate-50/80 rounded-2xl p-5 sm:p-6 border border-slate-200/80 border-t-4 border-t-red-600 flex flex-col justify-between gap-5">
         <div>
           <div class="flex items-center justify-between gap-2 mb-4">
             {% include 'components/badge.html' with variant='unavailable' label='Indisponible' %}
@@ -208,7 +197,7 @@
             Le conteneur ne peut pas être présenté à la vérification douanière pour la séance en cours. Le motif exact est indiqué sur sa fiche.
           </p>
         </div>
-        <div class="bg-white rounded-lg p-3.5 border border-slate-200/80 text-xs sm:text-sm text-slate-700">
+        <div class="bg-white rounded-xl p-3.5 border border-slate-200/80 text-xs sm:text-sm text-slate-700">
           <strong class="block font-heading uppercase tracking-wider text-red-800 text-[11px] mb-1">Consigne client</strong>
           {{ site_settings.unavailable_instruction }}
         </div>
@@ -220,7 +209,7 @@
 <!-- Accès Espace Client -->
 <section class="bg-slate-50 border-t border-slate-200/80 py-10 sm:py-12">
   <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-    <div class="rounded-xl bg-white border border-slate-200/90 border-l-4 border-l-ctsa-green p-6 sm:p-8 shadow-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+    <div class="rounded-2xl bg-white border border-slate-200/90 border-l-4 border-l-ctsa-green p-6 sm:p-8 shadow-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
       <div class="max-w-2xl">
         <div class="text-xs font-heading uppercase tracking-widest text-ctsa-bluehover font-bold mb-1.5">
           Suivi multi-conteneurs
