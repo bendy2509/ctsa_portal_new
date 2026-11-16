@@ -410,3 +410,6 @@ msgstr "Retire kontenè sa a nan lis ou a ?"
 
 msgid "%(num)s ne sera plus suivi dans « Mes conteneurs ». Vous pourrez l'ajouter à nouveau à tout moment."
 msgstr "Ou p ap swiv %(num)s ankò nan « Kontenè mwen yo ». Ou ka ajoute l ankò nenpòt ki lè."
+
+msgid "Ce conteneur a déjà été vérifié à la RAMPE. Aucune nouvelle vérification n'est programmée."
+msgstr "Kontenè sa a te deja verifye nan RANP la. Pa gen lòt verifikasyon ki pwograme."

@@ -576,9 +576,12 @@ class ShippingLinesAndStatisticsTests(TestCase):
         self.assertIn('Koneksyon an pa disponib', sw_body)
 
     def test_verified_container_search_shows_already_verified(self):
+        import datetime
+
+        sched_date = timezone.localdate() - datetime.timedelta(days=4)
         Container.objects.create(
             container_number='MSCU7778889',
-            scheduled_date=timezone.localdate(),
+            scheduled_date=sched_date,
             status=Container.Status.CONFIRMED,
             verification_result=Container.Verification.VERIFIED,
             verified_at=timezone.now(),
@@ -588,6 +591,8 @@ class ShippingLinesAndStatisticsTests(TestCase):
         self.assertEqual(resp.status_code, 200)
         self.assertContains(resp, 'Deja verifye')
         self.assertContains(resp, 'Kontenè sa a deja verifye')
+        self.assertNotContains(resp, sched_date.strftime('%d/%m/%Y'))
+        self.assertNotContains(resp, timezone.localdate().strftime('%d/%m/%Y'))
 
     def test_creole_language_switch_and_localized_site_settings(self):
         from .models import SiteSettings
