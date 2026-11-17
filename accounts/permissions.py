@@ -97,6 +97,7 @@ URL_PERMISSIONS = {
     'terminal:container_update_status': Actions.CONTAINER_CHANGE_STATUS,
     'terminal:container_status_bulk': Actions.CONTAINER_CHANGE_STATUS,
     'terminal:container_delete': Actions.CONTAINER_ARCHIVE,
+    'terminal:container_restore': Actions.CONTAINER_RESTORE,
     'terminal:arrival_create': Actions.CONTAINER_ARRIVAL_CREATE,
     'terminal:container_set_verification': Actions.CONTAINER_VERIFY,
     'terminal:container_verify_bulk': Actions.CONTAINER_VERIFY,
@@ -186,7 +187,7 @@ def peut(utilisateur, action: str, objet=None) -> bool:
         marked_at = None
         is_historical = False
 
-        if hasattr(objet, 'created_by_id') and hasattr(objet, 'created_at'):
+        if not hasattr(objet, 'verification_events') and hasattr(objet, 'created_by_id') and hasattr(objet, 'created_at'):
             # Objet VerificationEvent
             author_id = objet.created_by_id
             marked_at = objet.created_at

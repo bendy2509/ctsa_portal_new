@@ -1,6 +1,6 @@
 from django.utils.translation import get_language
 
-from .models import SiteSettings
+from .models import Motif, SiteSettings
 from .views import default_carry_target, unverified_backlog
 
 
@@ -14,4 +14,10 @@ def portal_navigation(request):
     user = getattr(request, 'user', None)
     if user and user.is_authenticated and user.is_staff_member:
         context['portal_unverified_count'] = unverified_backlog(default_carry_target(user)).count()
+        context['unavailable_motifs'] = list(
+            Motif.objects.filter(type=Motif.Type.UNAVAILABLE, is_active=True)
+        )
+        context['not_verified_motifs'] = list(
+            Motif.objects.filter(type=Motif.Type.NOT_VERIFIED, is_active=True)
+        )
     return context

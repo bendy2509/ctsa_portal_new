@@ -105,8 +105,22 @@
         </div>
 
         <div class="space-y-1.5">
-          <label for="id_unavailability_note" class="block text-sm font-bold text-ctsa-slate">
+          <label for="id_unavailability_reason" class="block text-sm font-bold text-ctsa-slate">
             Motif d'indisponibilité
+          </label>
+          <select id="id_unavailability_reason"
+                  name="unavailability_reason"
+                  class="w-full min-h-[44px] rounded-lg border border-slate-300 px-3.5 py-2 text-sm text-ctsa-slate bg-white focus:outline-none focus:ring-2 focus:ring-ctsa-blue/30 focus:border-ctsa-blue">
+            <option value="">— Choisissez un motif (si indisponible) —</option>
+            {% for m in unavailable_motifs %}
+              <option value="{{ m.pk }}" {% if container.unavailability_reason_id == m.pk %}selected{% endif %}>{{ m.label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="space-y-1.5">
+          <label for="id_unavailability_note" class="block text-sm font-bold text-ctsa-slate">
+            Précision d'indisponibilité
           </label>
           <textarea id="id_unavailability_note"
                     name="unavailability_note"

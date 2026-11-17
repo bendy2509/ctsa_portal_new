@@ -7,6 +7,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
 from django.core.paginator import Paginator
+from django.db import transaction
 from django.db.models import Count, Q
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
@@ -28,6 +29,7 @@ from .models import (
     SiteSettings,
     HeroSlide,
     PortalAuditLog,
+    sync_container_verification,
     normalize_container_number,
     CONTAINER_NUMBER_REGEX,
     ARRIVAL_NUMBER_REGEX,
@@ -928,22 +930,48 @@ def container_add_bulk_view(request):
     return redirect(_safe_next(request, _dashboard_url(target_date)))
 
 
+def _resolve_motif(motif_type: str, raw_reason_id, note: str):
+    """Valide un motif structuré actif et sa précision obligatoire éventuelle."""
+    reason_obj = None
+    if raw_reason_id and str(raw_reason_id).isdigit():
+        reason_obj = Motif.objects.filter(
+            pk=int(raw_reason_id),
+            type=motif_type,
+            is_active=True,
+        ).first()
+    if reason_obj is None:
+        raise ValidationError("Veuillez sélectionner un motif valide.")
+    clean_note = (note or '').strip()[:255]
+    if reason_obj.requires_note and not clean_note:
+        raise ValidationError(f"Une précision est obligatoire pour le motif « {reason_obj.label} ».")
+    return reason_obj, clean_note
+
+
 @require_permission(Actions.CONTAINER_CHANGE_STATUS)
 @require_POST
 def container_update_status_view(request, pk):
     container = get_object_or_404(Container.all_objects, pk=pk)
     new_status = request.POST.get('status', container.status)
     note = request.POST.get('unavailability_note', '').strip()
+    raw_reason = request.POST.get('unavailability_reason', '').strip()
+    raw_version = request.POST.get('version', '').strip()
+    expected_version = int(raw_version) if raw_version.isdigit() else None
     shipping_line_id = request.POST.get('shipping_line') or None
 
     if new_status in dict(Container.Status.choices):
         if shipping_line_id and shipping_line_id.isdigit():
             container.shipping_line_id = int(shipping_line_id)
         try:
+            reason_obj = None
+            clean_note = ''
+            if new_status == Container.Status.UNAVAILABLE:
+                reason_obj, clean_note = _resolve_motif(Motif.Type.UNAVAILABLE, raw_reason, note)
             container.change_status(
                 new_status,
                 acting_user=request.user,
-                note=note if 'unavailability_note' in request.POST else container.unavailability_note,
+                reason=reason_obj,
+                note=clean_note,
+                expected_version=expected_version,
             )
         except ValidationError as exc:
             messages.error(request, exc.messages[0])
@@ -965,11 +993,21 @@ def container_status_bulk_view(request):
     target_date = _parse_date(request.POST.get('date', ''), today)
     new_status = request.POST.get('status', '').strip()
     note = request.POST.get('unavailability_note', '').strip()
+    raw_reason = request.POST.get('unavailability_reason', '').strip()
     fallback = _dashboard_url(target_date)
 
     if new_status not in dict(Container.Status.choices):
         messages.error(request, "Statut inconnu.")
         return redirect(_safe_next(request, fallback))
+
+    reason_obj = None
+    clean_note = ''
+    if new_status == Container.Status.UNAVAILABLE:
+        try:
+            reason_obj, clean_note = _resolve_motif(Motif.Type.UNAVAILABLE, raw_reason, note)
+        except ValidationError as exc:
+            messages.error(request, exc.messages[0])
+            return redirect(_safe_next(request, fallback))
 
     qs = Container.objects.filter(scheduled_date=target_date)
     ids = [i for i in request.POST.getlist('ids') if i.isdigit()]
@@ -985,7 +1023,12 @@ def container_status_bulk_view(request):
     skipped_locked = 0
     for container in qs:
         try:
-            container.change_status(new_status, acting_user=request.user, note=note)
+            container.change_status(
+                new_status,
+                acting_user=request.user,
+                reason=reason_obj,
+                note=clean_note,
+            )
             updated_count += 1
         except ValidationError:
             skipped_locked += 1
@@ -1076,6 +1119,7 @@ def container_edit_view(request, pk):
         raw_line = request.POST.get('shipping_line', '').strip()
         raw_date = request.POST.get('scheduled_date', '').strip()
         new_status = request.POST.get('status', '').strip()
+        raw_reason = request.POST.get('unavailability_reason', '').strip()
         note = request.POST.get('unavailability_note', '').strip()
 
         form_values = {
@@ -1120,12 +1164,21 @@ def container_edit_view(request, pk):
             if not ok:
                 errors['status'] = err
 
+        reason_obj = None
+        clean_note = ''
+        if not errors and new_status == Container.Status.UNAVAILABLE:
+            try:
+                reason_obj, clean_note = _resolve_motif(Motif.Type.UNAVAILABLE, raw_reason, note)
+            except ValidationError as exc:
+                errors['unavailability_note'] = exc.messages[0]
+
         if not errors:
             container.container_number = normalized
             container.shipping_line = line_obj
             container.scheduled_date = parsed_date
             container.status = new_status
-            container.unavailability_note = note if new_status == Container.Status.UNAVAILABLE else ''
+            container.unavailability_reason = reason_obj
+            container.unavailability_note = clean_note
             container.version = (container.version or 1) + 1
             container.save(acting_user=request.user)
             messages.success(request, f"Conteneur {container.container_number} enregistré.")
@@ -1143,32 +1196,173 @@ def container_edit_view(request, pk):
 @require_permission(Actions.CONTAINER_VERIFY)
 @require_POST
 def container_set_verification_view(request, pk):
-    """Marque un conteneur confirmé Vérifié / Non vérifié (ou annule le marquage)."""
+    """Marque un conteneur confirmé Vérifié / Non vérifié, corrige (< fenêtre) ou supprime le mouvement (> fenêtre)."""
     container = get_object_or_404(Container, pk=pk)
     result = request.POST.get('result', '').strip()
     note = request.POST.get('verification_note', '').strip()[:255]
+    raw_reason = request.POST.get('verification_reason', '').strip()
+    archive_reason = request.POST.get('archive_reason', '').strip()[:255]
+    raw_version = request.POST.get('version', '').strip()
+    expected_version = int(raw_version) if raw_version.isdigit() else None
+    fallback = _dashboard_url(container.scheduled_date) if container.scheduled_date else reverse('terminal:containers')
+
+    # Cas 1 : Le conteneur a déjà un résultat -> correction (< fenêtre) ou suppression du mouvement (> fenêtre)
+    if container.verification_result:
+        if container.carry_decision in (Container.CarryDecision.CARRIED, Container.CarryDecision.REJECTED):
+            messages.error(
+                request,
+                f"{container.container_number} : impossible de corriger ou supprimer le mouvement d'un conteneur déjà repris ou rejeté.",
+            )
+            return redirect(_safe_next(request, fallback))
+
+        is_delete_movement = request.POST.get('delete_movement') == '1' or (
+            result == '' and not peut(request.user, Actions.CONTAINER_VERIFY_CORRECT, container)
+        )
+        if is_delete_movement:
+            if not peut(request.user, Actions.CONTAINER_VERIFY_DELETE_MOVEMENT, container):
+                return render_403(request, "Vous n'avez pas l'autorisation de supprimer ce mouvement de vérification.")
+            if not archive_reason:
+                messages.error(request, "Un motif est obligatoire pour supprimer le mouvement de vérification.")
+                return redirect(_safe_next(request, fallback))
+            try:
+                with transaction.atomic():
+                    locked = Container.all_objects.select_for_update().get(pk=container.pk)
+                    if expected_version is not None and locked.version != expected_version:
+                        raise ValidationError("Conflit de concurrence : ce conteneur a été modifié entre-temps. Actualisez la page.")
+                    VerificationEvent.objects.filter(
+                        container=locked, archived_at__isnull=True
+                    ).update(
+                        archived_at=timezone.now(),
+                        archived_by=request.user,
+                        archive_reason=archive_reason,
+                    )
+                    sync_container_verification(locked, acting_user=request.user)
+                    ContainerStatusLog.objects.create(
+                        container=locked,
+                        action=ContainerStatusLog.Action.VERIFICATION_ARCHIVED,
+                        old_status=locked.status,
+                        new_status=locked.status,
+                        reason_text=archive_reason,
+                        changed_by=request.user,
+                    )
+            except ValidationError as exc:
+                messages.error(request, f"{container.container_number} : {exc.messages[0]}")
+            else:
+                messages.success(request, f"Mouvement de vérification archivé pour {container.container_number} (remis à Non inspecté).")
+            return redirect(_safe_next(request, fallback))
+
+        # Correction dans la fenêtre
+        if not peut(request.user, Actions.CONTAINER_VERIFY_CORRECT, container):
+            return render_403(request, "La fenêtre de correction est dépassée ou ce marquage appartient à un autre inspecteur.")
+
+        reason_obj = None
+        clean_note = ''
+        if result == Container.Verification.NOT_VERIFIED:
+            try:
+                reason_obj, clean_note = _resolve_motif(Motif.Type.NOT_VERIFIED, raw_reason, note)
+            except ValidationError as exc:
+                messages.error(request, f"{container.container_number} : {exc.messages[0]}")
+                return redirect(_safe_next(request, fallback))
+
+        try:
+            with transaction.atomic():
+                locked = Container.all_objects.select_for_update().get(pk=container.pk)
+                if expected_version is not None and locked.version != expected_version:
+                    raise ValidationError("Conflit de concurrence : ce conteneur a été modifié entre-temps. Actualisez la page.")
+                if result == '':
+                    VerificationEvent.objects.filter(
+                        container=locked, archived_at__isnull=True
+                    ).update(
+                        archived_at=timezone.now(),
+                        archived_by=request.user,
+                        archive_reason=note or "Correction dans la fenêtre",
+                    )
+                else:
+                    VerificationEvent.objects.filter(
+                        container=locked, archived_at__isnull=True
+                    ).update(
+                        archived_at=timezone.now(),
+                        archived_by=request.user,
+                        archive_reason="Remplacé par correction",
+                    )
+                    VerificationEvent.objects.create(
+                        container=locked,
+                        result=result,
+                        reason=reason_obj,
+                        note=clean_note,
+                        created_by=request.user,
+                        created_at=timezone.now(),
+                        corrected_by=request.user,
+                        corrected_at=timezone.now(),
+                    )
+                sync_container_verification(locked, acting_user=request.user)
+                ContainerStatusLog.objects.create(
+                    container=locked,
+                    action=ContainerStatusLog.Action.VERIFICATION_CORRECTED,
+                    old_status=locked.status,
+                    new_status=locked.status,
+                    reason_text=(
+                        f"{reason_obj.label} — {clean_note}" if reason_obj and clean_note
+                        else (reason_obj.label if reason_obj else (clean_note or "Correction d'inspection"))
+                    )[:255],
+                    changed_by=request.user,
+                )
+        except ValidationError as exc:
+            messages.error(request, f"{container.container_number} : {exc.messages[0]}")
+        else:
+            label = container.get_verification_result_display() if result else "remis à Non inspecté"
+            messages.success(request, f"Conteneur {container.container_number} corrigé ({label}).")
+        return redirect(_safe_next(request, fallback))
+
+    # Cas 2 : Premier marquage sur un conteneur Non inspecté
+    reason_obj = None
+    clean_note = ''
+    if result == Container.Verification.NOT_VERIFIED:
+        try:
+            reason_obj, clean_note = _resolve_motif(Motif.Type.NOT_VERIFIED, raw_reason, note)
+        except ValidationError as exc:
+            messages.error(request, f"{container.container_number} : {exc.messages[0]}")
+            return redirect(_safe_next(request, fallback))
+
     try:
-        container.set_verification(result, acting_user=request.user, note=note)
+        container.set_verification(
+            result,
+            acting_user=request.user,
+            note=clean_note,
+            reason=reason_obj,
+            expected_version=expected_version,
+        )
     except ValidationError as exc:
         messages.error(request, f"{container.container_number} : {exc.messages[0]}")
     else:
         label = container.get_verification_result_display() if result else "marquage annulé"
         messages.success(request, f"Conteneur {container.container_number} : {label}.")
-    return redirect(_safe_next(request, _dashboard_url(container.scheduled_date)))
+    return redirect(_safe_next(request, fallback))
 
 
 @require_permission(Actions.CONTAINER_VERIFY)
 @require_POST
 def container_verify_bulk_view(request):
-    """Clôture de séance : applique un résultat aux conteneurs cochés ou aux confirmés restants."""
+    """Clôture de séance : seuls les conteneurs Confirmés et Non inspectés sont éligibles."""
     today = timezone.localdate()
     target_date = _parse_date(request.POST.get('date', ''), today)
     result = request.POST.get('result', '').strip()
+    note = request.POST.get('verification_note', '').strip()
+    raw_reason = request.POST.get('verification_reason', '').strip()
     fallback = _dashboard_url(target_date)
 
     if result not in Container.Verification.values:
         messages.error(request, "Résultat de vérification inconnu.")
         return redirect(_safe_next(request, fallback))
+
+    reason_obj = None
+    clean_note = ''
+    if result == Container.Verification.NOT_VERIFIED:
+        try:
+            reason_obj, clean_note = _resolve_motif(Motif.Type.NOT_VERIFIED, raw_reason, note)
+        except ValidationError as exc:
+            messages.error(request, exc.messages[0])
+            return redirect(_safe_next(request, fallback))
 
     qs = Container.objects.filter(scheduled_date=target_date, status=Container.Status.CONFIRMED)
     ids = [i for i in request.POST.getlist('ids') if i.isdigit()]
@@ -1181,12 +1375,22 @@ def container_verify_bulk_view(request):
         return redirect(_safe_next(request, fallback))
 
     done = 0
+    skipped = 0
     for container in qs:
+        if container.verification_result != '':
+            skipped += 1
+            continue
         try:
-            container.set_verification(result, acting_user=request.user)
+            container.set_verification(
+                result,
+                acting_user=request.user,
+                note=clean_note,
+                reason=reason_obj,
+                expected_version=container.version,
+            )
             done += 1
         except ValidationError:
-            continue
+            skipped += 1
 
     label = dict(Container.Verification.choices)[result].lower()
     if done:
@@ -1194,7 +1398,12 @@ def container_verify_bulk_view(request):
             request,
             f"{done} conteneur(s) marqué(s) « {label} » pour la séance du {target_date.strftime('%d/%m/%Y')}."
         )
-    else:
+    if skipped:
+        messages.warning(
+            request,
+            f"{skipped} conteneur(s) ignoré(s) (déjà inspectés ou non éligibles).",
+        )
+    if not done and not skipped:
         messages.warning(request, "Aucun conteneur confirmé à marquer pour cette séance.")
     return redirect(_safe_next(request, fallback))
 
@@ -1774,6 +1983,21 @@ def container_export_csv_view(request):
     return response
 
 
+@require_permission(Actions.CONTAINER_RESTORE)
+@require_POST
+def container_restore_view(request, pk):
+    """Restaure un conteneur archivé (Superadmin uniquement)."""
+    container = get_object_or_404(Container.all_objects, pk=pk)
+    reason = request.POST.get('restore_reason', '').strip() or "Restauration depuis l'historique"
+    try:
+        container.restore(acting_user=request.user, reason=reason)
+    except ValidationError as exc:
+        messages.error(request, exc.messages[0])
+    else:
+        messages.success(request, f"Conteneur {container.container_number} restauré.")
+    return redirect('terminal:status_logs')
+
+
 @require_permission(Actions.REPORT_VIEW)
 def status_logs_view(request):
     q = request.GET.get('q', '').strip()
@@ -1790,12 +2014,19 @@ def status_logs_view(request):
             | Q(changed_by__full_name__icontains=q)
         )
 
+    archived_containers = list(
+        Container.all_objects.filter(archived_at__isnull=False)
+        .select_related('shipping_line', 'archived_by')
+        .order_by('-archived_at')[:30]
+    )
+
     page, page_query = _paginate(request, logs)
     return render(request, 'portal/status_logs.html', {
         'logs': page.object_list,
         'page': page,
         'page_query': page_query,
         'q': q,
+        'archived_containers': archived_containers,
     })
 
 

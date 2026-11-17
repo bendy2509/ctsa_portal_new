@@ -241,6 +241,7 @@
         {% csrf_token %}
         <input type="hidden" name="result" value="not_verified">
         <input type="hidden" name="next" id="verification-note-next" value="">
+        <input type="hidden" name="version" id="verification-note-version" value="">
         <div class="space-y-1">
           <h2 id="verification-note-title" class="text-lg font-heading font-extrabold text-ctsa-slate m-0">
             Marquer non vérifié
@@ -248,8 +249,22 @@
           <p id="verification-note-subtitle" class="text-sm font-mono font-bold text-slate-600 m-0"></p>
         </div>
         <div class="space-y-1.5">
+          <label for="verification-reason-select" class="block text-sm font-bold text-ctsa-slate">
+            Motif <span class="text-red-600" aria-hidden="true">*</span>
+          </label>
+          <select id="verification-reason-select"
+                  name="verification_reason"
+                  required
+                  class="w-full min-h-[44px] rounded-lg border border-slate-300 px-3.5 py-2 text-sm text-ctsa-slate bg-white focus:outline-none focus:ring-2 focus:ring-ctsa-blue/30 focus:border-ctsa-blue">
+            <option value="">— Choisissez un motif —</option>
+            {% for m in not_verified_motifs %}
+              <option value="{{ m.pk }}" data-requires-note="{% if m.requires_note %}1{% else %}0{% endif %}">{{ m.label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="space-y-1.5">
           <label for="verification-note-input" class="block text-sm font-bold text-ctsa-slate">
-            Précision (facultatif)
+            Précision <span id="verification-note-req" class="text-xs font-normal text-slate-500">(facultatif)</span>
           </label>
           <input type="text"
                  id="verification-note-input"

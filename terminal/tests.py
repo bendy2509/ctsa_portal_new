@@ -246,6 +246,8 @@ class CTSAPortalBusinessTests(TestCase):
         self.assertEqual(c1.status, Container.Status.CONFIRMED)
         self.assertEqual(c2.status, Container.Status.CONFIRMED)
 
+        from .models import Motif
+        unavail_motif = Motif.objects.filter(type=Motif.Type.UNAVAILABLE, is_active=True).first()
         # 2. Mark selected container as unavailable with reason note
         resp_unavail = self.client_http.post(
             reverse('terminal:container_status_bulk'),
@@ -253,6 +255,7 @@ class CTSAPortalBusinessTests(TestCase):
                 'date': today.isoformat(),
                 'ids': [str(c1.pk)],
                 'status': Container.Status.UNAVAILABLE,
+                'unavailability_reason': str(unavail_motif.pk),
                 'unavailability_note': 'En maintenance',
             },
         )
@@ -325,6 +328,8 @@ class CTSAPortalBusinessTests(TestCase):
         c.refresh_from_db()
         self.assertEqual(c.container_number, 'MSCU3333333')
 
+        from .models import Motif
+        unavail_motif = Motif.objects.filter(type=Motif.Type.UNAVAILABLE, is_active=True).first()
         # Valid edit updates container and redirects to detail
         edit_ok = self.client_http.post(
             reverse('terminal:container_edit', args=[c.pk]),
@@ -333,6 +338,7 @@ class CTSAPortalBusinessTests(TestCase):
                 'scheduled_date': today.isoformat(),
                 'shipping_line': str(self.cma.pk),
                 'status': Container.Status.UNAVAILABLE,
+                'unavailability_reason': str(unavail_motif.pk),
                 'unavailability_note': 'Bloqué douane',
             },
         )
