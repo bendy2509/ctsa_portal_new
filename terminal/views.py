@@ -1193,6 +1193,74 @@ def container_edit_view(request, pk):
     })
 
 
+def _archive_verification_movement(container, acting_user, archive_reason: str, expected_version):
+    """Archive le mouvement de vérification actif et remet le conteneur à Non inspecté."""
+    with transaction.atomic():
+        locked = Container.all_objects.select_for_update().get(pk=container.pk)
+        if expected_version is not None and locked.version != expected_version:
+            raise ValidationError(
+                "Conflit de concurrence : ce conteneur a été modifié entre-temps. Actualisez la page."
+            )
+        VerificationEvent.objects.filter(
+            container=locked, archived_at__isnull=True
+        ).update(
+            archived_at=timezone.now(),
+            archived_by=acting_user,
+            archive_reason=archive_reason,
+        )
+        sync_container_verification(locked, acting_user=acting_user)
+        ContainerStatusLog.objects.create(
+            container=locked,
+            action=ContainerStatusLog.Action.VERIFICATION_ARCHIVED,
+            old_status=locked.status,
+            new_status=locked.status,
+            reason_text=archive_reason,
+            changed_by=acting_user,
+        )
+
+
+def _correct_verification_movement(container, result: str, acting_user, reason_obj, clean_note: str, expected_version):
+    """Corrige une inspection dans la fenêtre de temps autorisée."""
+    with transaction.atomic():
+        locked = Container.all_objects.select_for_update().get(pk=container.pk)
+        if expected_version is not None and locked.version != expected_version:
+            raise ValidationError(
+                "Conflit de concurrence : ce conteneur a été modifié entre-temps. Actualisez la page."
+            )
+        now = timezone.now()
+        VerificationEvent.objects.filter(
+            container=locked, archived_at__isnull=True
+        ).update(
+            archived_at=now,
+            archived_by=acting_user,
+            archive_reason=(clean_note or "Correction dans la fenêtre") if result == '' else "Remplacé par correction",
+        )
+        if result != '':
+            VerificationEvent.objects.create(
+                container=locked,
+                result=result,
+                reason=reason_obj,
+                note=clean_note,
+                created_by=acting_user,
+                created_at=now,
+                corrected_by=acting_user,
+                corrected_at=now,
+            )
+        sync_container_verification(locked, acting_user=acting_user)
+        reason_label = (
+            f"{reason_obj.label} — {clean_note}" if reason_obj and clean_note
+            else (reason_obj.label if reason_obj else (clean_note or "Correction d'inspection"))
+        )[:255]
+        ContainerStatusLog.objects.create(
+            container=locked,
+            action=ContainerStatusLog.Action.VERIFICATION_CORRECTED,
+            old_status=locked.status,
+            new_status=locked.status,
+            reason_text=reason_label,
+            changed_by=acting_user,
+        )
+
+
 @require_permission(Actions.CONTAINER_VERIFY)
 @require_POST
 def container_set_verification_view(request, pk):
@@ -1225,38 +1293,17 @@ def container_set_verification_view(request, pk):
                 messages.error(request, "Un motif est obligatoire pour supprimer le mouvement de vérification.")
                 return redirect(_safe_next(request, fallback))
             try:
-                with transaction.atomic():
-                    locked = Container.all_objects.select_for_update().get(pk=container.pk)
-                    if expected_version is not None and locked.version != expected_version:
-                        raise ValidationError("Conflit de concurrence : ce conteneur a été modifié entre-temps. Actualisez la page.")
-                    VerificationEvent.objects.filter(
-                        container=locked, archived_at__isnull=True
-                    ).update(
-                        archived_at=timezone.now(),
-                        archived_by=request.user,
-                        archive_reason=archive_reason,
-                    )
-                    sync_container_verification(locked, acting_user=request.user)
-                    ContainerStatusLog.objects.create(
-                        container=locked,
-                        action=ContainerStatusLog.Action.VERIFICATION_ARCHIVED,
-                        old_status=locked.status,
-                        new_status=locked.status,
-                        reason_text=archive_reason,
-                        changed_by=request.user,
-                    )
+                _archive_verification_movement(container, request.user, archive_reason, expected_version)
             except ValidationError as exc:
                 messages.error(request, f"{container.container_number} : {exc.messages[0]}")
             else:
                 messages.success(request, f"Mouvement de vérification archivé pour {container.container_number} (remis à Non inspecté).")
             return redirect(_safe_next(request, fallback))
 
-        # Correction dans la fenêtre
         if not peut(request.user, Actions.CONTAINER_VERIFY_CORRECT, container):
             return render_403(request, "La fenêtre de correction est dépassée ou ce marquage appartient à un autre inspecteur.")
 
-        reason_obj = None
-        clean_note = ''
+        reason_obj, clean_note = None, ''
         if result == Container.Verification.NOT_VERIFIED:
             try:
                 reason_obj, clean_note = _resolve_motif(Motif.Type.NOT_VERIFIED, raw_reason, note)
@@ -1265,48 +1312,7 @@ def container_set_verification_view(request, pk):
                 return redirect(_safe_next(request, fallback))
 
         try:
-            with transaction.atomic():
-                locked = Container.all_objects.select_for_update().get(pk=container.pk)
-                if expected_version is not None and locked.version != expected_version:
-                    raise ValidationError("Conflit de concurrence : ce conteneur a été modifié entre-temps. Actualisez la page.")
-                if result == '':
-                    VerificationEvent.objects.filter(
-                        container=locked, archived_at__isnull=True
-                    ).update(
-                        archived_at=timezone.now(),
-                        archived_by=request.user,
-                        archive_reason=note or "Correction dans la fenêtre",
-                    )
-                else:
-                    VerificationEvent.objects.filter(
-                        container=locked, archived_at__isnull=True
-                    ).update(
-                        archived_at=timezone.now(),
-                        archived_by=request.user,
-                        archive_reason="Remplacé par correction",
-                    )
-                    VerificationEvent.objects.create(
-                        container=locked,
-                        result=result,
-                        reason=reason_obj,
-                        note=clean_note,
-                        created_by=request.user,
-                        created_at=timezone.now(),
-                        corrected_by=request.user,
-                        corrected_at=timezone.now(),
-                    )
-                sync_container_verification(locked, acting_user=request.user)
-                ContainerStatusLog.objects.create(
-                    container=locked,
-                    action=ContainerStatusLog.Action.VERIFICATION_CORRECTED,
-                    old_status=locked.status,
-                    new_status=locked.status,
-                    reason_text=(
-                        f"{reason_obj.label} — {clean_note}" if reason_obj and clean_note
-                        else (reason_obj.label if reason_obj else (clean_note or "Correction d'inspection"))
-                    )[:255],
-                    changed_by=request.user,
-                )
+            _correct_verification_movement(container, result, request.user, reason_obj, clean_note, expected_version)
         except ValidationError as exc:
             messages.error(request, f"{container.container_number} : {exc.messages[0]}")
         else:
@@ -1315,8 +1321,7 @@ def container_set_verification_view(request, pk):
         return redirect(_safe_next(request, fallback))
 
     # Cas 2 : Premier marquage sur un conteneur Non inspecté
-    reason_obj = None
-    clean_note = ''
+    reason_obj, clean_note = None, ''
     if result == Container.Verification.NOT_VERIFIED:
         try:
             reason_obj, clean_note = _resolve_motif(Motif.Type.NOT_VERIFIED, raw_reason, note)
@@ -1674,6 +1679,25 @@ def _stat_annotations():
     }
 
 
+def _reason_breakdown(qs, filter_kwargs: dict, reason_field: str) -> list:
+    """Agrège et calcule les pourcentages pour une répartition par motif."""
+    raw = list(
+        qs.filter(**filter_kwargs)
+        .values(reason_field)
+        .annotate(total=Count('id'))
+        .order_by('-total')
+    )
+    peak = max((r['total'] for r in raw), default=0)
+    return [
+        {
+            'label': r[reason_field] or 'Non renseigné',
+            'total': r['total'],
+            'pct': round(100 * r['total'] / peak) if peak else 0,
+        }
+        for r in raw
+    ]
+
+
 @require_permission(Actions.REPORT_VIEW)
 def statistics_view(request):
     today = timezone.localdate()
@@ -1756,37 +1780,12 @@ def statistics_view(request):
         by_origin.append(row)
 
     # Non vérifiés par motif et Indisponibles par motif
-    nv_reasons_raw = list(
-        qs.filter(verification_result=Container.Verification.NOT_VERIFIED)
-        .values('verification_reason__label')
-        .annotate(total=Count('id'))
-        .order_by('-total')
+    not_verified_by_reason = _reason_breakdown(
+        qs, {'verification_result': Container.Verification.NOT_VERIFIED}, 'verification_reason__label'
     )
-    nv_max = max((r['total'] for r in nv_reasons_raw), default=0)
-    not_verified_by_reason = [
-        {
-            'label': r['verification_reason__label'] or 'Non renseigné',
-            'total': r['total'],
-            'pct': round(100 * r['total'] / nv_max) if nv_max else 0,
-        }
-        for r in nv_reasons_raw
-    ]
-
-    un_reasons_raw = list(
-        qs.filter(status=Container.Status.UNAVAILABLE)
-        .values('unavailability_reason__label')
-        .annotate(total=Count('id'))
-        .order_by('-total')
+    unavailable_by_reason = _reason_breakdown(
+        qs, {'status': Container.Status.UNAVAILABLE}, 'unavailability_reason__label'
     )
-    un_max = max((r['total'] for r in un_reasons_raw), default=0)
-    unavailable_by_reason = [
-        {
-            'label': r['unavailability_reason__label'] or 'Non renseigné',
-            'total': r['total'],
-            'pct': round(100 * r['total'] / un_max) if un_max else 0,
-        }
-        for r in un_reasons_raw
-    ]
 
     # Conteneurs enregistrés sans liste depuis >= N jours
     alert_days = SiteSettings.get_solo().unscheduled_alert_days or 3

@@ -6,7 +6,7 @@ from django.urls import reverse
 from django.utils import timezone
 
 from accounts.models import User
-from terminal.models import Container, ContainerStatusLog, PortalAuditLog
+from terminal.models import Container, PortalAuditLog
 from terminal.views import _carry_into
 
 

@@ -4,7 +4,6 @@ from django.utils import timezone
 from accounts.models import User
 from terminal.models import (
     ShippingLine,
-    ContainerPrefix,
     Container,
     ContainerStatusLog,
 )

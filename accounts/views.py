@@ -94,6 +94,19 @@ def profile_view(request):
     })
 
 
+def _log_user_audit(acting_user, target_user, category: str, old_value: str, new_value: str) -> None:
+    """Enregistre un événement utilisateur dans le journal d'audit en ajout seulement."""
+    from terminal.models import PortalAuditLog
+
+    PortalAuditLog.objects.create(
+        category=category,
+        target_label=f"User:{target_user.username}",
+        old_value=old_value,
+        new_value=new_value,
+        changed_by=acting_user,
+    )
+
+
 @require_permission(Actions.USER_MANAGE)
 def user_list_view(request):
     role_filter = request.GET.get('role', '')
@@ -118,12 +131,9 @@ def user_list_view(request):
             new_user = create_form.save()
             if new_user.role == User.Role.ADMIN:
                 from terminal.models import PortalAuditLog
-                PortalAuditLog.objects.create(
-                    category=PortalAuditLog.Category.PROMOTE_SUPERADMIN,
-                    target_label=f"User:{new_user.username}",
-                    old_value="",
-                    new_value="Administrateur (création)",
-                    changed_by=request.user,
+                _log_user_audit(
+                    request.user, new_user, PortalAuditLog.Category.PROMOTE_SUPERADMIN,
+                    "", "Administrateur (création)",
                 )
             messages.success(
                 request,
@@ -157,12 +167,9 @@ def user_create_view(request):
         new_user = form.save()
         if new_user.role == User.Role.ADMIN:
             from terminal.models import PortalAuditLog
-            PortalAuditLog.objects.create(
-                category=PortalAuditLog.Category.PROMOTE_SUPERADMIN,
-                target_label=f"User:{new_user.username}",
-                old_value="",
-                new_value="Administrateur (création)",
-                changed_by=request.user,
+            _log_user_audit(
+                request.user, new_user, PortalAuditLog.Category.PROMOTE_SUPERADMIN,
+                "", "Administrateur (création)",
             )
         messages.success(
             request,
@@ -207,12 +214,9 @@ def user_edit_view(request, pk):
         updated_user = form.save()
         if old_role != updated_user.role:
             from terminal.models import PortalAuditLog
-            PortalAuditLog.objects.create(
-                category=PortalAuditLog.Category.ROLE_CHANGE,
-                target_label=f"User:{updated_user.username}",
-                old_value=old_role,
-                new_value=updated_user.role,
-                changed_by=request.user,
+            _log_user_audit(
+                request.user, updated_user, PortalAuditLog.Category.ROLE_CHANGE,
+                old_role, updated_user.role,
             )
         messages.success(request, f"L'utilisateur « {target_user.display_name} » a été mis à jour.")
         return redirect('accounts:user_list')
