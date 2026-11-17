@@ -90,6 +90,8 @@ URL_PERMISSIONS = {
     'terminal:container_detail': Actions.CONTAINER_DETAIL,
     'terminal:container_edit': Actions.CONTAINER_CHANGE_STATUS,
     'terminal:prepare': Actions.CONTAINER_PREPARE,
+    'terminal:registered_search_json': Actions.CONTAINER_PREPARE,
+    'terminal:registered_add_to_list': Actions.CONTAINER_PREPARE,
     'terminal:container_add_single': Actions.CONTAINER_PREPARE,
     'terminal:container_add_bulk': Actions.CONTAINER_PREPARE,
     'terminal:container_update_status': Actions.CONTAINER_CHANGE_STATUS,

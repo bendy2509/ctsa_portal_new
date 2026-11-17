@@ -518,6 +518,28 @@ class Container(models.Model):
             self.version = (self.version or 1) + 1
             self.save(acting_user=acting_user)
 
+    def schedule_from_registered(self, target_date, acting_user=None, shipping_line_id=None):
+        """Ajoute un conteneur Enregistré à une liste datée (En attente), en conservant son origine."""
+        if self.archived_at is not None or self.status != self.Status.REGISTERED:
+            raise ValidationError("Seul un conteneur à l'état Enregistré peut être ajouté depuis la réserve.")
+        user = acting_user if getattr(acting_user, 'is_authenticated', False) else None
+        with transaction.atomic():
+            self.status = self.Status.PENDING
+            self.scheduled_date = target_date
+            self.first_scheduled_date = target_date
+            if shipping_line_id and not self.shipping_line_id:
+                self.shipping_line_id = shipping_line_id
+            self.version = (self.version or 1) + 1
+            self.save(acting_user=user, skip_status_log=True)
+            ContainerStatusLog.objects.create(
+                container=self,
+                action=ContainerStatusLog.Action.ADDED_TO_LIST,
+                old_status=self.Status.REGISTERED,
+                new_status=self.Status.PENDING,
+                reason_text=f"Ajouté à la liste du {target_date.strftime('%d/%m/%Y')}",
+                changed_by=user,
+            )
+
     def remove_from_list(self, acting_user=None, reason: str = ''):
         """Retire un conteneur de sa liste : retour à Enregistré (arrive_sans_liste) ou archivage (programme)."""
         if self.archived_at is not None:

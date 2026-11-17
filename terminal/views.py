@@ -438,6 +438,70 @@ def arrival_create_view(request):
 
 
 @require_permission(Actions.CONTAINER_PREPARE)
+def registered_search_json_view(request):
+    """Recherche prédictive JSON des conteneurs Enregistrés (hors liste de la date cible)."""
+    raw_q = request.GET.get('q', '').strip()
+    clean_q = normalize_container_number(raw_q)
+    if len(clean_q) < 2:
+        return JsonResponse({'results': []})
+
+    today = timezone.localdate()
+    target_date = _parse_date(request.GET.get('date', ''), today)
+    already_scheduled_numbers = Container.objects.filter(
+        scheduled_date=target_date
+    ).values_list('normalized_number', flat=True)
+
+    matches = (
+        Container.registered_objects.select_related('shipping_line')
+        .filter(normalized_number__icontains=clean_q)
+        .exclude(normalized_number__in=already_scheduled_numbers)
+        .order_by('normalized_number')[:10]
+    )
+    results = [
+        {
+            'id': c.pk,
+            'number': c.normalized_number,
+            'shipping_line': c.shipping_line.name if c.shipping_line else '',
+            'arrived_at': timezone.localtime(c.arrived_at).strftime('%d/%m/%Y %H:%M') if c.arrived_at else '',
+        }
+        for c in matches
+    ]
+    return JsonResponse({'results': results})
+
+
+@require_permission(Actions.CONTAINER_PREPARE)
+@require_POST
+def registered_add_to_list_view(request):
+    """Ajoute un ou plusieurs conteneurs Enregistrés à la liste d'une date (statut En attente)."""
+    today = timezone.localdate()
+    target_date = _parse_date(request.POST.get('scheduled_date', ''), today)
+    ids = [int(i) for i in request.POST.getlist('ids') if i.isdigit()]
+    fallback = f"{reverse('terminal:prepare')}?date={target_date.isoformat()}"
+
+    if not ids:
+        messages.warning(request, "Veuillez sélectionner au moins un conteneur enregistré.")
+        return redirect(_safe_next(request, fallback))
+
+    added = 0
+    skipped = 0
+    for c in Container.registered_objects.filter(pk__in=ids):
+        if Container.objects.filter(normalized_number=c.normalized_number, scheduled_date=target_date).exists():
+            skipped += 1
+            continue
+        c.schedule_from_registered(target_date, acting_user=request.user)
+        added += 1
+
+    if added:
+        messages.success(
+            request,
+            f"{added} conteneur(s) enregistré(s) ajouté(s) à la liste du {target_date.strftime('%d/%m/%Y')} (En attente).",
+        )
+    if skipped:
+        messages.warning(request, f"{skipped} conteneur(s) déjà présent(s) sur la liste de cette date.")
+    return redirect(_safe_next(request, fallback))
+
+
+@require_permission(Actions.CONTAINER_PREPARE)
 def prepare_view(request):
     """Préparer une liste : inscrire des conteneurs et reprendre les non vérifiés, à l'écart du
     tableau de bord, qui ne montre plus que la liste elle-même."""
@@ -713,6 +777,18 @@ def container_add_single_view(request):
             f"Le conteneur existant {normalized} a été mis à jour ({existing.get_status_display()})."
         )
     else:
+        registered = Container.registered_objects.filter(normalized_number=normalized).first()
+        if registered:
+            registered.schedule_from_registered(
+                target_date,
+                acting_user=request.user,
+                shipping_line_id=line_id,
+            )
+            messages.success(
+                request,
+                f"Conteneur enregistré {normalized} ajouté à la liste du {target_date.strftime('%d/%m/%Y')} (En attente).",
+            )
+            return redirect(_safe_next(request, _dashboard_url(target_date)))
         container = Container(
             container_number=normalized,
             scheduled_date=target_date,
@@ -806,6 +882,16 @@ def container_add_bulk_view(request):
         if prior:
             _carry_into(prior, target_date, request.user)
             carried_numbers.append(normalized)
+            continue
+
+        registered = Container.registered_objects.filter(normalized_number=normalized).first()
+        if registered:
+            registered.schedule_from_registered(
+                target_date,
+                acting_user=request.user,
+                shipping_line_id=resolved_line_id,
+            )
+            created_count += 1
             continue
 
         c = Container(

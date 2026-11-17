@@ -68,6 +68,9 @@
         <button type="button" data-tab-target="panel-bulk-add" aria-selected="{% if active_tab == 'bulk' %}true{% else %}false{% endif %}" class="tab-btn list-tab" style="border-top:0;border-inline:0;background:none;cursor:pointer">
           Coller une liste
         </button>
+        <button type="button" data-tab-target="panel-search-registered" aria-selected="false" class="tab-btn list-tab" style="border-top:0;border-inline:0;background:none;cursor:pointer">
+          Chercher un conteneur enregistré
+        </button>
       </div>
     </div>
 
@@ -197,7 +200,107 @@
         </div>
       </form>
     </div>
+
+    <!-- Chercher un conteneur enregistré -->
+    <div id="panel-search-registered" hidden class="p-4 sm:p-6 space-y-4">
+      <div class="space-y-1.5">
+        <label for="registered-search-input" class="block text-sm font-bold text-ctsa-slate">
+          Rechercher un conteneur arrivé sans liste
+        </label>
+        <input type="search"
+               id="registered-search-input"
+               autocomplete="off"
+               autocapitalize="characters"
+               spellcheck="false"
+               placeholder="Saisissez au moins 2 caractères (ex. MSKU)..."
+               data-search-url="{% url 'terminal:registered_search_json' %}"
+               data-target-date="{{ selected_date|date:'Y-m-d' }}"
+               class="w-full min-h-[44px] rounded-lg border border-slate-300 px-3.5 py-2 text-base font-mono uppercase text-ctsa-slate bg-white focus:outline-none focus:ring-2 focus:ring-ctsa-blue/30 focus:border-ctsa-blue">
+        <p class="text-xs text-slate-500 m-0">Affiche jusqu'à 10 conteneurs Enregistrés pas encore présents sur la liste du {{ selected_date|date:"d/m/Y" }}.</p>
+      </div>
+
+      <form action="{% url 'terminal:registered_add_to_list' %}" method="post" id="registered-add-form" class="space-y-3">
+        {% csrf_token %}
+        <input type="hidden" name="scheduled_date" value="{{ selected_date|date:'Y-m-d' }}">
+        <input type="hidden" name="next" value="{{ request.get_full_path }}">
+
+        <div id="registered-search-results" class="divide-y divide-slate-100 border border-slate-200/80 rounded-xl overflow-hidden hidden" aria-live="polite"></div>
+        <p id="registered-search-empty" class="text-xs text-slate-500 m-0 hidden">Aucun conteneur enregistré correspondant.</p>
+
+        <div id="registered-add-actions" class="hidden pt-1">
+          <button type="submit" data-submit-guard class="ui-btn ui-btn-primary w-full sm:w-auto">
+            Ajouter la sélection à la liste (En attente)
+          </button>
+        </div>
+      </form>
+    </div>
   </section>
+
+  <script>
+  (function () {
+    const input = document.getElementById('registered-search-input');
+    const resultsBox = document.getElementById('registered-search-results');
+    const emptyMsg = document.getElementById('registered-search-empty');
+    const actionsBox = document.getElementById('registered-add-actions');
+    if (!input || !resultsBox) return;
+
+    let timer = null;
+    async function runSearch() {
+      const q = (input.value || '').trim();
+      if (q.length < 2) {
+        resultsBox.innerHTML = '';
+        resultsBox.classList.add('hidden');
+        emptyMsg.classList.add('hidden');
+        actionsBox.classList.add('hidden');
+        return;
+      }
+      const url = `${input.dataset.searchUrl}?q=${encodeURIComponent(q)}&date=${encodeURIComponent(input.dataset.targetDate)}`;
+      try {
+        const resp = await fetch(url, { headers: { 'Accept': 'application/json' } });
+        if (!resp.ok) return;
+        const data = await resp.json();
+        const items = data.results || [];
+        resultsBox.innerHTML = '';
+        if (!items.length) {
+          resultsBox.classList.add('hidden');
+          actionsBox.classList.add('hidden');
+          emptyMsg.classList.remove('hidden');
+          return;
+        }
+        emptyMsg.classList.add('hidden');
+        items.forEach(item => {
+          const label = document.createElement('label');
+          label.className = 'flex items-center justify-between gap-3 p-3 bg-white hover:bg-slate-50 cursor-pointer';
+          const left = document.createElement('div');
+          left.className = 'flex items-center gap-3 min-w-0';
+          const cb = document.createElement('input');
+          cb.type = 'checkbox';
+          cb.name = 'ids';
+          cb.value = String(item.id);
+          cb.className = 'w-4 h-4 rounded border-slate-300';
+          const numSpan = document.createElement('span');
+          numSpan.className = 'font-mono font-bold text-sm text-ctsa-slate';
+          numSpan.textContent = item.number;
+          left.appendChild(cb);
+          left.appendChild(numSpan);
+          const meta = document.createElement('span');
+          meta.className = 'text-xs text-slate-500 truncate';
+          meta.textContent = [item.shipping_line || 'Sans ligne', item.arrived_at].filter(Boolean).join(' · ');
+          label.appendChild(left);
+          label.appendChild(meta);
+          resultsBox.appendChild(label);
+        });
+        resultsBox.classList.remove('hidden');
+        actionsBox.classList.remove('hidden');
+      } catch (e) {}
+    }
+
+    input.addEventListener('input', function () {
+      clearTimeout(timer);
+      timer = setTimeout(runSearch, 250);
+    });
+  })();
+  </script>
 
 </div>
 {% endblock %}
