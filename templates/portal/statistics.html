@@ -276,5 +276,136 @@
     </section>
   {% endif %}
 
+  <!-- Répartition par origine -->
+  <section aria-labelledby="stat-origin-title" class="bg-white rounded-xl border border-slate-200/80 shadow-xs overflow-hidden">
+    <div class="px-4 sm:px-5 py-3.5 border-b border-slate-200/80">
+      <h2 id="stat-origin-title" class="text-base font-heading font-extrabold text-ctsa-slate m-0">
+        Répartition par origine
+      </h2>
+    </div>
+    {% if by_origin %}
+      <div class="overflow-x-auto">
+        <table class="ctsa-table w-full">
+          <thead class="bg-slate-50/95">
+            <tr>
+              <th scope="col">Origine</th>
+              <th scope="col">Programmés</th>
+              <th scope="col">Confirmés</th>
+              <th scope="col">Vérifiés</th>
+              <th scope="col">Non vérifiés</th>
+              <th scope="col">Restent à inspecter</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in by_origin %}
+              <tr>
+                <th scope="row" class="font-sans text-sm">{{ row.label }}</th>
+                <td class="tabular-nums">{{ row.scheduled }}</td>
+                <td class="tabular-nums">{{ row.confirmed }}</td>
+                <td class="font-bold text-[#006b3f] tabular-nums">{{ row.verified }}</td>
+                <td class="tabular-nums">{{ row.not_verified }}</td>
+                <td class="tabular-nums">{{ row.to_verify }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <p class="p-4 text-xs text-slate-500 m-0">Aucune donnée sur cette période.</p>
+    {% endif %}
+  </section>
+
+  <!-- Motifs de non-vérification et d'indisponibilité -->
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+    <section class="bg-white rounded-xl border border-slate-200/80 shadow-xs p-4 sm:p-5 space-y-3">
+      <h2 class="text-base font-heading font-extrabold text-ctsa-slate m-0">Non vérifiés par motif</h2>
+      {% if not_verified_by_reason %}
+        <div class="space-y-2.5">
+          {% for item in not_verified_by_reason %}
+            <div class="space-y-1">
+              <div class="flex items-center justify-between text-xs font-semibold text-ctsa-slate">
+                <span class="truncate">{{ item.label }}</span>
+                <span class="tabular-nums">{{ item.total }}</span>
+              </div>
+              <div class="h-2 rounded-full bg-slate-100 overflow-hidden">
+                <div class="h-full bg-amber-500 rounded-full" style="width: {{ item.pct }}%"></div>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+        <details class="pt-2">
+          <summary class="text-xs font-semibold text-ctsa-bluehover cursor-pointer">Voir le tableau détaillé</summary>
+          <table class="ctsa-table w-full text-xs mt-2">
+            <thead><tr><th scope="col">Motif</th><th scope="col" class="text-right">Nombre</th></tr></thead>
+            <tbody>
+              {% for item in not_verified_by_reason %}
+                <tr><td>{{ item.label }}</td><td class="text-right tabular-nums">{{ item.total }}</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </details>
+      {% else %}
+        <p class="text-xs text-slate-500 m-0">Aucun conteneur non vérifié sur cette période.</p>
+      {% endif %}
+    </section>
+
+    <section class="bg-white rounded-xl border border-slate-200/80 shadow-xs p-4 sm:p-5 space-y-3">
+      <h2 class="text-base font-heading font-extrabold text-ctsa-slate m-0">Indisponibles par motif</h2>
+      {% if unavailable_by_reason %}
+        <div class="space-y-2.5">
+          {% for item in unavailable_by_reason %}
+            <div class="space-y-1">
+              <div class="flex items-center justify-between text-xs font-semibold text-ctsa-slate">
+                <span class="truncate">{{ item.label }}</span>
+                <span class="tabular-nums">{{ item.total }}</span>
+              </div>
+              <div class="h-2 rounded-full bg-slate-100 overflow-hidden">
+                <div class="h-full bg-ctsa-red rounded-full" style="width: {{ item.pct }}%"></div>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+        <details class="pt-2">
+          <summary class="text-xs font-semibold text-ctsa-bluehover cursor-pointer">Voir le tableau détaillé</summary>
+          <table class="ctsa-table w-full text-xs mt-2">
+            <thead><tr><th scope="col">Motif</th><th scope="col" class="text-right">Nombre</th></tr></thead>
+            <tbody>
+              {% for item in unavailable_by_reason %}
+                <tr><td>{{ item.label }}</td><td class="text-right tabular-nums">{{ item.total }}</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </details>
+      {% else %}
+        <p class="text-xs text-slate-500 m-0">Aucun conteneur indisponible sur cette période.</p>
+      {% endif %}
+    </section>
+  </div>
+
+  <!-- Conteneurs enregistrés sans liste depuis >= N jours -->
+  <section class="bg-white rounded-xl border border-slate-200/80 shadow-xs overflow-hidden">
+    <div class="px-4 sm:px-5 py-3.5 border-b border-slate-200/80 flex flex-wrap items-center justify-between gap-2">
+      <h2 class="text-base font-heading font-extrabold text-ctsa-slate m-0">
+        Enregistrés sans liste depuis {{ unscheduled_alert_days }} jour{{ unscheduled_alert_days|pluralize }} ou plus
+      </h2>
+      <span class="text-xs font-semibold text-slate-500 tabular-nums">{{ stale_registered|length }}</span>
+    </div>
+    {% if stale_registered %}
+      <div class="divide-y divide-slate-100">
+        {% for rc in stale_registered %}
+          <div class="px-4 sm:px-5 py-3 flex flex-wrap items-center justify-between gap-2 text-sm">
+            <div>
+              <a href="{% url 'terminal:container_detail' rc.pk %}" class="font-mono font-bold text-ctsa-slate hover:text-ctsa-bluehover no-underline">{{ rc.container_number }}</a>
+              <span class="text-xs text-slate-500 ml-2">{{ rc.shipping_line.name|default:"—" }}</span>
+            </div>
+            <span class="text-xs text-slate-500 tabular-nums">Arrivé le {{ rc.arrived_at|date:"d/m/Y H:i" }}</span>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p class="p-4 text-xs text-slate-500 m-0">Aucun conteneur enregistré en attente de liste depuis {{ unscheduled_alert_days }} jours.</p>
+    {% endif %}
+  </section>
+
 </div>
 {% endblock %}

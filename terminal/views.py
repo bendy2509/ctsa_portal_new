@@ -1747,6 +1747,56 @@ def statistics_view(request):
     ]
     avg_delay = round(sum(delays) / len(delays), 1) if delays else None
 
+    # Répartition par origine (Programmé / Arrivé sans liste)
+    origin_labels = dict(Container.Origin.choices)
+    by_origin = []
+    for row in qs.values('origin').annotate(**_stat_annotations()).order_by('origin'):
+        row['label'] = origin_labels.get(row['origin'], row['origin'])
+        row['rate'] = _rate(row['verified'], row['confirmed'])
+        by_origin.append(row)
+
+    # Non vérifiés par motif et Indisponibles par motif
+    nv_reasons_raw = list(
+        qs.filter(verification_result=Container.Verification.NOT_VERIFIED)
+        .values('verification_reason__label')
+        .annotate(total=Count('id'))
+        .order_by('-total')
+    )
+    nv_max = max((r['total'] for r in nv_reasons_raw), default=0)
+    not_verified_by_reason = [
+        {
+            'label': r['verification_reason__label'] or 'Non renseigné',
+            'total': r['total'],
+            'pct': round(100 * r['total'] / nv_max) if nv_max else 0,
+        }
+        for r in nv_reasons_raw
+    ]
+
+    un_reasons_raw = list(
+        qs.filter(status=Container.Status.UNAVAILABLE)
+        .values('unavailability_reason__label')
+        .annotate(total=Count('id'))
+        .order_by('-total')
+    )
+    un_max = max((r['total'] for r in un_reasons_raw), default=0)
+    unavailable_by_reason = [
+        {
+            'label': r['unavailability_reason__label'] or 'Non renseigné',
+            'total': r['total'],
+            'pct': round(100 * r['total'] / un_max) if un_max else 0,
+        }
+        for r in un_reasons_raw
+    ]
+
+    # Conteneurs enregistrés sans liste depuis >= N jours
+    alert_days = SiteSettings.get_solo().unscheduled_alert_days or 3
+    cutoff = timezone.now() - datetime.timedelta(days=alert_days)
+    stale_registered = list(
+        Container.registered_objects.filter(arrived_at__lte=cutoff)
+        .select_related('shipping_line')
+        .order_by('arrived_at')[:50]
+    )
+
     # Situation actuelle du suivi (indépendante de la période affichée).
     backlog_qs = unverified_backlog(today)
     backlog = _backlog_breakdown(backlog_qs)
@@ -1789,6 +1839,11 @@ def statistics_view(request):
         'verified_with_delay': len(delays),
         'backlog': backlog,
         'oldest': oldest,
+        'by_origin': by_origin,
+        'not_verified_by_reason': not_verified_by_reason,
+        'unavailable_by_reason': unavailable_by_reason,
+        'stale_registered': stale_registered,
+        'unscheduled_alert_days': alert_days,
     })
 
 
@@ -1940,7 +1995,7 @@ def container_export_csv_view(request):
     status_filter = request.GET.get('status', '').strip()
 
     qs = Container.objects.filter(scheduled_date=selected_date).select_related(
-        'shipping_line', 'prefix_ref', 'updated_by'
+        'shipping_line', 'prefix_ref', 'updated_by', 'unavailability_reason', 'verification_reason'
     ).order_by('container_number')
 
     if status_filter in dict(Container.Status.choices):
@@ -1956,11 +2011,15 @@ def container_export_csv_view(request):
     writer.writerow([
         'Numero Conteneur',
         'Prefixe',
+        'Origine',
         'Ligne Maritime',
         'Date Programmation RAMPE',
         'Statut',
         'Motif Indisponibilite',
+        'Precision Indisponibilite',
         'Verification',
+        'Motif Non-Verification',
+        'Precision Non-Verification',
         'Premiere Programmation',
         'Derniere Mise a Jour',
         'Modifie Par',
@@ -1970,12 +2029,16 @@ def container_export_csv_view(request):
         writer.writerow([
             c.container_number,
             c.prefix_code,
+            c.get_origin_display(),
             c.shipping_line.name if c.shipping_line else 'Non rattaché',
-            c.scheduled_date.strftime('%d/%m/%Y'),
+            c.scheduled_date.strftime('%d/%m/%Y') if c.scheduled_date else '',
             c.get_status_display(),
-            c.full_reason_display,
-            c.get_verification_result_display(),
-            (c.first_scheduled_date or c.scheduled_date).strftime('%d/%m/%Y'),
+            c.unavailability_reason.label if c.unavailability_reason else '',
+            c.unavailability_note if c.status == Container.Status.UNAVAILABLE else '',
+            c.get_verification_result_display() or 'Non inspecté',
+            c.verification_reason.label if c.verification_reason else '',
+            c.verification_note if c.verification_result == Container.Verification.NOT_VERIFIED else '',
+            (c.first_scheduled_date or c.scheduled_date).strftime('%d/%m/%Y') if (c.first_scheduled_date or c.scheduled_date) else '',
             timezone.localtime(c.updated_at).strftime('%d/%m/%Y %H:%M'),
             c.updated_by.display_name if c.updated_by else '-',
         ])
