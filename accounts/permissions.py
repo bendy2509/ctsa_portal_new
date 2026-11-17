@@ -95,6 +95,7 @@ URL_PERMISSIONS = {
     'terminal:container_update_status': Actions.CONTAINER_CHANGE_STATUS,
     'terminal:container_status_bulk': Actions.CONTAINER_CHANGE_STATUS,
     'terminal:container_delete': Actions.CONTAINER_ARCHIVE,
+    'terminal:arrival_create': Actions.CONTAINER_ARRIVAL_CREATE,
     'terminal:container_set_verification': Actions.CONTAINER_VERIFY,
     'terminal:container_verify_bulk': Actions.CONTAINER_VERIFY,
     'terminal:inspection': Actions.CONTAINER_VERIFY,

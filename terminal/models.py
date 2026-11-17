@@ -12,12 +12,32 @@ from PIL import Image, ImageOps
 # Create your models here.
 
 CONTAINER_NUMBER_REGEX = re.compile(r'^[A-Z]{4}\d{7}$')
+ARRIVAL_NUMBER_REGEX = re.compile(r'^[A-Z]{3}[UJZ]\d{7}$')
+
+_ISO6346_LETTER_VALUES = {
+    'A': 10, 'B': 12, 'C': 13, 'D': 14, 'E': 15, 'F': 16, 'G': 17, 'H': 18, 'I': 19,
+    'J': 20, 'K': 21, 'L': 23, 'M': 24, 'N': 25, 'O': 26, 'P': 27, 'Q': 28, 'R': 29,
+    'S': 30, 'T': 31, 'U': 32, 'V': 34, 'W': 35, 'X': 36, 'Y': 37, 'Z': 38,
+}
 
 
 def normalize_container_number(value: str) -> str:
     if not value:
         return ''
-    return re.sub(r'[\s\-]+', '', value).upper()
+    return re.sub(r'[\s\-.]+', '', value).upper()
+
+
+def is_valid_iso6346(number: str) -> bool:
+    """Vérifie la clé de contrôle ISO 6346 d'un numéro normalisé (3 lettres + U/J/Z + 7 chiffres)."""
+    norm = normalize_container_number(number)
+    if not ARRIVAL_NUMBER_REGEX.match(norm):
+        return False
+    total = 0
+    for idx, ch in enumerate(norm[:10]):
+        val = _ISO6346_LETTER_VALUES[ch] if ch.isalpha() else int(ch)
+        total += val * (2 ** idx)
+    check_digit = (total % 11) % 10
+    return check_digit == int(norm[10])
 
 
 def validate_container_number(value: str):
