@@ -1,5 +1,5 @@
 {% load static %}
-const CACHE_NAME = 'ctsa-rampe-v1';
+const CACHE_NAME = 'ctsa-rampe-v2';
 const STATIC_ASSETS = [
   "{% static 'css/output.css' %}",
   "{% static 'css/ctsa.css' %}",
