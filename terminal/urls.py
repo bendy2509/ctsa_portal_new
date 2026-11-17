@@ -45,4 +45,7 @@ urlpatterns = [
     path('admin/parametres-site/carrousel/ajouter/', views.hero_slide_create_view, name='hero_slide_create'),
     path('admin/parametres-site/carrousel/<int:pk>/basculer/', views.hero_slide_toggle_view, name='hero_slide_toggle'),
     path('admin/parametres-site/carrousel/<int:pk>/supprimer/', views.hero_slide_delete_view, name='hero_slide_delete'),
+    path('admin/parametres-site/motifs/ajouter/', views.motif_create_view, name='motif_create'),
+    path('admin/parametres-site/motifs/<int:pk>/basculer/', views.motif_toggle_view, name='motif_toggle'),
+    path('admin/parametres-site/motifs/<int:pk>/modifier/', views.motif_update_view, name='motif_update'),
 ]

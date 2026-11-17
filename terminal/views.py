@@ -20,11 +20,14 @@ from accounts.utils import safe_next_url
 from .models import (
     ShippingLine,
     ContainerPrefix,
+    Motif,
     Container,
+    VerificationEvent,
     ContainerStatusLog,
     SavedContainer,
     SiteSettings,
     HeroSlide,
+    PortalAuditLog,
     normalize_container_number,
     CONTAINER_NUMBER_REGEX,
 )
@@ -1784,6 +1787,9 @@ class SiteSettingsForm(forms.ModelForm):
             'client_cta_subtitle',
             'hero_carousel_enabled',
             'hero_carousel_limit',
+            'correction_window_minutes',
+            'delete_window_hours',
+            'unscheduled_alert_days',
             # Champs Kreyòl
             'portal_title_ht',
             'portal_subtitle_ht',
@@ -1835,11 +1841,16 @@ class SiteSettingsForm(forms.ModelForm):
             'unavailable_description_ht': forms.Textarea(attrs={'rows': 3}),
             'client_cta_subtitle_ht': forms.Textarea(attrs={'rows': 3}),
             'hero_carousel_limit': forms.NumberInput(attrs={'min': 1, 'max': 6}),
+            'correction_window_minutes': forms.NumberInput(attrs={'min': 1, 'max': 1440}),
+            'delete_window_hours': forms.NumberInput(attrs={'min': 1, 'max': 168}),
+            'unscheduled_alert_days': forms.NumberInput(attrs={'min': 1, 'max': 90}),
         }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['hero_badge'].required = False
+        for opt_field in ('correction_window_minutes', 'delete_window_hours', 'unscheduled_alert_days'):
+            self.fields[opt_field].required = False
         for name, field in self.fields.items():
             if name.endswith('_ht'):
                 field.required = False
@@ -1847,6 +1858,24 @@ class SiteSettingsForm(forms.ModelForm):
                 field.widget.attrs.setdefault('class', 'w-4 h-4 rounded border-slate-300 text-ctsa-blue focus:ring-ctsa-blue')
             else:
                 field.widget.attrs.setdefault('class', 'form-control')
+
+    def clean_correction_window_minutes(self):
+        val = self.cleaned_data.get('correction_window_minutes')
+        if val is None:
+            return getattr(self.instance, 'correction_window_minutes', 60) or 60
+        return val
+
+    def clean_delete_window_hours(self):
+        val = self.cleaned_data.get('delete_window_hours')
+        if val is None:
+            return getattr(self.instance, 'delete_window_hours', 24) or 24
+        return val
+
+    def clean_unscheduled_alert_days(self):
+        val = self.cleaned_data.get('unscheduled_alert_days')
+        if val is None:
+            return getattr(self.instance, 'unscheduled_alert_days', 3) or 3
+        return val
 
 
 class HeroSlideForm(forms.ModelForm):
@@ -1873,10 +1902,25 @@ def site_settings_view(request):
     """Espace d'édition des textes et coordonnées publiques du portail."""
     instance = SiteSettings.get_solo()
     if request.method == 'POST':
+        old_snapshot = {
+            f: getattr(instance, f)
+            for f in SiteSettingsForm.Meta.fields
+        }
         form = SiteSettingsForm(request.POST, instance=instance)
         if form.is_valid():
-            form.save()
-            messages.success(request, "Les informations et textes publics ont été mis à jour.")
+            saved = form.save()
+            for field_name in SiteSettingsForm.Meta.fields:
+                old_val = old_snapshot.get(field_name)
+                new_val = getattr(saved, field_name)
+                if old_val != new_val:
+                    PortalAuditLog.objects.create(
+                        category=PortalAuditLog.Category.SETTING_CHANGE,
+                        target_label=f"SiteSettings.{field_name}",
+                        old_value=str(old_val),
+                        new_value=str(new_val),
+                        changed_by=request.user,
+                    )
+            messages.success(request, "Les informations et paramètres ont été mis à jour.")
             return redirect('terminal:site_settings')
         messages.error(request, "Veuillez corriger les champs signalés ci-dessous.")
     else:
@@ -1884,6 +1928,12 @@ def site_settings_view(request):
 
     slides = list(HeroSlide.objects.all())
     active_slides_count = sum(1 for s in slides if s.is_active)
+    motifs_unavailable = list(Motif.objects.filter(type=Motif.Type.UNAVAILABLE))
+    motifs_not_verified = list(Motif.objects.filter(type=Motif.Type.NOT_VERIFIED))
+    settings_logs = list(
+        PortalAuditLog.objects.select_related('changed_by')
+        .filter(category=PortalAuditLog.Category.SETTING_CHANGE)[:15]
+    )
 
     return render(request, 'portal/site_settings.html', {
         'form': form,
@@ -1891,7 +1941,99 @@ def site_settings_view(request):
         'slides': slides,
         'active_slides_count': active_slides_count,
         'slide_form': HeroSlideForm(initial={'display_order': len(slides) + 1}),
+        'motifs_unavailable': motifs_unavailable,
+        'motifs_not_verified': motifs_not_verified,
+        'motif_types': Motif.Type.choices,
+        'settings_logs': settings_logs,
     })
+
+
+@require_permission(Actions.MOTIF_MANAGE)
+@require_POST
+def motif_create_view(request):
+    """Ajoute un nouveau motif prédéfini (Superadmin uniquement)."""
+    motif_type = request.POST.get('type', '').strip()
+    label = request.POST.get('label', '').strip()[:160]
+    raw_order = request.POST.get('display_order', '10').strip()
+    requires_note = request.POST.get('requires_note') == 'on'
+
+    if motif_type not in dict(Motif.Type.choices):
+        messages.error(request, "Type de motif invalide.")
+        return redirect('terminal:site_settings')
+    if not label:
+        messages.error(request, "Le libellé du motif est obligatoire.")
+        return redirect('terminal:site_settings')
+    if Motif.objects.filter(type=motif_type, label__iexact=label).exists():
+        messages.warning(request, f"Le motif « {label} » existe déjà pour cette catégorie.")
+        return redirect('terminal:site_settings')
+
+    order = int(raw_order) if raw_order.isdigit() else 10
+    motif = Motif.objects.create(
+        type=motif_type,
+        label=label,
+        display_order=order,
+        requires_note=requires_note,
+        is_active=True,
+    )
+    PortalAuditLog.objects.create(
+        category=PortalAuditLog.Category.SETTING_CHANGE,
+        target_label=f"Motif:{motif.type}",
+        old_value="",
+        new_value=f"{motif.label} (ordre={motif.display_order}, precision={motif.requires_note})",
+        changed_by=request.user,
+    )
+    messages.success(request, f"Motif « {motif.label} » ajouté.")
+    return redirect('terminal:site_settings')
+
+
+@require_permission(Actions.MOTIF_MANAGE)
+@require_POST
+def motif_toggle_view(request, pk):
+    """Active ou désactive un motif (jamais de suppression)."""
+    motif = get_object_or_404(Motif, pk=pk)
+    if motif.is_system:
+        messages.error(request, f"Le motif système « {motif.label} » ne peut pas être modifié.")
+        return redirect('terminal:site_settings')
+
+    old_state = "actif" if motif.is_active else "inactif"
+    motif.is_active = not motif.is_active
+    motif.save(update_fields=['is_active', 'updated_at'])
+    new_state = "actif" if motif.is_active else "inactif"
+    PortalAuditLog.objects.create(
+        category=PortalAuditLog.Category.SETTING_CHANGE,
+        target_label=f"Motif:{motif.pk}:{motif.label}",
+        old_value=old_state,
+        new_value=new_state,
+        changed_by=request.user,
+    )
+    messages.info(request, f"Motif « {motif.label} » marqué {new_state}.")
+    return redirect('terminal:site_settings')
+
+
+@require_permission(Actions.MOTIF_MANAGE)
+@require_POST
+def motif_update_view(request, pk):
+    """Met à jour l'ordre ou la précision obligatoire d'un motif."""
+    motif = get_object_or_404(Motif, pk=pk)
+    if motif.is_system:
+        messages.error(request, f"Le motif système « {motif.label} » ne peut pas être modifié.")
+        return redirect('terminal:site_settings')
+
+    raw_order = request.POST.get('display_order', str(motif.display_order)).strip()
+    if raw_order.isdigit():
+        old_order = motif.display_order
+        motif.display_order = int(raw_order)
+        motif.save(update_fields=['display_order', 'updated_at'])
+        if old_order != motif.display_order:
+            PortalAuditLog.objects.create(
+                category=PortalAuditLog.Category.SETTING_CHANGE,
+                target_label=f"Motif:{motif.pk}:ordre",
+                old_value=str(old_order),
+                new_value=str(motif.display_order),
+                changed_by=request.user,
+            )
+            messages.success(request, f"Ordre du motif « {motif.label} » mis à jour.")
+    return redirect('terminal:site_settings')
 
 
 @require_permission(Actions.SITE_SETTINGS_MANAGE)
