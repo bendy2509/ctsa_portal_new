@@ -1,51 +1,103 @@
-{# Marquage Vérifié / Non vérifié d'un conteneur `c`, avec note d'inspection en bottom sheet. #}
-{% if c.verification_result == 'verified' and not user.can_mark_verification %}
-  {% include 'components/badge.html' with variant='verified' label='Vérifié' %}
-{% elif c.verification_result == 'not_verified' and not user.can_mark_verification %}
-  {% include 'components/badge.html' with variant='not_verified' label='Non vérifié' %}
-{% elif not c.can_be_verified %}
+{# Marquage Vérifié / Non vérifié d'un conteneur `c`, avec motif obligatoire, concurrence et correction/suppression. #}
+{% load permissions_tags %}
+{% if not c.can_be_verified %}
   <span class="text-xs text-slate-500">
-    {% if c.status != 'confirmed' %}À confirmer avant vérification{% else %}Séance à venir{% endif %}
+    {% if c.status != 'confirmed' %}À confirmer avant inspection{% else %}Séance à venir{% endif %}
   </span>
 {% elif not user.can_mark_verification %}
-  <span class="text-xs text-slate-500">À marquer</span>
+  {% if c.verification_result == 'verified' %}
+    {% include 'components/badge.html' with variant='verified' label='Vérifié' %}
+  {% elif c.verification_result == 'not_verified' %}
+    {% include 'components/badge.html' with variant='not_verified' label='Non vérifié' %}
+  {% else %}
+    {% include 'components/badge.html' with variant='not_inspected' label='Non inspecté' %}
+  {% endif %}
 {% else %}
+  {% can 'container.verify_correct' c as can_correct %}
+  {% can 'container.verify_delete_movement' c as can_delete_mv %}
   <div class="space-y-1.5">
-    <div class="status-segmented" role="group" aria-label="Vérification de {{ c.container_number }}">
-      <form action="{% url 'terminal:container_set_verification' c.pk %}" method="post">
-        {% csrf_token %}
-        <input type="hidden" name="result" value="verified">
-        <input type="hidden" name="next" value="{{ request.get_full_path }}">
-        <button type="submit"
-                {% if c.verification_result == 'verified' %}disabled{% endif %}
-                class="status-seg-btn {% if c.verification_result == 'verified' %}is-verified{% endif %}">
-          Vérifié
+    {% if not c.verification_result %}
+      <div class="status-segmented" role="group" aria-label="Inspection de {{ c.container_number }}">
+        <form action="{% url 'terminal:container_set_verification' c.pk %}" method="post">
+          {% csrf_token %}
+          <input type="hidden" name="result" value="verified">
+          <input type="hidden" name="version" value="{{ c.version }}">
+          <input type="hidden" name="next" value="{{ request.get_full_path }}">
+          <button type="submit" class="status-seg-btn">
+            Vérifié
+          </button>
+        </form>
+        <button type="button"
+                data-verification-note-trigger
+                data-action="{% url 'terminal:container_set_verification' c.pk %}"
+                data-number="{{ c.container_number }}"
+                data-version="{{ c.version }}"
+                data-note="{{ c.verification_note }}"
+                data-next="{{ request.get_full_path }}"
+                class="status-seg-btn">
+          Non vérifié
         </button>
-      </form>
-      <button type="button"
-              data-verification-note-trigger
-              data-action="{% url 'terminal:container_set_verification' c.pk %}"
-              data-number="{{ c.container_number }}"
-              data-note="{{ c.verification_note }}"
-              data-next="{{ request.get_full_path }}"
-              class="status-seg-btn {% if c.verification_result == 'not_verified' %}is-not-verified{% endif %}">
-        Non vérifié
-      </button>
-    </div>
+      </div>
+    {% else %}
+      <div class="flex flex-wrap items-center gap-2">
+        {% if c.verification_result == 'verified' %}
+          {% include 'components/badge.html' with variant='verified' label='Vérifié' %}
+        {% else %}
+          {% include 'components/badge.html' with variant='not_verified' label='Non vérifié' %}
+        {% endif %}
+      </div>
+      {% if c.verification_result == 'not_verified' %}
+        {% if c.verification_reason %}
+          <div class="text-xs font-semibold text-ctsa-slate">Motif : {{ c.verification_reason.label }}</div>
+        {% endif %}
+        {% if c.verification_note %}
+          <div class="text-xs text-slate-600">Précision : {{ c.verification_note }}</div>
+        {% endif %}
+      {% endif %}
 
-    {% if c.verification_result == 'not_verified' and c.verification_note %}
-      <div class="text-xs font-semibold text-ctsa-slate">Précision : {{ c.verification_note }}</div>
-    {% endif %}
-
-    {% if c.verification_result %}
-      <form action="{% url 'terminal:container_set_verification' c.pk %}" method="post">
-        {% csrf_token %}
-        <input type="hidden" name="result" value="">
-        <input type="hidden" name="next" value="{{ request.get_full_path }}">
-        <button type="submit" class="text-xs font-semibold text-slate-500 hover:text-ctsa-bluehover underline">
-          Annuler le marquage
-        </button>
-      </form>
+      {% if can_correct %}
+        <div class="flex flex-wrap items-center gap-2 pt-0.5">
+          {% if c.verification_result != 'verified' %}
+            <form action="{% url 'terminal:container_set_verification' c.pk %}" method="post" class="inline">
+              {% csrf_token %}
+              <input type="hidden" name="result" value="verified">
+              <input type="hidden" name="version" value="{{ c.version }}">
+              <input type="hidden" name="next" value="{{ request.get_full_path }}">
+              <button type="submit" class="text-xs font-semibold text-[#006b3f] hover:underline">Corriger → Vérifié</button>
+            </form>
+          {% else %}
+            <button type="button"
+                    data-verification-note-trigger
+                    data-action="{% url 'terminal:container_set_verification' c.pk %}"
+                    data-number="{{ c.container_number }}"
+                    data-version="{{ c.version }}"
+                    data-note=""
+                    data-next="{{ request.get_full_path }}"
+                    class="text-xs font-semibold text-amber-800 hover:underline">
+              Corriger → Non vérifié
+            </button>
+          {% endif %}
+          <form action="{% url 'terminal:container_set_verification' c.pk %}" method="post" class="inline">
+            {% csrf_token %}
+            <input type="hidden" name="result" value="">
+            <input type="hidden" name="version" value="{{ c.version }}">
+            <input type="hidden" name="next" value="{{ request.get_full_path }}">
+            <button type="submit" class="text-xs font-semibold text-slate-500 hover:text-ctsa-bluehover underline">
+              Annuler (&lt; 60 min)
+            </button>
+          </form>
+        </div>
+      {% elif can_delete_mv and not c.carry_decision %}
+        <form action="{% url 'terminal:container_set_verification' c.pk %}" method="post" class="flex flex-wrap items-center gap-1.5 pt-1">
+          {% csrf_token %}
+          <input type="hidden" name="result" value="">
+          <input type="hidden" name="delete_movement" value="1">
+          <input type="hidden" name="version" value="{{ c.version }}">
+          <input type="hidden" name="next" value="{{ request.get_full_path }}">
+          <input type="text" name="archive_reason" required maxlength="255" placeholder="Motif d'annulation..." class="rounded border border-slate-300 px-2 py-1 text-xs">
+          <button type="submit" class="text-xs font-semibold text-red-700 hover:underline">Supprimer le mouvement</button>
+        </form>
+      {% endif %}
     {% endif %}
   </div>
 {% endif %}

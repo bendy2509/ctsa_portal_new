@@ -1,4 +1,5 @@
 {% extends 'portal/base_portal.html' %}
+{% load permissions_tags %}
 
 {% block title %}Historique des Statuts — Cap Terminal S.A.{% endblock %}
 {% block page_title %}Historique{% endblock %}
@@ -106,6 +107,34 @@
     {% include 'components/pagination.html' %}
   {% else %}
     {% include 'components/empty_state.html' with title="Aucune opération trouvée" description="Aucune modification de statut ne correspond à cette recherche." %}
+  {% endif %}
+
+  {% if archived_containers %}
+    <section class="bg-white rounded-xl border border-slate-200/80 shadow-xs overflow-hidden">
+      <div class="px-4 sm:px-5 py-3.5 border-b border-slate-200/80">
+        <h2 class="text-base font-heading font-extrabold text-ctsa-slate m-0">Conteneurs archivés</h2>
+      </div>
+      <div class="divide-y divide-slate-100">
+        {% can 'container.restore' as can_restore %}
+        {% for ac in archived_containers %}
+          <div class="p-3.5 sm:px-5 flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <div class="font-mono text-sm font-bold text-ctsa-slate">{{ ac.container_number }}</div>
+              <div class="text-xs text-slate-500">
+                Archivé le {{ ac.archived_at|date:"d/m/Y H:i" }} par {{ ac.archived_by.display_name|default:"Système" }}
+                {% if ac.archive_reason %} · {{ ac.archive_reason }}{% endif %}
+              </div>
+            </div>
+            {% if can_restore %}
+              <form action="{% url 'terminal:container_restore' ac.pk %}" method="post">
+                {% csrf_token %}
+                <button type="submit" class="ui-btn ui-btn-secondary ui-btn-sm">Restaurer</button>
+              </form>
+            {% endif %}
+          </div>
+        {% endfor %}
+      </div>
+    </section>
   {% endif %}
 
 </div>

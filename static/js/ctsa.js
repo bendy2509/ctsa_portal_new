@@ -150,10 +150,23 @@ document.addEventListener('DOMContentLoaded', () => {
   if (unavailDialog && typeof unavailDialog.showModal === 'function') {
     const unavailForm = document.getElementById('unavail-dialog-form');
     const unavailSubtitle = document.getElementById('unavail-dialog-subtitle');
+    const unavailReason = document.getElementById('unavail-dialog-reason');
     const unavailNote = document.getElementById('unavail-dialog-note');
+    const unavailNoteReq = document.getElementById('unavail-note-req');
     const unavailNext = document.getElementById('unavail-dialog-next');
     const unavailExtras = document.getElementById('unavail-dialog-extra-fields');
     const cancelBtn = unavailDialog.querySelector('[data-unavail-cancel]');
+
+    const syncUnavailNoteRequired = () => {
+      if (!unavailReason || !unavailNote) return;
+      const opt = unavailReason.options[unavailReason.selectedIndex];
+      const req = opt && opt.dataset.requiresNote === '1';
+      unavailNote.required = !!req;
+      if (unavailNoteReq) {
+        unavailNoteReq.textContent = req ? '(obligatoire)' : '(facultative)';
+      }
+    };
+    unavailReason?.addEventListener('change', syncUnavailNoteRequired);
 
     if (cancelBtn) {
       cancelBtn.addEventListener('click', () => unavailDialog.close());
@@ -165,7 +178,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const openUnavailDialog = ({ action, subtitle, note, nextUrl, extras }) => {
       unavailForm.setAttribute('action', action);
       unavailSubtitle.textContent = subtitle;
+      if (unavailReason) unavailReason.value = '';
       unavailNote.value = note || '';
+      syncUnavailNoteRequired();
       unavailNext.value = nextUrl || '';
       unavailExtras.innerHTML = '';
       (extras || []).forEach(([name, value]) => {
@@ -176,7 +191,7 @@ document.addEventListener('DOMContentLoaded', () => {
         unavailExtras.appendChild(input);
       });
       unavailDialog.showModal();
-      unavailNote.focus();
+      (unavailReason || unavailNote).focus();
     };
 
     document.querySelectorAll('[data-unavailable-action]').forEach((btn) => {
@@ -546,7 +561,19 @@ document.addEventListener('DOMContentLoaded', () => {
     const verifForm = document.getElementById('verification-note-form');
     const verifSub = document.getElementById('verification-note-subtitle');
     const verifNext = document.getElementById('verification-note-next');
+    const verifVersion = document.getElementById('verification-note-version');
+    const verifReason = document.getElementById('verification-reason-select');
     const verifInput = document.getElementById('verification-note-input');
+    const verifReq = document.getElementById('verification-note-req');
+
+    const syncVerifNoteRequired = () => {
+      if (!verifReason || !verifInput) return;
+      const opt = verifReason.options[verifReason.selectedIndex];
+      const req = opt && opt.dataset.requiresNote === '1';
+      verifInput.required = !!req;
+      if (verifReq) verifReq.textContent = req ? '(obligatoire)' : '(facultatif)';
+    };
+    verifReason?.addEventListener('change', syncVerifNoteRequired);
 
     document.addEventListener('click', (e) => {
       const btn = e.target.closest('[data-verification-note-trigger]');
@@ -554,9 +581,12 @@ document.addEventListener('DOMContentLoaded', () => {
       if (verifForm) verifForm.action = btn.dataset.action || '';
       if (verifSub) verifSub.textContent = btn.dataset.number || '';
       if (verifNext) verifNext.value = btn.dataset.next || '';
+      if (verifVersion) verifVersion.value = btn.dataset.version || '';
+      if (verifReason) verifReason.value = '';
       if (verifInput) verifInput.value = btn.dataset.note || '';
+      syncVerifNoteRequired();
       verifDialog.showModal();
-      verifInput?.focus();
+      (verifReason || verifInput)?.focus();
     });
 
     verifDialog.querySelector('[data-verification-note-cancel]')?.addEventListener('click', () => {

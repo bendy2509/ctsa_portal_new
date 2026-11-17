@@ -1,4 +1,5 @@
 {% extends 'portal/base_portal.html' %}
+{% load permissions_tags %}
 
 {% block title %}Conteneurs — Cap Terminal S.A.{% endblock %}
 {% block page_title %}Conteneurs{% endblock %}
@@ -6,9 +7,14 @@
 {% block portal_content %}
 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 space-y-4">
 
-  {% url 'terminal:prepare' as prepare_url %}
-  {% with date_iso=selected_date|date:"Y-m-d" date_fr=selected_date|date:"d/m/Y" subtitle_str=selected_date|date:"l j F Y"|capfirst %}
-    {% include 'components/page_header.html' with title="Conteneurs du "|add:date_fr subtitle=subtitle_str count=stats.total primary_url=prepare_url|add:"?date="|add:date_iso primary_label="Ajouter" primary_icon="plus" %}
+  {% can 'container.arrival_create' as can_arrival %}
+  {% url 'terminal:arrival_create' as arrival_url %}
+  {% with date_fr=selected_date|date:"d/m/Y" subtitle_str=selected_date|date:"l j F Y"|capfirst %}
+    {% if can_arrival %}
+      {% include 'components/page_header.html' with title="Conteneurs du "|add:date_fr subtitle=subtitle_str count=stats.total primary_url=arrival_url primary_label="Enregistrer une arrivée" primary_icon="plus" %}
+    {% else %}
+      {% include 'components/page_header.html' with title="Conteneurs du "|add:date_fr subtitle=subtitle_str count=stats.total %}
+    {% endif %}
   {% endwith %}
 
   <!-- Sélecteur de séance (Aujourd'hui / Demain / Date) -->

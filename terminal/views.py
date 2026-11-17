@@ -7,6 +7,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
 from django.core.paginator import Paginator
+from django.db import transaction
 from django.db.models import Count, Q
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
@@ -15,17 +16,24 @@ from django.utils import timezone
 from django.utils.translation import gettext as _
 from django.views.decorators.http import require_POST
 
+from accounts.permissions import Actions, peut, render_403, require_permission
 from accounts.utils import safe_next_url
 from .models import (
     ShippingLine,
     ContainerPrefix,
+    Motif,
     Container,
+    VerificationEvent,
     ContainerStatusLog,
     SavedContainer,
     SiteSettings,
     HeroSlide,
+    PortalAuditLog,
+    sync_container_verification,
     normalize_container_number,
     CONTAINER_NUMBER_REGEX,
+    ARRIVAL_NUMBER_REGEX,
+    is_valid_iso6346,
 )
 
 # Create your views here.
@@ -133,6 +141,8 @@ def _carry_into(old: Container, target_date: datetime.date, user) -> Container:
     if new is None:
         new = Container(
             container_number=old.container_number,
+            origin=old.origin,
+            arrived_at=old.arrived_at,
             scheduled_date=target_date,
             status=Container.Status.PENDING,
             shipping_line=old.shipping_line,
@@ -142,9 +152,14 @@ def _carry_into(old: Container, target_date: datetime.date, user) -> Container:
         )
         new.save(acting_user=user)
     else:
-        Container.objects.filter(pk=new.pk).update(carried_from=old, first_scheduled_date=first_date)
+        Container.objects.filter(pk=new.pk).update(
+            carried_from=old,
+            first_scheduled_date=first_date,
+            origin=old.origin,
+        )
         new.carried_from = old
         new.first_scheduled_date = first_date
+        new.origin = old.origin
 
     _close_tracking(
         old,
@@ -353,13 +368,145 @@ def client_watchlist_remove_view(request, pk):
     return redirect('terminal:client_watchlist')
 
 
-@login_required
+@require_permission(Actions.CONTAINER_ARRIVAL_CREATE)
+def arrival_create_view(request):
+    """Page dédiée d'enregistrement d'une arrivée sans liste programmée."""
+    shipping_lines = ShippingLine.objects.filter(is_active=True).order_by('name')
+    errors = {}
+    duplicate_container = None
+    iso_warning = False
+    raw_number = ''
+    raw_line = ''
+
+    if request.method == 'POST':
+        raw_number = request.POST.get('container_number', '').strip()
+        raw_line = request.POST.get('shipping_line', '').strip()
+        confirm_iso = request.POST.get('confirm_iso') == '1'
+        normalized = normalize_container_number(raw_number)
+
+        line_obj = None
+        if raw_line:
+            if raw_line.isdigit():
+                line_obj = ShippingLine.objects.filter(pk=int(raw_line), is_active=True).first()
+            if line_obj is None:
+                errors['shipping_line'] = "Ligne maritime invalide."
+
+        if not ARRIVAL_NUMBER_REGEX.match(normalized):
+            errors['container_number'] = (
+                "Format requis : 3 lettres suivies de U, J ou Z puis 7 chiffres (ex. CMAU4052450)."
+            )
+        else:
+            duplicate_container = (
+                Container.all_objects.filter(
+                    normalized_number=normalized,
+                    archived_at__isnull=True,
+                )
+                .order_by('-scheduled_date', '-arrived_at', '-pk')
+                .first()
+            )
+            if duplicate_container is not None:
+                errors['container_number'] = (
+                    f"Le conteneur {normalized} existe déjà dans le système "
+                    f"({duplicate_container.get_status_display()})."
+                )
+            elif not is_valid_iso6346(normalized) and not confirm_iso:
+                iso_warning = True
+
+        if not errors and not iso_warning:
+            container = Container(
+                container_number=normalized,
+                shipping_line=line_obj,
+                origin=Container.Origin.ARRIVE_SANS_LISTE,
+                status=Container.Status.REGISTERED,
+                scheduled_date=None,
+                arrived_at=timezone.now(),
+            )
+            container.save(acting_user=request.user)
+            messages.success(
+                request,
+                f"Arrivée du conteneur {container.container_number} enregistrée (hors liste).",
+            )
+            return redirect('terminal:container_detail', pk=container.pk)
+
+    return render(request, 'portal/arrival_create.html', {
+        'shipping_lines': shipping_lines,
+        'errors': errors,
+        'duplicate_container': duplicate_container,
+        'iso_warning': iso_warning,
+        'raw_number': raw_number,
+        'raw_line': raw_line,
+        'now_preview': timezone.localtime(timezone.now()),
+    })
+
+
+@require_permission(Actions.CONTAINER_PREPARE)
+def registered_search_json_view(request):
+    """Recherche prédictive JSON des conteneurs Enregistrés (hors liste de la date cible)."""
+    raw_q = request.GET.get('q', '').strip()
+    clean_q = normalize_container_number(raw_q)
+    if len(clean_q) < 2:
+        return JsonResponse({'results': []})
+
+    today = timezone.localdate()
+    target_date = _parse_date(request.GET.get('date', ''), today)
+    already_scheduled_numbers = Container.objects.filter(
+        scheduled_date=target_date
+    ).values_list('normalized_number', flat=True)
+
+    matches = (
+        Container.registered_objects.select_related('shipping_line')
+        .filter(normalized_number__icontains=clean_q)
+        .exclude(normalized_number__in=already_scheduled_numbers)
+        .order_by('normalized_number')[:10]
+    )
+    results = [
+        {
+            'id': c.pk,
+            'number': c.normalized_number,
+            'shipping_line': c.shipping_line.name if c.shipping_line else '',
+            'arrived_at': timezone.localtime(c.arrived_at).strftime('%d/%m/%Y %H:%M') if c.arrived_at else '',
+        }
+        for c in matches
+    ]
+    return JsonResponse({'results': results})
+
+
+@require_permission(Actions.CONTAINER_PREPARE)
+@require_POST
+def registered_add_to_list_view(request):
+    """Ajoute un ou plusieurs conteneurs Enregistrés à la liste d'une date (statut En attente)."""
+    today = timezone.localdate()
+    target_date = _parse_date(request.POST.get('scheduled_date', ''), today)
+    ids = [int(i) for i in request.POST.getlist('ids') if i.isdigit()]
+    fallback = f"{reverse('terminal:prepare')}?date={target_date.isoformat()}"
+
+    if not ids:
+        messages.warning(request, "Veuillez sélectionner au moins un conteneur enregistré.")
+        return redirect(_safe_next(request, fallback))
+
+    added = 0
+    skipped = 0
+    for c in Container.registered_objects.filter(pk__in=ids):
+        if Container.objects.filter(normalized_number=c.normalized_number, scheduled_date=target_date).exists():
+            skipped += 1
+            continue
+        c.schedule_from_registered(target_date, acting_user=request.user)
+        added += 1
+
+    if added:
+        messages.success(
+            request,
+            f"{added} conteneur(s) enregistré(s) ajouté(s) à la liste du {target_date.strftime('%d/%m/%Y')} (En attente).",
+        )
+    if skipped:
+        messages.warning(request, f"{skipped} conteneur(s) déjà présent(s) sur la liste de cette date.")
+    return redirect(_safe_next(request, fallback))
+
+
+@require_permission(Actions.CONTAINER_PREPARE)
 def prepare_view(request):
     """Préparer une liste : inscrire des conteneurs et reprendre les non vérifiés, à l'écart du
     tableau de bord, qui ne montre plus que la liste elle-même."""
-    if not request.user.is_staff_member:
-        return redirect('terminal:home')
-
     today = timezone.localdate()
     tomorrow = today + datetime.timedelta(days=1)
     selected_date = max(_parse_date(request.GET.get('date', ''), default_work_date(request.user)), today)
@@ -390,12 +537,9 @@ def prepare_view(request):
     })
 
 
-@login_required
+@require_permission(Actions.PORTAL_DASHBOARD)
 def dashboard_view(request):
     """Tableau de bord : résumé de la séance, indicateurs, points d'attention et activité récente."""
-    if not request.user.is_staff_member:
-        return redirect('terminal:home')
-
     today = timezone.localdate()
     selected_date = _parse_date(request.GET.get('date', ''), today)
     day_qs = Container.objects.filter(scheduled_date=selected_date)
@@ -470,11 +614,8 @@ def dashboard_view(request):
     })
 
 
-@login_required
+@require_permission(Actions.CONTAINER_LIST)
 def container_list_view(request):
-    if not request.user.is_staff_member:
-        return redirect('terminal:client_watchlist')
-
     today = timezone.localdate()
     tomorrow = today + datetime.timedelta(days=1)
 
@@ -548,12 +689,9 @@ def container_list_view(request):
     })
 
 
-@login_required
+@require_permission(Actions.CONTAINER_PREPARE)
 @require_POST
 def container_add_single_view(request):
-    if not request.user.is_staff_member:
-        return redirect('terminal:home')
-
     today = timezone.localdate()
     default_date = today
 
@@ -641,6 +779,18 @@ def container_add_single_view(request):
             f"Le conteneur existant {normalized} a été mis à jour ({existing.get_status_display()})."
         )
     else:
+        registered = Container.registered_objects.filter(normalized_number=normalized).first()
+        if registered:
+            registered.schedule_from_registered(
+                target_date,
+                acting_user=request.user,
+                shipping_line_id=line_id,
+            )
+            messages.success(
+                request,
+                f"Conteneur enregistré {normalized} ajouté à la liste du {target_date.strftime('%d/%m/%Y')} (En attente).",
+            )
+            return redirect(_safe_next(request, _dashboard_url(target_date)))
         container = Container(
             container_number=normalized,
             scheduled_date=target_date,
@@ -658,12 +808,9 @@ def container_add_single_view(request):
     return redirect(_safe_next(request, _dashboard_url(target_date)))
 
 
-@login_required
+@require_permission(Actions.CONTAINER_PREPARE)
 @require_POST
 def container_add_bulk_view(request):
-    if not request.user.is_staff_member:
-        return redirect('terminal:home')
-
     today = timezone.localdate()
     default_date = today
 
@@ -739,6 +886,16 @@ def container_add_bulk_view(request):
             carried_numbers.append(normalized)
             continue
 
+        registered = Container.registered_objects.filter(normalized_number=normalized).first()
+        if registered:
+            registered.schedule_from_registered(
+                target_date,
+                acting_user=request.user,
+                shipping_line_id=resolved_line_id,
+            )
+            created_count += 1
+            continue
+
         c = Container(
             container_number=normalized,
             scheduled_date=target_date,
@@ -773,59 +930,84 @@ def container_add_bulk_view(request):
     return redirect(_safe_next(request, _dashboard_url(target_date)))
 
 
-@login_required
+def _resolve_motif(motif_type: str, raw_reason_id, note: str):
+    """Valide un motif structuré actif et sa précision obligatoire éventuelle."""
+    reason_obj = None
+    if raw_reason_id and str(raw_reason_id).isdigit():
+        reason_obj = Motif.objects.filter(
+            pk=int(raw_reason_id),
+            type=motif_type,
+            is_active=True,
+        ).first()
+    if reason_obj is None:
+        raise ValidationError("Veuillez sélectionner un motif valide.")
+    clean_note = (note or '').strip()[:255]
+    if reason_obj.requires_note and not clean_note:
+        raise ValidationError(f"Une précision est obligatoire pour le motif « {reason_obj.label} ».")
+    return reason_obj, clean_note
+
+
+@require_permission(Actions.CONTAINER_CHANGE_STATUS)
 @require_POST
 def container_update_status_view(request, pk):
-    if not request.user.can_edit_or_delete_containers:
-        messages.error(
-            request,
-            "Action réservée aux administrateurs et superviseurs."
-        )
-        return redirect('terminal:dashboard')
-
-    container = get_object_or_404(Container, pk=pk)
+    container = get_object_or_404(Container.all_objects, pk=pk)
     new_status = request.POST.get('status', container.status)
     note = request.POST.get('unavailability_note', '').strip()
+    raw_reason = request.POST.get('unavailability_reason', '').strip()
+    raw_version = request.POST.get('version', '').strip()
+    expected_version = int(raw_version) if raw_version.isdigit() else None
     shipping_line_id = request.POST.get('shipping_line') or None
 
     if new_status in dict(Container.Status.choices):
-        container.status = new_status
         if shipping_line_id and shipping_line_id.isdigit():
             container.shipping_line_id = int(shipping_line_id)
-        if new_status == Container.Status.UNAVAILABLE:
-            if 'unavailability_note' in request.POST:
-                container.unavailability_note = note
+        try:
+            reason_obj = None
+            clean_note = ''
+            if new_status == Container.Status.UNAVAILABLE:
+                reason_obj, clean_note = _resolve_motif(Motif.Type.UNAVAILABLE, raw_reason, note)
+            container.change_status(
+                new_status,
+                acting_user=request.user,
+                reason=reason_obj,
+                note=clean_note,
+                expected_version=expected_version,
+            )
+        except ValidationError as exc:
+            messages.error(request, exc.messages[0])
         else:
-            container.unavailability_note = ''
-        container.save(acting_user=request.user)
-        messages.success(
-            request,
-            f"Conteneur {container.container_number} mis à jour ({container.get_status_display()}).",
-        )
+            messages.success(
+                request,
+                f"Conteneur {container.container_number} mis à jour ({container.get_status_display()}).",
+            )
 
-    return redirect(_safe_next(request, _dashboard_url(container.scheduled_date)))
+    fallback = _dashboard_url(container.scheduled_date) if container.scheduled_date else reverse('terminal:containers')
+    return redirect(_safe_next(request, fallback))
 
 
-@login_required
+@require_permission(Actions.CONTAINER_CHANGE_STATUS)
 @require_POST
 def container_status_bulk_view(request):
     """Change le statut (Confirmé, En attente, Indisponible) des conteneurs cochés ou de tous les conteneurs en attente."""
-    if not request.user.can_edit_or_delete_containers:
-        messages.error(
-            request,
-            "Action réservée aux administrateurs et superviseurs.",
-        )
-        return redirect('terminal:dashboard')
-
     today = timezone.localdate()
     target_date = _parse_date(request.POST.get('date', ''), today)
     new_status = request.POST.get('status', '').strip()
     note = request.POST.get('unavailability_note', '').strip()
+    raw_reason = request.POST.get('unavailability_reason', '').strip()
     fallback = _dashboard_url(target_date)
 
     if new_status not in dict(Container.Status.choices):
         messages.error(request, "Statut inconnu.")
         return redirect(_safe_next(request, fallback))
+
+    reason_obj = None
+    clean_note = ''
+    if new_status == Container.Status.UNAVAILABLE:
+        try:
+            reason_obj, clean_note = _resolve_motif(Motif.Type.UNAVAILABLE, raw_reason, note)
+        except ValidationError as exc:
+            messages.error(request, exc.messages[0])
+            return redirect(_safe_next(request, fallback))
 
     qs = Container.objects.filter(scheduled_date=target_date)
     ids = [i for i in request.POST.getlist('ids') if i.isdigit()]
@@ -838,14 +1020,18 @@ def container_status_bulk_view(request):
         return redirect(_safe_next(request, fallback))
 
     updated_count = 0
+    skipped_locked = 0
     for container in qs:
-        container.status = new_status
-        if new_status == Container.Status.UNAVAILABLE:
-            container.unavailability_note = note
-        else:
-            container.unavailability_note = ''
-        container.save(acting_user=request.user)
-        updated_count += 1
+        try:
+            container.change_status(
+                new_status,
+                acting_user=request.user,
+                reason=reason_obj,
+                note=clean_note,
+            )
+            updated_count += 1
+        except ValidationError:
+            skipped_locked += 1
 
     label = dict(Container.Status.choices)[new_status]
     if updated_count:
@@ -853,40 +1039,50 @@ def container_status_bulk_view(request):
             request,
             f"{updated_count} conteneur(s) passé(s) au statut « {label} » pour la séance du {target_date.strftime('%d/%m/Y').replace('/Y', '/' + target_date.strftime('%Y'))}.",
         )
-    else:
+    if skipped_locked:
+        messages.warning(
+            request,
+            f"{skipped_locked} conteneur(s) ignoré(s) car déjà inspecté(s) ou verrouillé(s).",
+        )
+    if not updated_count and not skipped_locked:
         messages.warning(request, "Aucun conteneur à modifier pour cette sélection.")
     return redirect(_safe_next(request, fallback))
 
 
-@login_required
+@require_permission(Actions.CONTAINER_ARCHIVE)
 @require_POST
 def container_delete_view(request, pk):
-    if not request.user.can_edit_or_delete_containers:
-        messages.error(request, "Vous n'avez pas l'autorisation de supprimer un conteneur.")
-        return redirect('terminal:dashboard')
-
-    container = get_object_or_404(Container, pk=pk)
+    container = get_object_or_404(Container.all_objects, pk=pk)
+    if not peut(request.user, Actions.CONTAINER_ARCHIVE, container):
+        return render_403(request, "La fenêtre de suppression est dépassée pour votre rôle.")
     scheduled = container.scheduled_date
     num = container.container_number
-    # Si ce conteneur avait été repris d'une séance précédente, celle-ci redevient « à suivre » :
-    # sans cela, le conteneur disparaîtrait du suivi des non vérifiés sans avoir été vérifié.
-    if container.carried_from_id:
-        Container.objects.filter(
-            pk=container.carried_from_id, carry_decision=Container.CarryDecision.CARRIED
-        ).update(carry_decision='', carry_decided_by=None, carry_decided_at=None)
-    container.delete()
-    messages.info(request, f"Le conteneur {num} a été supprimé de la liste du {scheduled.strftime('%d/%m/%Y')}.")
-    return redirect(f"{reverse('terminal:containers')}?date={scheduled.isoformat()}")
+    reason = request.POST.get('archive_reason', '').strip()
+    try:
+        if container.status == Container.Status.REGISTERED:
+            container.archive(acting_user=request.user, reason=reason or "Archivage depuis la fiche")
+            messages.info(request, f"Le conteneur {num} a été archivé.")
+        else:
+            was_arrival = container.origin == Container.Origin.ARRIVE_SANS_LISTE
+            container.remove_from_list(acting_user=request.user, reason=reason or "Retiré de la liste")
+            if was_arrival:
+                messages.info(request, f"Le conteneur {num} a été retiré de la liste et remis à l'état Enregistré.")
+            else:
+                messages.info(request, f"Le conteneur {num} a été retiré de la liste du {scheduled.strftime('%d/%m/%Y')} et archivé.")
+    except ValidationError as exc:
+        messages.error(request, exc.messages[0])
+        return redirect('terminal:container_detail', pk=container.pk)
+
+    if scheduled:
+        return redirect(f"{reverse('terminal:containers')}?date={scheduled.isoformat()}")
+    return redirect('terminal:containers')
 
 
-@login_required
+@require_permission(Actions.CONTAINER_DETAIL)
 def container_detail_view(request, pk):
     """Fiche détail d'un conteneur programmé : infos, changement de statut, suppression, historique."""
-    if not request.user.is_staff_member:
-        return redirect('terminal:client_watchlist')
-
     container = get_object_or_404(
-        Container.objects.select_related(
+        Container.all_objects.select_related(
             'shipping_line', 'prefix_ref', 'created_by', 'updated_by', 'verified_by', 'carried_from'
         ),
         pk=pk,
@@ -903,13 +1099,9 @@ def container_detail_view(request, pk):
     })
 
 
-@login_required
+@require_permission(Actions.CONTAINER_CHANGE_STATUS)
 def container_edit_view(request, pk):
     """Page dédiée de modification d'un conteneur programmé."""
-    if not request.user.can_edit_or_delete_containers:
-        messages.error(request, "Vous n'avez pas l'autorisation de modifier ce conteneur.")
-        return redirect('terminal:container_detail', pk=pk)
-
     container = get_object_or_404(Container, pk=pk)
     shipping_lines = ShippingLine.objects.filter(is_active=True)
     errors = {}
@@ -927,6 +1119,7 @@ def container_edit_view(request, pk):
         raw_line = request.POST.get('shipping_line', '').strip()
         raw_date = request.POST.get('scheduled_date', '').strip()
         new_status = request.POST.get('status', '').strip()
+        raw_reason = request.POST.get('unavailability_reason', '').strip()
         note = request.POST.get('unavailability_note', '').strip()
 
         form_values = {
@@ -966,12 +1159,27 @@ def container_edit_view(request, pk):
                 f"Le conteneur {normalized} est déjà programmé le {parsed_date.strftime('%d/%m/%Y')}."
             )
 
+        if not errors and (new_status != container.status or parsed_date != container.scheduled_date):
+            ok, err = container.can_change_status(new_status)
+            if not ok:
+                errors['status'] = err
+
+        reason_obj = None
+        clean_note = ''
+        if not errors and new_status == Container.Status.UNAVAILABLE:
+            try:
+                reason_obj, clean_note = _resolve_motif(Motif.Type.UNAVAILABLE, raw_reason, note)
+            except ValidationError as exc:
+                errors['unavailability_note'] = exc.messages[0]
+
         if not errors:
             container.container_number = normalized
             container.shipping_line = line_obj
             container.scheduled_date = parsed_date
             container.status = new_status
-            container.unavailability_note = note if new_status == Container.Status.UNAVAILABLE else ''
+            container.unavailability_reason = reason_obj
+            container.unavailability_note = clean_note
+            container.version = (container.version or 1) + 1
             container.save(acting_user=request.user)
             messages.success(request, f"Conteneur {container.container_number} enregistré.")
             return redirect('terminal:container_detail', pk=container.pk)
@@ -985,41 +1193,181 @@ def container_edit_view(request, pk):
     })
 
 
-@login_required
+def _archive_verification_movement(container, acting_user, archive_reason: str, expected_version):
+    """Archive le mouvement de vérification actif et remet le conteneur à Non inspecté."""
+    with transaction.atomic():
+        locked = Container.all_objects.select_for_update().get(pk=container.pk)
+        if expected_version is not None and locked.version != expected_version:
+            raise ValidationError(
+                "Conflit de concurrence : ce conteneur a été modifié entre-temps. Actualisez la page."
+            )
+        VerificationEvent.objects.filter(
+            container=locked, archived_at__isnull=True
+        ).update(
+            archived_at=timezone.now(),
+            archived_by=acting_user,
+            archive_reason=archive_reason,
+        )
+        sync_container_verification(locked, acting_user=acting_user)
+        ContainerStatusLog.objects.create(
+            container=locked,
+            action=ContainerStatusLog.Action.VERIFICATION_ARCHIVED,
+            old_status=locked.status,
+            new_status=locked.status,
+            reason_text=archive_reason,
+            changed_by=acting_user,
+        )
+
+
+def _correct_verification_movement(container, result: str, acting_user, reason_obj, clean_note: str, expected_version):
+    """Corrige une inspection dans la fenêtre de temps autorisée."""
+    with transaction.atomic():
+        locked = Container.all_objects.select_for_update().get(pk=container.pk)
+        if expected_version is not None and locked.version != expected_version:
+            raise ValidationError(
+                "Conflit de concurrence : ce conteneur a été modifié entre-temps. Actualisez la page."
+            )
+        now = timezone.now()
+        VerificationEvent.objects.filter(
+            container=locked, archived_at__isnull=True
+        ).update(
+            archived_at=now,
+            archived_by=acting_user,
+            archive_reason=(clean_note or "Correction dans la fenêtre") if result == '' else "Remplacé par correction",
+        )
+        if result != '':
+            VerificationEvent.objects.create(
+                container=locked,
+                result=result,
+                reason=reason_obj,
+                note=clean_note,
+                created_by=acting_user,
+                created_at=now,
+                corrected_by=acting_user,
+                corrected_at=now,
+            )
+        sync_container_verification(locked, acting_user=acting_user)
+        reason_label = (
+            f"{reason_obj.label} — {clean_note}" if reason_obj and clean_note
+            else (reason_obj.label if reason_obj else (clean_note or "Correction d'inspection"))
+        )[:255]
+        ContainerStatusLog.objects.create(
+            container=locked,
+            action=ContainerStatusLog.Action.VERIFICATION_CORRECTED,
+            old_status=locked.status,
+            new_status=locked.status,
+            reason_text=reason_label,
+            changed_by=acting_user,
+        )
+
+
+@require_permission(Actions.CONTAINER_VERIFY)
 @require_POST
 def container_set_verification_view(request, pk):
-    """Marque un conteneur confirmé Vérifié / Non vérifié (ou annule le marquage)."""
-    if not request.user.can_mark_verification:
-        return redirect('terminal:home')
-
+    """Marque un conteneur confirmé Vérifié / Non vérifié, corrige (< fenêtre) ou supprime le mouvement (> fenêtre)."""
     container = get_object_or_404(Container, pk=pk)
     result = request.POST.get('result', '').strip()
     note = request.POST.get('verification_note', '').strip()[:255]
+    raw_reason = request.POST.get('verification_reason', '').strip()
+    archive_reason = request.POST.get('archive_reason', '').strip()[:255]
+    raw_version = request.POST.get('version', '').strip()
+    expected_version = int(raw_version) if raw_version.isdigit() else None
+    fallback = _dashboard_url(container.scheduled_date) if container.scheduled_date else reverse('terminal:containers')
+
+    # Cas 1 : Le conteneur a déjà un résultat -> correction (< fenêtre) ou suppression du mouvement (> fenêtre)
+    if container.verification_result:
+        if container.carry_decision in (Container.CarryDecision.CARRIED, Container.CarryDecision.REJECTED):
+            messages.error(
+                request,
+                f"{container.container_number} : impossible de corriger ou supprimer le mouvement d'un conteneur déjà repris ou rejeté.",
+            )
+            return redirect(_safe_next(request, fallback))
+
+        is_delete_movement = request.POST.get('delete_movement') == '1' or (
+            result == '' and not peut(request.user, Actions.CONTAINER_VERIFY_CORRECT, container)
+        )
+        if is_delete_movement:
+            if not peut(request.user, Actions.CONTAINER_VERIFY_DELETE_MOVEMENT, container):
+                return render_403(request, "Vous n'avez pas l'autorisation de supprimer ce mouvement de vérification.")
+            if not archive_reason:
+                messages.error(request, "Un motif est obligatoire pour supprimer le mouvement de vérification.")
+                return redirect(_safe_next(request, fallback))
+            try:
+                _archive_verification_movement(container, request.user, archive_reason, expected_version)
+            except ValidationError as exc:
+                messages.error(request, f"{container.container_number} : {exc.messages[0]}")
+            else:
+                messages.success(request, f"Mouvement de vérification archivé pour {container.container_number} (remis à Non inspecté).")
+            return redirect(_safe_next(request, fallback))
+
+        if not peut(request.user, Actions.CONTAINER_VERIFY_CORRECT, container):
+            return render_403(request, "La fenêtre de correction est dépassée ou ce marquage appartient à un autre inspecteur.")
+
+        reason_obj, clean_note = None, ''
+        if result == Container.Verification.NOT_VERIFIED:
+            try:
+                reason_obj, clean_note = _resolve_motif(Motif.Type.NOT_VERIFIED, raw_reason, note)
+            except ValidationError as exc:
+                messages.error(request, f"{container.container_number} : {exc.messages[0]}")
+                return redirect(_safe_next(request, fallback))
+
+        try:
+            _correct_verification_movement(container, result, request.user, reason_obj, clean_note, expected_version)
+        except ValidationError as exc:
+            messages.error(request, f"{container.container_number} : {exc.messages[0]}")
+        else:
+            label = container.get_verification_result_display() if result else "remis à Non inspecté"
+            messages.success(request, f"Conteneur {container.container_number} corrigé ({label}).")
+        return redirect(_safe_next(request, fallback))
+
+    # Cas 2 : Premier marquage sur un conteneur Non inspecté
+    reason_obj, clean_note = None, ''
+    if result == Container.Verification.NOT_VERIFIED:
+        try:
+            reason_obj, clean_note = _resolve_motif(Motif.Type.NOT_VERIFIED, raw_reason, note)
+        except ValidationError as exc:
+            messages.error(request, f"{container.container_number} : {exc.messages[0]}")
+            return redirect(_safe_next(request, fallback))
+
     try:
-        container.set_verification(result, acting_user=request.user, note=note)
+        container.set_verification(
+            result,
+            acting_user=request.user,
+            note=clean_note,
+            reason=reason_obj,
+            expected_version=expected_version,
+        )
     except ValidationError as exc:
         messages.error(request, f"{container.container_number} : {exc.messages[0]}")
     else:
         label = container.get_verification_result_display() if result else "marquage annulé"
         messages.success(request, f"Conteneur {container.container_number} : {label}.")
-    return redirect(_safe_next(request, _dashboard_url(container.scheduled_date)))
+    return redirect(_safe_next(request, fallback))
 
 
-@login_required
+@require_permission(Actions.CONTAINER_VERIFY)
 @require_POST
 def container_verify_bulk_view(request):
-    """Clôture de séance : applique un résultat aux conteneurs cochés ou aux confirmés restants."""
-    if not request.user.can_mark_verification:
-        return redirect('terminal:home')
-
+    """Clôture de séance : seuls les conteneurs Confirmés et Non inspectés sont éligibles."""
     today = timezone.localdate()
     target_date = _parse_date(request.POST.get('date', ''), today)
     result = request.POST.get('result', '').strip()
+    note = request.POST.get('verification_note', '').strip()
+    raw_reason = request.POST.get('verification_reason', '').strip()
     fallback = _dashboard_url(target_date)
 
     if result not in Container.Verification.values:
         messages.error(request, "Résultat de vérification inconnu.")
         return redirect(_safe_next(request, fallback))
+
+    reason_obj = None
+    clean_note = ''
+    if result == Container.Verification.NOT_VERIFIED:
+        try:
+            reason_obj, clean_note = _resolve_motif(Motif.Type.NOT_VERIFIED, raw_reason, note)
+        except ValidationError as exc:
+            messages.error(request, exc.messages[0])
+            return redirect(_safe_next(request, fallback))
 
     qs = Container.objects.filter(scheduled_date=target_date, status=Container.Status.CONFIRMED)
     ids = [i for i in request.POST.getlist('ids') if i.isdigit()]
@@ -1032,12 +1380,22 @@ def container_verify_bulk_view(request):
         return redirect(_safe_next(request, fallback))
 
     done = 0
+    skipped = 0
     for container in qs:
+        if container.verification_result != '':
+            skipped += 1
+            continue
         try:
-            container.set_verification(result, acting_user=request.user)
+            container.set_verification(
+                result,
+                acting_user=request.user,
+                note=clean_note,
+                reason=reason_obj,
+                expected_version=container.version,
+            )
             done += 1
         except ValidationError:
-            continue
+            skipped += 1
 
     label = dict(Container.Verification.choices)[result].lower()
     if done:
@@ -1045,17 +1403,19 @@ def container_verify_bulk_view(request):
             request,
             f"{done} conteneur(s) marqué(s) « {label} » pour la séance du {target_date.strftime('%d/%m/%Y')}."
         )
-    else:
+    if skipped:
+        messages.warning(
+            request,
+            f"{skipped} conteneur(s) ignoré(s) (déjà inspectés ou non éligibles).",
+        )
+    if not done and not skipped:
         messages.warning(request, "Aucun conteneur confirmé à marquer pour cette séance.")
     return redirect(_safe_next(request, fallback))
 
 
-@login_required
+@require_permission(Actions.CONTAINER_VERIFY)
 def inspection_view(request):
     """Onglet Inspection : marquer Vérifié / Non vérifié les conteneurs confirmés d'une séance."""
-    if not request.user.is_staff_member:
-        return redirect('terminal:home')
-
     today = timezone.localdate()
     # On n'inspecte qu'une séance commencée : aujourd'hui ou une date passée.
     selected_date = min(_parse_date(request.GET.get('date', ''), today), today)
@@ -1107,12 +1467,9 @@ def inspection_view(request):
     })
 
 
-@login_required
+@require_permission(Actions.REPORT_VIEW)
 def register_view(request):
     """Registre des vérifications : qui a été vérifié, quand, et les quantités sur un intervalle."""
-    if not request.user.is_staff_member:
-        return redirect('terminal:home')
-
     today = timezone.localdate()
     search_q = request.GET.get('q', '').strip()
     result_filter = request.GET.get('resultat', '').strip()
@@ -1189,12 +1546,9 @@ def register_view(request):
     })
 
 
-@login_required
+@require_permission(Actions.CONTAINER_CARRYOVER)
 def carryover_view(request):
     """Suivi de tous les conteneurs programmés mais pas encore vérifiés, et décision de reprise."""
-    if not request.user.is_staff_member:
-        return redirect('terminal:home')
-
     today = timezone.localdate()
     target_date = max(_parse_date(request.GET.get('date', ''), default_carry_target(request.user)), today)
     list_started = Container.objects.filter(scheduled_date=target_date).exists()
@@ -1242,13 +1596,10 @@ def carryover_view(request):
     })
 
 
-@login_required
+@require_permission(Actions.CONTAINER_CARRYOVER)
 @require_POST
 def carryover_decide_view(request):
     """Reprend (bouton en un clic ou sélection) ou rejette des conteneurs non vérifiés."""
-    if not request.user.is_staff_member:
-        return redirect('terminal:home')
-
     today = timezone.localdate()
     decision = request.POST.get('decision', '').strip()
     target_date = _parse_date(request.POST.get('date', ''), default_work_date(request.user))
@@ -1328,11 +1679,27 @@ def _stat_annotations():
     }
 
 
-@login_required
-def statistics_view(request):
-    if not request.user.is_staff_member:
-        return redirect('terminal:home')
+def _reason_breakdown(qs, filter_kwargs: dict, reason_field: str) -> list:
+    """Agrège et calcule les pourcentages pour une répartition par motif."""
+    raw = list(
+        qs.filter(**filter_kwargs)
+        .values(reason_field)
+        .annotate(total=Count('id'))
+        .order_by('-total')
+    )
+    peak = max((r['total'] for r in raw), default=0)
+    return [
+        {
+            'label': r[reason_field] or 'Non renseigné',
+            'total': r['total'],
+            'pct': round(100 * r['total'] / peak) if peak else 0,
+        }
+        for r in raw
+    ]
 
+
+@require_permission(Actions.REPORT_VIEW)
+def statistics_view(request):
     today = timezone.localdate()
     kind = request.GET.get('periode', 'semaine')
     if kind not in ('semaine', 'mois', 'perso'):
@@ -1404,6 +1771,31 @@ def statistics_view(request):
     ]
     avg_delay = round(sum(delays) / len(delays), 1) if delays else None
 
+    # Répartition par origine (Programmé / Arrivé sans liste)
+    origin_labels = dict(Container.Origin.choices)
+    by_origin = []
+    for row in qs.values('origin').annotate(**_stat_annotations()).order_by('origin'):
+        row['label'] = origin_labels.get(row['origin'], row['origin'])
+        row['rate'] = _rate(row['verified'], row['confirmed'])
+        by_origin.append(row)
+
+    # Non vérifiés par motif et Indisponibles par motif
+    not_verified_by_reason = _reason_breakdown(
+        qs, {'verification_result': Container.Verification.NOT_VERIFIED}, 'verification_reason__label'
+    )
+    unavailable_by_reason = _reason_breakdown(
+        qs, {'status': Container.Status.UNAVAILABLE}, 'unavailability_reason__label'
+    )
+
+    # Conteneurs enregistrés sans liste depuis >= N jours
+    alert_days = SiteSettings.get_solo().unscheduled_alert_days or 3
+    cutoff = timezone.now() - datetime.timedelta(days=alert_days)
+    stale_registered = list(
+        Container.registered_objects.filter(arrived_at__lte=cutoff)
+        .select_related('shipping_line')
+        .order_by('arrived_at')[:50]
+    )
+
     # Situation actuelle du suivi (indépendante de la période affichée).
     backlog_qs = unverified_backlog(today)
     backlog = _backlog_breakdown(backlog_qs)
@@ -1417,7 +1809,7 @@ def statistics_view(request):
         response.write('﻿')
         writer = csv.writer(response, delimiter=';')
         writer.writerow([
-            'Periode', 'Programmes', 'Confirmes', 'Verifies', 'Restent a verifier',
+            'Periode', 'Programmes', 'Confirmes', 'Verifies', 'Restent a inspecter',
             'Repris', 'Rejetes', 'Taux de verification (%)',
         ])
         for b in buckets + [{'label': 'TOTAL', **totals}]:
@@ -1446,14 +1838,16 @@ def statistics_view(request):
         'verified_with_delay': len(delays),
         'backlog': backlog,
         'oldest': oldest,
+        'by_origin': by_origin,
+        'not_verified_by_reason': not_verified_by_reason,
+        'unavailable_by_reason': unavailable_by_reason,
+        'stale_registered': stale_registered,
+        'unscheduled_alert_days': alert_days,
     })
 
 
-@login_required
+@require_permission(Actions.REPORT_VIEW)
 def container_export_pdf_view(request):
-    if not request.user.is_staff_member:
-        return redirect('terminal:home')
-
     import io
     from reportlab.lib import colors
     from reportlab.lib.pagesizes import A4
@@ -1593,17 +1987,14 @@ def container_export_pdf_view(request):
     return response
 
 
-@login_required
+@require_permission(Actions.REPORT_VIEW)
 def container_export_csv_view(request):
-    if not request.user.is_staff_member:
-        return redirect('terminal:home')
-
     today = timezone.localdate()
     selected_date = _parse_date(request.GET.get('date', ''), today)
     status_filter = request.GET.get('status', '').strip()
 
     qs = Container.objects.filter(scheduled_date=selected_date).select_related(
-        'shipping_line', 'prefix_ref', 'updated_by'
+        'shipping_line', 'prefix_ref', 'updated_by', 'unavailability_reason', 'verification_reason'
     ).order_by('container_number')
 
     if status_filter in dict(Container.Status.choices):
@@ -1619,11 +2010,15 @@ def container_export_csv_view(request):
     writer.writerow([
         'Numero Conteneur',
         'Prefixe',
+        'Origine',
         'Ligne Maritime',
         'Date Programmation RAMPE',
         'Statut',
         'Motif Indisponibilite',
+        'Precision Indisponibilite',
         'Verification',
+        'Motif Non-Verification',
+        'Precision Non-Verification',
         'Premiere Programmation',
         'Derniere Mise a Jour',
         'Modifie Par',
@@ -1633,12 +2028,16 @@ def container_export_csv_view(request):
         writer.writerow([
             c.container_number,
             c.prefix_code,
+            c.get_origin_display(),
             c.shipping_line.name if c.shipping_line else 'Non rattaché',
-            c.scheduled_date.strftime('%d/%m/%Y'),
+            c.scheduled_date.strftime('%d/%m/%Y') if c.scheduled_date else '',
             c.get_status_display(),
-            c.full_reason_display,
-            c.get_verification_result_display(),
-            (c.first_scheduled_date or c.scheduled_date).strftime('%d/%m/%Y'),
+            c.unavailability_reason.label if c.unavailability_reason else '',
+            c.unavailability_note if c.status == Container.Status.UNAVAILABLE else '',
+            c.get_verification_result_display() or 'Non inspecté',
+            c.verification_reason.label if c.verification_reason else '',
+            c.verification_note if c.verification_result == Container.Verification.NOT_VERIFIED else '',
+            (c.first_scheduled_date or c.scheduled_date).strftime('%d/%m/%Y') if (c.first_scheduled_date or c.scheduled_date) else '',
             timezone.localtime(c.updated_at).strftime('%d/%m/%Y %H:%M'),
             c.updated_by.display_name if c.updated_by else '-',
         ])
@@ -1646,11 +2045,23 @@ def container_export_csv_view(request):
     return response
 
 
-@login_required
-def status_logs_view(request):
-    if not request.user.is_staff_member:
-        return redirect('terminal:home')
+@require_permission(Actions.CONTAINER_RESTORE)
+@require_POST
+def container_restore_view(request, pk):
+    """Restaure un conteneur archivé (Superadmin uniquement)."""
+    container = get_object_or_404(Container.all_objects, pk=pk)
+    reason = request.POST.get('restore_reason', '').strip() or "Restauration depuis l'historique"
+    try:
+        container.restore(acting_user=request.user, reason=reason)
+    except ValidationError as exc:
+        messages.error(request, exc.messages[0])
+    else:
+        messages.success(request, f"Conteneur {container.container_number} restauré.")
+    return redirect('terminal:status_logs')
 
+
+@require_permission(Actions.REPORT_VIEW)
+def status_logs_view(request):
     q = request.GET.get('q', '').strip()
     logs = ContainerStatusLog.objects.select_related(
         'container', 'container__shipping_line', 'changed_by'
@@ -1665,21 +2076,24 @@ def status_logs_view(request):
             | Q(changed_by__full_name__icontains=q)
         )
 
+    archived_containers = list(
+        Container.all_objects.filter(archived_at__isnull=False)
+        .select_related('shipping_line', 'archived_by')
+        .order_by('-archived_at')[:30]
+    )
+
     page, page_query = _paginate(request, logs)
     return render(request, 'portal/status_logs.html', {
         'logs': page.object_list,
         'page': page,
         'page_query': page_query,
         'q': q,
+        'archived_containers': archived_containers,
     })
 
 
-@login_required
+@require_permission(Actions.SHIPPING_LINE_MANAGE)
 def shipping_lines_view(request):
-    if not request.user.is_portal_admin:
-        messages.error(request, "Accès réservé aux administrateurs.")
-        return redirect('terminal:dashboard')
-
     if request.method == 'POST':
         action = request.POST.get('action', 'save_line')
         if action == 'save_line':
@@ -1726,13 +2140,9 @@ def shipping_lines_view(request):
     })
 
 
-@login_required
+@require_permission(Actions.SHIPPING_LINE_MANAGE)
 def shipping_line_create_view(request):
     """Page dédiée de création d'une ligne maritime."""
-    if not request.user.is_portal_admin:
-        messages.error(request, "Accès réservé aux administrateurs.")
-        return redirect('terminal:dashboard')
-
     error = ''
     name = ''
     if request.method == 'POST':
@@ -1754,13 +2164,9 @@ def shipping_line_create_view(request):
     })
 
 
-@login_required
+@require_permission(Actions.SHIPPING_LINE_MANAGE)
 def shipping_line_edit_view(request, pk):
     """Page dédiée de modification d'une ligne maritime."""
-    if not request.user.is_portal_admin:
-        messages.error(request, "Accès réservé aux administrateurs.")
-        return redirect('terminal:dashboard')
-
     line = get_object_or_404(ShippingLine, pk=pk)
     error = ''
     name = line.name
@@ -1785,13 +2191,9 @@ def shipping_line_edit_view(request, pk):
     })
 
 
-@login_required
+@require_permission(Actions.SHIPPING_LINE_MANAGE)
 @require_POST
 def shipping_line_delete_view(request, pk):
-    if not request.user.is_portal_admin:
-        messages.error(request, "Accès réservé aux administrateurs.")
-        return redirect('terminal:dashboard')
-
     line = get_object_or_404(ShippingLine, pk=pk)
     name = line.name
     line.delete()
@@ -1837,6 +2239,9 @@ class SiteSettingsForm(forms.ModelForm):
             'client_cta_subtitle',
             'hero_carousel_enabled',
             'hero_carousel_limit',
+            'correction_window_minutes',
+            'delete_window_hours',
+            'unscheduled_alert_days',
             # Champs Kreyòl
             'portal_title_ht',
             'portal_subtitle_ht',
@@ -1888,11 +2293,16 @@ class SiteSettingsForm(forms.ModelForm):
             'unavailable_description_ht': forms.Textarea(attrs={'rows': 3}),
             'client_cta_subtitle_ht': forms.Textarea(attrs={'rows': 3}),
             'hero_carousel_limit': forms.NumberInput(attrs={'min': 1, 'max': 6}),
+            'correction_window_minutes': forms.NumberInput(attrs={'min': 1, 'max': 1440}),
+            'delete_window_hours': forms.NumberInput(attrs={'min': 1, 'max': 168}),
+            'unscheduled_alert_days': forms.NumberInput(attrs={'min': 1, 'max': 90}),
         }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['hero_badge'].required = False
+        for opt_field in ('correction_window_minutes', 'delete_window_hours', 'unscheduled_alert_days'):
+            self.fields[opt_field].required = False
         for name, field in self.fields.items():
             if name.endswith('_ht'):
                 field.required = False
@@ -1900,6 +2310,24 @@ class SiteSettingsForm(forms.ModelForm):
                 field.widget.attrs.setdefault('class', 'w-4 h-4 rounded border-slate-300 text-ctsa-blue focus:ring-ctsa-blue')
             else:
                 field.widget.attrs.setdefault('class', 'form-control')
+
+    def clean_correction_window_minutes(self):
+        val = self.cleaned_data.get('correction_window_minutes')
+        if val is None:
+            return getattr(self.instance, 'correction_window_minutes', 60) or 60
+        return val
+
+    def clean_delete_window_hours(self):
+        val = self.cleaned_data.get('delete_window_hours')
+        if val is None:
+            return getattr(self.instance, 'delete_window_hours', 24) or 24
+        return val
+
+    def clean_unscheduled_alert_days(self):
+        val = self.cleaned_data.get('unscheduled_alert_days')
+        if val is None:
+            return getattr(self.instance, 'unscheduled_alert_days', 3) or 3
+        return val
 
 
 class HeroSlideForm(forms.ModelForm):
@@ -1921,19 +2349,30 @@ class HeroSlideForm(forms.ModelForm):
                 field.widget.attrs.setdefault('class', 'form-control')
 
 
-@login_required
+@require_permission(Actions.SITE_SETTINGS_MANAGE)
 def site_settings_view(request):
     """Espace d'édition des textes et coordonnées publiques du portail."""
-    if not request.user.is_portal_admin:
-        messages.error(request, "Accès réservé aux administrateurs.")
-        return redirect('terminal:dashboard')
-
     instance = SiteSettings.get_solo()
     if request.method == 'POST':
+        old_snapshot = {
+            f: getattr(instance, f)
+            for f in SiteSettingsForm.Meta.fields
+        }
         form = SiteSettingsForm(request.POST, instance=instance)
         if form.is_valid():
-            form.save()
-            messages.success(request, "Les informations et textes publics ont été mis à jour.")
+            saved = form.save()
+            for field_name in SiteSettingsForm.Meta.fields:
+                old_val = old_snapshot.get(field_name)
+                new_val = getattr(saved, field_name)
+                if old_val != new_val:
+                    PortalAuditLog.objects.create(
+                        category=PortalAuditLog.Category.SETTING_CHANGE,
+                        target_label=f"SiteSettings.{field_name}",
+                        old_value=str(old_val),
+                        new_value=str(new_val),
+                        changed_by=request.user,
+                    )
+            messages.success(request, "Les informations et paramètres ont été mis à jour.")
             return redirect('terminal:site_settings')
         messages.error(request, "Veuillez corriger les champs signalés ci-dessous.")
     else:
@@ -1941,6 +2380,12 @@ def site_settings_view(request):
 
     slides = list(HeroSlide.objects.all())
     active_slides_count = sum(1 for s in slides if s.is_active)
+    motifs_unavailable = list(Motif.objects.filter(type=Motif.Type.UNAVAILABLE))
+    motifs_not_verified = list(Motif.objects.filter(type=Motif.Type.NOT_VERIFIED))
+    settings_logs = list(
+        PortalAuditLog.objects.select_related('changed_by')
+        .filter(category=PortalAuditLog.Category.SETTING_CHANGE)[:15]
+    )
 
     return render(request, 'portal/site_settings.html', {
         'form': form,
@@ -1948,17 +2393,105 @@ def site_settings_view(request):
         'slides': slides,
         'active_slides_count': active_slides_count,
         'slide_form': HeroSlideForm(initial={'display_order': len(slides) + 1}),
+        'motifs_unavailable': motifs_unavailable,
+        'motifs_not_verified': motifs_not_verified,
+        'motif_types': Motif.Type.choices,
+        'settings_logs': settings_logs,
     })
 
 
-@login_required
+@require_permission(Actions.MOTIF_MANAGE)
+@require_POST
+def motif_create_view(request):
+    """Ajoute un nouveau motif prédéfini (Superadmin uniquement)."""
+    motif_type = request.POST.get('type', '').strip()
+    label = request.POST.get('label', '').strip()[:160]
+    raw_order = request.POST.get('display_order', '10').strip()
+    requires_note = request.POST.get('requires_note') == 'on'
+
+    if motif_type not in dict(Motif.Type.choices):
+        messages.error(request, "Type de motif invalide.")
+        return redirect('terminal:site_settings')
+    if not label:
+        messages.error(request, "Le libellé du motif est obligatoire.")
+        return redirect('terminal:site_settings')
+    if Motif.objects.filter(type=motif_type, label__iexact=label).exists():
+        messages.warning(request, f"Le motif « {label} » existe déjà pour cette catégorie.")
+        return redirect('terminal:site_settings')
+
+    order = int(raw_order) if raw_order.isdigit() else 10
+    motif = Motif.objects.create(
+        type=motif_type,
+        label=label,
+        display_order=order,
+        requires_note=requires_note,
+        is_active=True,
+    )
+    PortalAuditLog.objects.create(
+        category=PortalAuditLog.Category.SETTING_CHANGE,
+        target_label=f"Motif:{motif.type}",
+        old_value="",
+        new_value=f"{motif.label} (ordre={motif.display_order}, precision={motif.requires_note})",
+        changed_by=request.user,
+    )
+    messages.success(request, f"Motif « {motif.label} » ajouté.")
+    return redirect('terminal:site_settings')
+
+
+@require_permission(Actions.MOTIF_MANAGE)
+@require_POST
+def motif_toggle_view(request, pk):
+    """Active ou désactive un motif (jamais de suppression)."""
+    motif = get_object_or_404(Motif, pk=pk)
+    if motif.is_system:
+        messages.error(request, f"Le motif système « {motif.label} » ne peut pas être modifié.")
+        return redirect('terminal:site_settings')
+
+    old_state = "actif" if motif.is_active else "inactif"
+    motif.is_active = not motif.is_active
+    motif.save(update_fields=['is_active', 'updated_at'])
+    new_state = "actif" if motif.is_active else "inactif"
+    PortalAuditLog.objects.create(
+        category=PortalAuditLog.Category.SETTING_CHANGE,
+        target_label=f"Motif:{motif.pk}:{motif.label}",
+        old_value=old_state,
+        new_value=new_state,
+        changed_by=request.user,
+    )
+    messages.info(request, f"Motif « {motif.label} » marqué {new_state}.")
+    return redirect('terminal:site_settings')
+
+
+@require_permission(Actions.MOTIF_MANAGE)
+@require_POST
+def motif_update_view(request, pk):
+    """Met à jour l'ordre ou la précision obligatoire d'un motif."""
+    motif = get_object_or_404(Motif, pk=pk)
+    if motif.is_system:
+        messages.error(request, f"Le motif système « {motif.label} » ne peut pas être modifié.")
+        return redirect('terminal:site_settings')
+
+    raw_order = request.POST.get('display_order', str(motif.display_order)).strip()
+    if raw_order.isdigit():
+        old_order = motif.display_order
+        motif.display_order = int(raw_order)
+        motif.save(update_fields=['display_order', 'updated_at'])
+        if old_order != motif.display_order:
+            PortalAuditLog.objects.create(
+                category=PortalAuditLog.Category.SETTING_CHANGE,
+                target_label=f"Motif:{motif.pk}:ordre",
+                old_value=str(old_order),
+                new_value=str(motif.display_order),
+                changed_by=request.user,
+            )
+            messages.success(request, f"Ordre du motif « {motif.label} » mis à jour.")
+    return redirect('terminal:site_settings')
+
+
+@require_permission(Actions.SITE_SETTINGS_MANAGE)
 @require_POST
 def hero_slide_create_view(request):
     """Ajoute une image au carrousel d'arrière-plan de l'accueil."""
-    if not request.user.is_portal_admin:
-        messages.error(request, "Accès réservé aux administrateurs.")
-        return redirect('terminal:dashboard')
-
     form = HeroSlideForm(request.POST, request.FILES)
     if form.is_valid():
         slide = form.save()
@@ -1968,14 +2501,10 @@ def hero_slide_create_view(request):
     return redirect('terminal:site_settings')
 
 
-@login_required
+@require_permission(Actions.SITE_SETTINGS_MANAGE)
 @require_POST
 def hero_slide_toggle_view(request, pk):
     """Active ou désactive une image du carrousel."""
-    if not request.user.is_portal_admin:
-        messages.error(request, "Accès réservé aux administrateurs.")
-        return redirect('terminal:dashboard')
-
     slide = get_object_or_404(HeroSlide, pk=pk)
     slide.is_active = not slide.is_active
     slide.save(update_fields=['is_active'])
@@ -1984,14 +2513,10 @@ def hero_slide_toggle_view(request, pk):
     return redirect('terminal:site_settings')
 
 
-@login_required
+@require_permission(Actions.SITE_SETTINGS_MANAGE)
 @require_POST
 def hero_slide_delete_view(request, pk):
     """Supprime une image du carrousel."""
-    if not request.user.is_portal_admin:
-        messages.error(request, "Accès réservé aux administrateurs.")
-        return redirect('terminal:dashboard')
-
     slide = get_object_or_404(HeroSlide, pk=pk)
     label = str(slide)
     if slide.image:

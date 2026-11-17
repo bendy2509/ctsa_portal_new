@@ -89,7 +89,7 @@
       <div class="text-xs text-slate-500 mt-0.5">{% if totals.rate is not None %}{{ totals.rate }} % des confirmés{% else %}—{% endif %}</div>
     </div>
     <div class="bg-white rounded-xl border border-slate-200/80 shadow-xs p-3.5">
-      <div class="text-xs font-bold uppercase tracking-wider text-slate-500">Restent à vérifier</div>
+      <div class="text-xs font-bold uppercase tracking-wider text-slate-500">Restent à inspecter</div>
       <div class="text-2xl font-heading font-extrabold text-ctsa-pending-text tabular-nums mt-1">{{ totals.to_verify }}</div>
       <div class="text-xs text-slate-500 mt-0.5">{{ totals.not_verified }} non vérifié{{ totals.not_verified|pluralize }}</div>
     </div>

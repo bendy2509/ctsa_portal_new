@@ -15,6 +15,7 @@ from .forms import (
     StaffUserUpdateForm,
 )
 from .models import User
+from .permissions import Actions, peut, render_403, require_permission
 from .utils import safe_next_url
 
 # Create your views here.
@@ -93,12 +94,21 @@ def profile_view(request):
     })
 
 
-@login_required
-def user_list_view(request):
-    if not request.user.is_portal_admin:
-        messages.error(request, "Accès réservé aux administrateurs Cap Terminal S.A.")
-        return redirect('terminal:dashboard')
+def _log_user_audit(acting_user, target_user, category: str, old_value: str, new_value: str) -> None:
+    """Enregistre un événement utilisateur dans le journal d'audit en ajout seulement."""
+    from terminal.models import PortalAuditLog
 
+    PortalAuditLog.objects.create(
+        category=category,
+        target_label=f"User:{target_user.username}",
+        old_value=old_value,
+        new_value=new_value,
+        changed_by=acting_user,
+    )
+
+
+@require_permission(Actions.USER_MANAGE)
+def user_list_view(request):
     role_filter = request.GET.get('role', '')
     q = request.GET.get('q', '').strip()
     users = User.objects.all().order_by('-date_joined')
@@ -112,11 +122,19 @@ def user_list_view(request):
             | Q(company_name__icontains=q)
         )
 
-    create_form = StaffUserCreateForm()
+    create_form = StaffUserCreateForm(acting_user=request.user)
     if request.method == 'POST':
-        create_form = StaffUserCreateForm(request.POST)
+        if request.POST.get('role') == User.Role.ADMIN and not request.user.is_superuser:
+            return render_403(request, "Seul un Administrateur (Superadmin) peut créer un compte Administrateur.")
+        create_form = StaffUserCreateForm(request.POST, acting_user=request.user)
         if create_form.is_valid():
             new_user = create_form.save()
+            if new_user.role == User.Role.ADMIN:
+                from terminal.models import PortalAuditLog
+                _log_user_audit(
+                    request.user, new_user, PortalAuditLog.Category.PROMOTE_SUPERADMIN,
+                    "", "Administrateur (création)",
+                )
             messages.success(
                 request,
                 f"L'utilisateur « {new_user.display_name} » ({new_user.get_role_display()}) a été créé."
@@ -138,16 +156,21 @@ def user_list_view(request):
     })
 
 
-@login_required
+@require_permission(Actions.USER_MANAGE)
 def user_create_view(request):
     """Page dédiée de création d'un compte utilisateur."""
-    if not request.user.is_portal_admin:
-        messages.error(request, "Accès réservé aux administrateurs Cap Terminal S.A.")
-        return redirect('terminal:dashboard')
+    if request.method == 'POST' and request.POST.get('role') == User.Role.ADMIN and not request.user.is_superuser:
+        return render_403(request, "Seul un Administrateur (Superadmin) peut créer un compte Administrateur.")
 
-    form = StaffUserCreateForm(request.POST or None)
+    form = StaffUserCreateForm(request.POST or None, acting_user=request.user)
     if request.method == 'POST' and form.is_valid():
         new_user = form.save()
+        if new_user.role == User.Role.ADMIN:
+            from terminal.models import PortalAuditLog
+            _log_user_audit(
+                request.user, new_user, PortalAuditLog.Category.PROMOTE_SUPERADMIN,
+                "", "Administrateur (création)",
+            )
         messages.success(
             request,
             f"L'utilisateur « {new_user.display_name} » ({new_user.get_role_display()}) a été créé."
@@ -156,20 +179,45 @@ def user_create_view(request):
 
     return render(request, 'portal/user_create.html', {
         'form': form,
-        'role_choices': User.Role.choices,
+        'role_choices': form.fields['role'].choices,
     })
 
 
-@login_required
+@require_permission(Actions.USER_MANAGE)
 def user_edit_view(request, pk):
-    if not request.user.is_portal_admin:
-        messages.error(request, "Accès réservé aux administrateurs.")
-        return redirect('terminal:dashboard')
-
     target_user = get_object_or_404(User, pk=pk)
-    form = StaffUserUpdateForm(request.POST or None, instance=target_user)
+    if not peut(request.user, Actions.USER_MANAGE, target_user):
+        return render_403(request, "Vous ne pouvez pas modifier un compte Superadmin.")
+
+    if request.method == 'POST' and request.POST.get('role') == User.Role.ADMIN and not request.user.is_superuser:
+        return render_403(request, "Seul un Administrateur (Superadmin) peut promouvoir un compte Administrateur.")
+
+    old_role = target_user.role
+    old_superuser = target_user.is_superuser
+    form = StaffUserUpdateForm(request.POST or None, instance=target_user, acting_user=request.user)
     if request.method == 'POST' and form.is_valid():
-        form.save()
+        # Protection du dernier Administrateur (Superadmin) actif contre la désactivation ou rétrogradation
+        is_last_superadmin = (
+            old_superuser
+            and not User.objects.filter(is_superuser=True, is_active=True).exclude(pk=target_user.pk).exists()
+        )
+        if is_last_superadmin and (
+            not form.cleaned_data.get('is_active', True)
+            or form.cleaned_data.get('role') != User.Role.ADMIN
+        ):
+            messages.error(request, "Impossible de désactiver ou rétrograder le dernier Administrateur actif.")
+            return render(request, 'portal/user_edit.html', {
+                'target_user': target_user,
+                'form': form,
+            })
+
+        updated_user = form.save()
+        if old_role != updated_user.role:
+            from terminal.models import PortalAuditLog
+            _log_user_audit(
+                request.user, updated_user, PortalAuditLog.Category.ROLE_CHANGE,
+                old_role, updated_user.role,
+            )
         messages.success(request, f"L'utilisateur « {target_user.display_name} » a été mis à jour.")
         return redirect('accounts:user_list')
 
@@ -179,16 +227,22 @@ def user_edit_view(request, pk):
     })
 
 
-@login_required
+@require_permission(Actions.USER_MANAGE)
 @require_POST
 def user_delete_view(request, pk):
-    if not request.user.is_portal_admin:
-        messages.error(request, "Accès réservé aux administrateurs.")
-        return redirect('terminal:dashboard')
-
     target_user = get_object_or_404(User, pk=pk)
+    if not peut(request.user, Actions.USER_MANAGE, target_user):
+        return render_403(request, "Vous ne pouvez pas supprimer un compte Superadmin.")
+
     if target_user.pk == request.user.pk:
         messages.error(request, "Vous ne pouvez pas supprimer votre propre compte administrateur actif.")
+        return redirect('accounts:user_list')
+
+    if (
+        target_user.is_superuser
+        and not User.objects.filter(is_superuser=True, is_active=True).exclude(pk=target_user.pk).exists()
+    ):
+        messages.error(request, "Impossible de supprimer le dernier Superadmin actif.")
         return redirect('accounts:user_list')
 
     name = target_user.display_name

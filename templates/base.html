@@ -293,17 +293,34 @@
         <span class="confirm-dialog-icon" style="background-color:#fdf2f1;color:#c0392b;" aria-hidden="true">
           <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></svg>
         </span>
-        <div class="min-w-0 flex-1">
+        <div class="min-w-0 flex-1 space-y-2.5">
           <h2 id="unavail-dialog-title" class="confirm-dialog-title">Motif d'indisponibilité</h2>
-          <p id="unavail-dialog-subtitle" class="confirm-dialog-message mb-3"></p>
-          <label for="unavail-dialog-note" class="visually-hidden">Motif d'indisponibilité</label>
-          <textarea id="unavail-dialog-note"
-                    name="unavailability_note"
-                    rows="3"
+          <p id="unavail-dialog-subtitle" class="confirm-dialog-message mb-2"></p>
+          <div>
+            <label for="unavail-dialog-reason" class="block text-xs font-bold text-[#2c3741] mb-1">
+              Motif <span aria-hidden="true" class="text-red-600">*</span>
+            </label>
+            <select id="unavail-dialog-reason"
+                    name="unavailability_reason"
                     required
-                    maxlength="255"
-                    placeholder="Saisissez le motif (ex. Panne reach stacker, blocage douane...)"
-                    class="w-full rounded-lg border border-slate-200/80 px-3 py-2 text-sm text-[#2c3741] bg-white focus:outline-none focus:border-[#3498db]"></textarea>
+                    class="w-full min-h-[40px] rounded-lg border border-slate-200/80 px-3 py-2 text-sm text-[#2c3741] bg-white focus:outline-none focus:border-[#3498db]">
+              <option value="">— Choisissez un motif —</option>
+              {% for m in unavailable_motifs %}
+                <option value="{{ m.pk }}" data-requires-note="{% if m.requires_note %}1{% else %}0{% endif %}">{{ m.label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div>
+            <label for="unavail-dialog-note" class="block text-xs font-bold text-[#2c3741] mb-1">
+              Précision <span id="unavail-note-req" class="text-slate-500 font-normal">(facultative)</span>
+            </label>
+            <textarea id="unavail-dialog-note"
+                      name="unavailability_note"
+                      rows="2"
+                      maxlength="255"
+                      placeholder="Précisez si nécessaire..."
+                      class="w-full rounded-lg border border-slate-200/80 px-3 py-2 text-sm text-[#2c3741] bg-white focus:outline-none focus:border-[#3498db]"></textarea>
+          </div>
         </div>
       </div>
       <div class="confirm-dialog-actions">

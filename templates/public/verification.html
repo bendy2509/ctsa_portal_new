@@ -174,7 +174,7 @@
                   {% trans "Conteneur indisponible — Ne pas se déplacer" %}
                 </h3>
                 <p class="text-sm font-semibold leading-relaxed m-0">
-                  {% trans "Motif" %} : {{ result.full_reason_display }}
+                  {% trans "Ce conteneur ne peut pas être présenté aujourd'hui. Contactez votre transitaire." %}
                 </p>
               </div>
             {% endif %}
@@ -309,7 +309,8 @@
           {% trans "Indisponible" as lbl_u %}
           {% include 'components/badge.html' with variant='unavailable' label=lbl_u %}
           <p class="text-xs sm:text-sm text-slate-600 leading-relaxed m-0">
-            {% trans "Non présentable ce jour. Le motif communiqué est indiqué sur la fiche." %}
+            {# TODO: texte créole à fournir pour « Non présentable ce jour » sans mention de motif #}
+            {% trans "Non présentable ce jour. Contactez votre transitaire." %}
           </p>
         </div>
       </div>

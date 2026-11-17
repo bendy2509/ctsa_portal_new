@@ -133,7 +133,7 @@
             {% if item.container and item.container.is_verified and item.container.timing != 'upcoming' %}
               <p class="text-xs text-emerald-700 font-semibold m-0">{% trans "Conteneur déjà vérifié" %}</p>
             {% elif item.container and item.container.status == 'unavailable' %}
-              <p class="text-xs text-red-700 font-semibold m-0">{{ item.container.full_reason_display }}</p>
+              <p class="text-xs text-red-700 font-semibold m-0">{% trans "Conteneur indisponible — Ne pas se déplacer" %}</p>
             {% endif %}
 
             <div class="pt-2.5 border-t border-slate-100 flex items-center justify-between gap-3">
@@ -167,7 +167,7 @@
                 <th scope="col">{% trans "Ligne maritime" %}</th>
                 <th scope="col">{% trans "Séance" %}</th>
                 <th scope="col">{% trans "Statut" %}</th>
-                <th scope="col">{% trans "Référence / Motif" %}</th>
+                <th scope="col">{% trans "Référence" %}</th>
                 <th scope="col">{% trans "Mise à jour" %}</th>
                 <th scope="col" class="text-right">{% trans "Action" %}</th>
               </tr>
@@ -221,7 +221,7 @@
                     {% elif item.container and item.container.timing == 'past' %}
                       <div class="text-xs text-slate-500">{% trans "Dernier statut connu" %} : {% trans item.container.get_status_display %}</div>
                     {% elif item.container and item.container.status == 'unavailable' %}
-                      <div class="text-xs text-red-700 font-semibold">{{ item.container.full_reason_display }}</div>
+                      <div class="text-xs text-red-700 font-semibold">{% trans "Conteneur indisponible" %}</div>
                     {% endif %}
                   </td>
                   <td class="text-xs text-slate-500 tabular-nums">

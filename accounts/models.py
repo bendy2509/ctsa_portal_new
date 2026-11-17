@@ -7,7 +7,9 @@ from django.db import models
 class User(AbstractUser):
     class Role(models.TextChoices):
         ADMIN = 'admin', 'Administrateur'
+        MANAGER = 'manager', 'Manager'
         SUPERVISOR = 'supervisor', 'Superviseur'
+        AGENT = 'agent', 'Agent'
         CLIENT = 'client', 'Client'
 
     role = models.CharField(
@@ -41,29 +43,54 @@ class User(AbstractUser):
         display = self.full_name or self.get_full_name() or self.username
         return f"{display} ({self.get_role_display()})"
 
+    def save(self, *args, **kwargs):
+        if self.role == self.Role.ADMIN:
+            self.is_superuser = True
+            self.is_staff = True
+        elif self.is_superuser:
+            self.role = self.Role.ADMIN
+            self.is_staff = True
+        else:
+            self.is_superuser = False
+            self.is_staff = self.role == self.Role.MANAGER
+        super().save(*args, **kwargs)
+
     @property
     def display_name(self) -> str:
         return self.full_name or self.get_full_name() or self.username
 
     @property
     def is_portal_admin(self) -> bool:
-        return self.is_superuser or self.role == self.Role.ADMIN
+        return self.is_superuser or self.role in (self.Role.ADMIN, self.Role.MANAGER)
+
+    @property
+    def is_manager(self) -> bool:
+        return self.role == self.Role.MANAGER
 
     @property
     def is_supervisor(self) -> bool:
         return self.role == self.Role.SUPERVISOR
 
     @property
+    def is_agent(self) -> bool:
+        return self.role == self.Role.AGENT
+
+    @property
     def is_staff_member(self) -> bool:
-        return self.is_portal_admin or self.is_supervisor
+        return self.is_superuser or self.role in (
+            self.Role.ADMIN,
+            self.Role.MANAGER,
+            self.Role.SUPERVISOR,
+            self.Role.AGENT,
+        )
 
     @property
     def can_mark_verification(self) -> bool:
-        # Administrateur et Superviseur peuvent marquer la vérification (Vérifié / Non vérifié).
-        return self.is_staff_member
+        from accounts.permissions import Actions, peut
+        return peut(self, Actions.CONTAINER_VERIFY)
 
     @property
     def can_edit_or_delete_containers(self) -> bool:
-        # Droits compilés pour Administrateur et Superviseur.
-        return self.is_staff_member
+        from accounts.permissions import Actions, peut
+        return peut(self, Actions.CONTAINER_CHANGE_STATUS)
 

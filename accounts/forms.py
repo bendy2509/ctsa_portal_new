@@ -83,10 +83,17 @@ class StaffUserCreateForm(forms.ModelForm):
         model = User
         fields = ['username', 'full_name', 'email', 'role', 'company_name', 'phone', 'is_active']
 
+    def __init__(self, *args, acting_user=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.acting_user = acting_user
+        if not getattr(acting_user, 'is_superuser', False):
+            self.fields['role'].choices = [
+                c for c in User.Role.choices if c[0] != User.Role.ADMIN
+            ]
+
     def save(self, commit=True):
         user = super().save(commit=False)
         user.set_password(self.cleaned_data['password'])
-        user.is_staff = user.role == User.Role.ADMIN
         if commit:
             user.save()
         return user
@@ -104,12 +111,19 @@ class StaffUserUpdateForm(forms.ModelForm):
         model = User
         fields = ['username', 'full_name', 'email', 'role', 'company_name', 'phone', 'is_active']
 
+    def __init__(self, *args, acting_user=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.acting_user = acting_user
+        if not getattr(acting_user, 'is_superuser', False):
+            self.fields['role'].choices = [
+                c for c in User.Role.choices if c[0] != User.Role.ADMIN
+            ]
+
     def save(self, commit=True):
         user = super().save(commit=False)
         pwd = self.cleaned_data.get('new_password')
         if pwd:
             user.set_password(pwd)
-        user.is_staff = user.role == User.Role.ADMIN or user.is_superuser
         if commit:
             user.save()
         return user

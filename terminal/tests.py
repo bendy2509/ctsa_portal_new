@@ -4,7 +4,6 @@ from django.utils import timezone
 from accounts.models import User
 from terminal.models import (
     ShippingLine,
-    ContainerPrefix,
     Container,
     ContainerStatusLog,
 )
@@ -100,8 +99,18 @@ class CTSAPortalBusinessTests(TestCase):
         self.assertContains(response, 'Konfime')
         self.assertContains(response, 'CMA CGM')
 
-        # Test PDF export for confirmed containers
+        # Test PDF export for confirmed containers (Superviseur -> 403, Admin -> 200)
         self.client_http.login(username='sup_test', password='Password123!')
+        sup_pdf_resp = self.client_http.get(
+            reverse('terminal:container_export_pdf'),
+            {'date': timezone.localdate().isoformat(), 'status': 'confirmed'},
+        )
+        self.assertEqual(sup_pdf_resp.status_code, 403)
+
+        admin_pdf_user = User.objects.create_user(
+            username='adm_pdf_test', password='Password123!', role=User.Role.ADMIN
+        )
+        self.client_http.force_login(admin_pdf_user)
         pdf_resp = self.client_http.get(
             reverse('terminal:container_export_pdf'),
             {'date': timezone.localdate().isoformat(), 'status': 'confirmed'},
@@ -236,6 +245,8 @@ class CTSAPortalBusinessTests(TestCase):
         self.assertEqual(c1.status, Container.Status.CONFIRMED)
         self.assertEqual(c2.status, Container.Status.CONFIRMED)
 
+        from .models import Motif
+        unavail_motif = Motif.objects.filter(type=Motif.Type.UNAVAILABLE, is_active=True).first()
         # 2. Mark selected container as unavailable with reason note
         resp_unavail = self.client_http.post(
             reverse('terminal:container_status_bulk'),
@@ -243,6 +254,7 @@ class CTSAPortalBusinessTests(TestCase):
                 'date': today.isoformat(),
                 'ids': [str(c1.pk)],
                 'status': Container.Status.UNAVAILABLE,
+                'unavailability_reason': str(unavail_motif.pk),
                 'unavailability_note': 'En maintenance',
             },
         )
@@ -278,11 +290,11 @@ class CTSAPortalBusinessTests(TestCase):
         self.client_http.login(username='client_only', password='Password123!')
         self.assertEqual(
             self.client_http.get(reverse('terminal:container_detail', args=[c.pk])).status_code,
-            302,
+            403,
         )
         self.assertEqual(
             self.client_http.get(reverse('terminal:container_edit', args=[c.pk])).status_code,
-            302,
+            403,
         )
 
         # Staff user can view list without portal-dropdown, view detail, edit, and delete
@@ -315,6 +327,8 @@ class CTSAPortalBusinessTests(TestCase):
         c.refresh_from_db()
         self.assertEqual(c.container_number, 'MSCU3333333')
 
+        from .models import Motif
+        unavail_motif = Motif.objects.filter(type=Motif.Type.UNAVAILABLE, is_active=True).first()
         # Valid edit updates container and redirects to detail
         edit_ok = self.client_http.post(
             reverse('terminal:container_edit', args=[c.pk]),
@@ -323,6 +337,7 @@ class CTSAPortalBusinessTests(TestCase):
                 'scheduled_date': today.isoformat(),
                 'shipping_line': str(self.cma.pk),
                 'status': Container.Status.UNAVAILABLE,
+                'unavailability_reason': str(unavail_motif.pk),
                 'unavailability_note': 'Bloqué douane',
             },
         )
@@ -351,8 +366,12 @@ class CTSAPortalBusinessTests(TestCase):
 class ShippingLinesAndStatisticsTests(TestCase):
     def setUp(self):
         self.client_http = Client()
+        self.superadmin_user = User.objects.create_user(
+            username='sl_superadmin', password='Password123!', role=User.Role.ADMIN,
+            is_superuser=True, is_staff=True,
+        )
         self.admin_user = User.objects.create_user(
-            username='sl_admin', password='Password123!', role=User.Role.ADMIN
+            username='sl_admin', password='Password123!', role=User.Role.MANAGER
         )
         self.client_user = User.objects.create_user(
             username='sl_client', password='Password123!', role=User.Role.CLIENT
@@ -421,13 +440,13 @@ class ShippingLinesAndStatisticsTests(TestCase):
         self.assertEqual(resp.status_code, 200)
         self.assertFalse(resp.context['show_lines'])
 
-        # CSV export uses unified "Restent a verifier" header
+        # CSV export uses unified "Restent a inspecter" header
         csv_resp = self.client_http.get(
             reverse('terminal:statistics'),
             {'periode': 'perso', 'du': du_fr, 'au': du_fr, 'export': 'csv'},
         )
         self.assertEqual(csv_resp.status_code, 200)
-        self.assertIn('Restent a verifier', csv_resp.content.decode('utf-8-sig'))
+        self.assertIn('Restent a inspecter', csv_resp.content.decode('utf-8-sig'))
 
         # Adding a container with a shipping line turns show_lines True
         cma = ShippingLine.objects.create(name='CMA CGM', code='CMA')
@@ -446,13 +465,15 @@ class ShippingLinesAndStatisticsTests(TestCase):
         self.assertTrue(resp_with_line.context['show_lines'])
 
     def test_site_settings_edit_and_public_rendering(self):
-        # Non-admin cannot access site settings
+        # Non-superadmin (client and admin) cannot access site settings
         self.client_http.force_login(self.client_user)
         resp_forbidden = self.client_http.get(reverse('terminal:site_settings'))
-        self.assertIn(resp_forbidden.status_code, (302, 403))
-
-        # Admin views and updates site settings
+        self.assertEqual(resp_forbidden.status_code, 403)
         self.client_http.force_login(self.admin_user)
+        self.assertEqual(self.client_http.get(reverse('terminal:site_settings')).status_code, 403)
+
+        # Superadmin views and updates site settings
+        self.client_http.force_login(self.superadmin_user)
         get_resp = self.client_http.get(reverse('terminal:site_settings'))
         self.assertEqual(get_resp.status_code, 200)
         self.assertContains(get_resp, 'contact@bendyservilus.com')
@@ -527,6 +548,9 @@ class ShippingLinesAndStatisticsTests(TestCase):
         try:
             with override_settings(MEDIA_ROOT=tmp_media):
                 self.client_http.force_login(self.admin_user)
+                self.assertEqual(self.client_http.post(reverse('terminal:hero_slide_create')).status_code, 403)
+
+                self.client_http.force_login(self.superadmin_user)
                 for idx in range(1, 4):
                     resp = self.client_http.post(
                         reverse('terminal:hero_slide_create'),
@@ -572,7 +596,7 @@ class ShippingLinesAndStatisticsTests(TestCase):
         self.assertEqual(sw_resp.status_code, 200)
         self.assertIn('application/javascript', sw_resp['Content-Type'])
         sw_body = sw_resp.content.decode('utf-8')
-        self.assertIn('ctsa-rampe-v1', sw_body)
+        self.assertIn('ctsa-rampe-v2', sw_body)
         self.assertIn('Koneksyon an pa disponib', sw_body)
 
     def test_verified_container_search_shows_already_verified(self):
