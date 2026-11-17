@@ -109,14 +109,25 @@ def user_list_view(request):
             | Q(company_name__icontains=q)
         )
 
-    create_form = StaffUserCreateForm()
+    create_form = StaffUserCreateForm(acting_user=request.user)
     if request.method == 'POST':
-        create_form = StaffUserCreateForm(request.POST)
+        if request.POST.get('is_superuser') and not request.user.is_superuser:
+            return render_403(request, "Seul un Superadmin peut créer un compte Superadmin.")
+        create_form = StaffUserCreateForm(request.POST, acting_user=request.user)
         if create_form.is_valid():
             new_user = create_form.save()
+            if new_user.is_superuser:
+                from terminal.models import PortalAuditLog
+                PortalAuditLog.objects.create(
+                    category=PortalAuditLog.Category.PROMOTE_SUPERADMIN,
+                    target_label=f"User:{new_user.username}",
+                    old_value="",
+                    new_value="Superadmin (création)",
+                    changed_by=request.user,
+                )
             messages.success(
                 request,
-                f"L'utilisateur « {new_user.display_name} » ({new_user.get_role_display()}) a été créé."
+                f"L'utilisateur « {new_user.display_name} » ({'Superadmin' if new_user.is_superuser else new_user.get_role_display()}) a été créé."
             )
             return redirect('accounts:user_list')
 
@@ -138,12 +149,24 @@ def user_list_view(request):
 @require_permission(Actions.USER_MANAGE)
 def user_create_view(request):
     """Page dédiée de création d'un compte utilisateur."""
-    form = StaffUserCreateForm(request.POST or None)
+    if request.method == 'POST' and request.POST.get('is_superuser') and not request.user.is_superuser:
+        return render_403(request, "Seul un Superadmin peut créer un compte Superadmin.")
+
+    form = StaffUserCreateForm(request.POST or None, acting_user=request.user)
     if request.method == 'POST' and form.is_valid():
         new_user = form.save()
+        if new_user.is_superuser:
+            from terminal.models import PortalAuditLog
+            PortalAuditLog.objects.create(
+                category=PortalAuditLog.Category.PROMOTE_SUPERADMIN,
+                target_label=f"User:{new_user.username}",
+                old_value="",
+                new_value="Superadmin (création)",
+                changed_by=request.user,
+            )
         messages.success(
             request,
-            f"L'utilisateur « {new_user.display_name} » ({new_user.get_role_display()}) a été créé."
+            f"L'utilisateur « {new_user.display_name} » ({'Superadmin' if new_user.is_superuser else new_user.get_role_display()}) a été créé."
         )
         return redirect('accounts:user_list')
 
@@ -159,16 +182,23 @@ def user_edit_view(request, pk):
     if not peut(request.user, Actions.USER_MANAGE, target_user):
         return render_403(request, "Vous ne pouvez pas modifier un compte Superadmin.")
 
+    if request.method == 'POST' and request.POST.get('is_superuser') and not request.user.is_superuser:
+        return render_403(request, "Seul un Superadmin peut promouvoir un compte Superadmin.")
+
     old_role = target_user.role
-    form = StaffUserUpdateForm(request.POST or None, instance=target_user)
+    old_superuser = target_user.is_superuser
+    form = StaffUserUpdateForm(request.POST or None, instance=target_user, acting_user=request.user)
     if request.method == 'POST' and form.is_valid():
-        # Protection du dernier Superadmin actif contre la désactivation
-        if (
-            target_user.is_superuser
-            and not form.cleaned_data.get('is_active', True)
+        # Protection du dernier Superadmin actif contre la désactivation ou rétrogradation
+        is_last_superadmin = (
+            old_superuser
             and not User.objects.filter(is_superuser=True, is_active=True).exclude(pk=target_user.pk).exists()
+        )
+        if is_last_superadmin and (
+            not form.cleaned_data.get('is_active', True)
+            or not form.cleaned_data.get('is_superuser', True)
         ):
-            messages.error(request, "Impossible de désactiver le dernier Superadmin actif.")
+            messages.error(request, "Impossible de désactiver ou rétrograder le dernier Superadmin actif.")
             return render(request, 'portal/user_edit.html', {
                 'target_user': target_user,
                 'form': form,
@@ -182,6 +212,15 @@ def user_edit_view(request, pk):
                 target_label=f"User:{updated_user.username}",
                 old_value=old_role,
                 new_value=updated_user.role,
+                changed_by=request.user,
+            )
+        if old_superuser != updated_user.is_superuser:
+            from terminal.models import PortalAuditLog
+            PortalAuditLog.objects.create(
+                category=PortalAuditLog.Category.PROMOTE_SUPERADMIN,
+                target_label=f"User:{updated_user.username}",
+                old_value=f"is_superuser={old_superuser}",
+                new_value=f"is_superuser={updated_user.is_superuser}",
                 changed_by=request.user,
             )
         messages.success(request, f"L'utilisateur « {target_user.display_name} » a été mis à jour.")

@@ -53,6 +53,13 @@
           <input type="checkbox" id="eu-active" name="is_active" {% if form.is_active.value %}checked{% endif %} class="w-4 h-4 rounded">
           <span class="text-sm font-bold text-ctsa-slate">Compte actif (autorisé à se connecter)</span>
         </label>
+
+        {% if request.user.is_superuser %}
+          <label for="eu-superuser" class="flex items-center gap-3 p-3.5 rounded-lg bg-slate-50 border border-slate-200/80 cursor-pointer min-h-[44px]">
+            <input type="checkbox" id="eu-superuser" name="is_superuser" {% if form.is_superuser.value %}checked{% endif %} class="w-4 h-4 rounded">
+            <span class="text-sm font-bold text-ctsa-slate">Superadmin (accès total, paramètres et restauration)</span>
+          </label>
+        {% endif %}
       </div>
     </section>
 

@@ -301,3 +301,77 @@ class PermissionsMatrixAndDefaultDenyTests(TestCase):
         motif = Motif.objects.first()
         with self.assertRaises(ValidationError):
             motif.delete()
+
+    def test_superadmin_can_create_superadmin_and_admin_cannot(self):
+        # 1. Superadmin voit la case is_superuser et peut créer un autre Superadmin
+        self.client.force_login(self.superadmin)
+        get_sa = self.client.get(reverse('accounts:user_create'))
+        self.assertContains(get_sa, 'name="is_superuser"')
+
+        resp_sa = self.client.post(
+            reverse('accounts:user_create'),
+            {
+                'username': 'sa_second',
+                'full_name': 'Deuxième Superadmin',
+                'role': User.Role.ADMIN,
+                'password': 'Password123!',
+                'is_active': 'on',
+                'is_superuser': 'on',
+            },
+        )
+        self.assertRedirects(resp_sa, reverse('accounts:user_list'))
+        created_sa = User.objects.get(username='sa_second')
+        self.assertTrue(created_sa.is_superuser)
+        self.assertTrue(created_sa.is_staff)
+
+        # 2. Admin ne voit pas is_superuser, reçoit 403 s'il tente de créer ou promouvoir un Superadmin
+        self.client.force_login(self.admin)
+        get_adm = self.client.get(reverse('accounts:user_create'))
+        self.assertNotContains(get_adm, 'name="is_superuser"')
+        self.assertNotContains(get_adm, reverse('terminal:site_settings'))
+
+        resp_forbid_create = self.client.post(
+            reverse('accounts:user_create'),
+            {
+                'username': 'fake_sa',
+                'full_name': 'Fake SA',
+                'role': User.Role.ADMIN,
+                'password': 'Password123!',
+                'is_active': 'on',
+                'is_superuser': 'on',
+            },
+        )
+        self.assertEqual(resp_forbid_create.status_code, 403)
+        self.assertFalse(User.objects.filter(username='fake_sa').exists())
+
+        resp_forbid_edit = self.client.post(
+            reverse('accounts:user_edit', args=[self.agent.pk]),
+            {
+                'username': self.agent.username,
+                'full_name': 'Agent Promoted',
+                'role': User.Role.ADMIN,
+                'is_active': 'on',
+                'is_superuser': 'on',
+            },
+        )
+        self.assertEqual(resp_forbid_edit.status_code, 403)
+        self.agent.refresh_from_db()
+        self.assertFalse(self.agent.is_superuser)
+
+        # 3. Admin peut créer tous les autres rôles (Agent, Superviseur, Admin, Client)
+        for role_val in (User.Role.AGENT, User.Role.SUPERVISOR, User.Role.ADMIN, User.Role.CLIENT):
+            uname = f"adm_created_{role_val}"
+            ok_resp = self.client.post(
+                reverse('accounts:user_create'),
+                {
+                    'username': uname,
+                    'full_name': f"User {role_val}",
+                    'role': role_val,
+                    'password': 'Password123!',
+                    'is_active': 'on',
+                },
+            )
+            self.assertRedirects(ok_resp, reverse('accounts:user_list'))
+            u = User.objects.get(username=uname)
+            self.assertEqual(u.role, role_val)
+            self.assertFalse(u.is_superuser)
