@@ -15,6 +15,7 @@ from django.utils import timezone
 from django.utils.translation import gettext as _
 from django.views.decorators.http import require_POST
 
+from accounts.permissions import Actions, peut, render_403, require_permission
 from accounts.utils import safe_next_url
 from .models import (
     ShippingLine,
@@ -353,13 +354,10 @@ def client_watchlist_remove_view(request, pk):
     return redirect('terminal:client_watchlist')
 
 
-@login_required
+@require_permission(Actions.CONTAINER_PREPARE)
 def prepare_view(request):
     """Préparer une liste : inscrire des conteneurs et reprendre les non vérifiés, à l'écart du
     tableau de bord, qui ne montre plus que la liste elle-même."""
-    if not request.user.is_staff_member:
-        return redirect('terminal:home')
-
     today = timezone.localdate()
     tomorrow = today + datetime.timedelta(days=1)
     selected_date = max(_parse_date(request.GET.get('date', ''), default_work_date(request.user)), today)
@@ -390,12 +388,9 @@ def prepare_view(request):
     })
 
 
-@login_required
+@require_permission(Actions.PORTAL_DASHBOARD)
 def dashboard_view(request):
     """Tableau de bord : résumé de la séance, indicateurs, points d'attention et activité récente."""
-    if not request.user.is_staff_member:
-        return redirect('terminal:home')
-
     today = timezone.localdate()
     selected_date = _parse_date(request.GET.get('date', ''), today)
     day_qs = Container.objects.filter(scheduled_date=selected_date)
@@ -470,11 +465,8 @@ def dashboard_view(request):
     })
 
 
-@login_required
+@require_permission(Actions.CONTAINER_LIST)
 def container_list_view(request):
-    if not request.user.is_staff_member:
-        return redirect('terminal:client_watchlist')
-
     today = timezone.localdate()
     tomorrow = today + datetime.timedelta(days=1)
 
@@ -548,12 +540,9 @@ def container_list_view(request):
     })
 
 
-@login_required
+@require_permission(Actions.CONTAINER_PREPARE)
 @require_POST
 def container_add_single_view(request):
-    if not request.user.is_staff_member:
-        return redirect('terminal:home')
-
     today = timezone.localdate()
     default_date = today
 
@@ -658,12 +647,9 @@ def container_add_single_view(request):
     return redirect(_safe_next(request, _dashboard_url(target_date)))
 
 
-@login_required
+@require_permission(Actions.CONTAINER_PREPARE)
 @require_POST
 def container_add_bulk_view(request):
-    if not request.user.is_staff_member:
-        return redirect('terminal:home')
-
     today = timezone.localdate()
     default_date = today
 
@@ -773,16 +759,9 @@ def container_add_bulk_view(request):
     return redirect(_safe_next(request, _dashboard_url(target_date)))
 
 
-@login_required
+@require_permission(Actions.CONTAINER_CHANGE_STATUS)
 @require_POST
 def container_update_status_view(request, pk):
-    if not request.user.can_edit_or_delete_containers:
-        messages.error(
-            request,
-            "Action réservée aux administrateurs et superviseurs."
-        )
-        return redirect('terminal:dashboard')
-
     container = get_object_or_404(Container, pk=pk)
     new_status = request.POST.get('status', container.status)
     note = request.POST.get('unavailability_note', '').strip()
@@ -806,17 +785,10 @@ def container_update_status_view(request, pk):
     return redirect(_safe_next(request, _dashboard_url(container.scheduled_date)))
 
 
-@login_required
+@require_permission(Actions.CONTAINER_CHANGE_STATUS)
 @require_POST
 def container_status_bulk_view(request):
     """Change le statut (Confirmé, En attente, Indisponible) des conteneurs cochés ou de tous les conteneurs en attente."""
-    if not request.user.can_edit_or_delete_containers:
-        messages.error(
-            request,
-            "Action réservée aux administrateurs et superviseurs.",
-        )
-        return redirect('terminal:dashboard')
-
     today = timezone.localdate()
     target_date = _parse_date(request.POST.get('date', ''), today)
     new_status = request.POST.get('status', '').strip()
@@ -858,14 +830,12 @@ def container_status_bulk_view(request):
     return redirect(_safe_next(request, fallback))
 
 
-@login_required
+@require_permission(Actions.CONTAINER_ARCHIVE)
 @require_POST
 def container_delete_view(request, pk):
-    if not request.user.can_edit_or_delete_containers:
-        messages.error(request, "Vous n'avez pas l'autorisation de supprimer un conteneur.")
-        return redirect('terminal:dashboard')
-
-    container = get_object_or_404(Container, pk=pk)
+    container = get_object_or_404(Container.all_objects, pk=pk)
+    if not peut(request.user, Actions.CONTAINER_ARCHIVE, container):
+        return render_403(request, "La fenêtre de suppression est dépassée pour votre rôle.")
     scheduled = container.scheduled_date
     num = container.container_number
     # Si ce conteneur avait été repris d'une séance précédente, celle-ci redevient « à suivre » :
@@ -879,14 +849,11 @@ def container_delete_view(request, pk):
     return redirect(f"{reverse('terminal:containers')}?date={scheduled.isoformat()}")
 
 
-@login_required
+@require_permission(Actions.CONTAINER_DETAIL)
 def container_detail_view(request, pk):
     """Fiche détail d'un conteneur programmé : infos, changement de statut, suppression, historique."""
-    if not request.user.is_staff_member:
-        return redirect('terminal:client_watchlist')
-
     container = get_object_or_404(
-        Container.objects.select_related(
+        Container.all_objects.select_related(
             'shipping_line', 'prefix_ref', 'created_by', 'updated_by', 'verified_by', 'carried_from'
         ),
         pk=pk,
@@ -903,13 +870,9 @@ def container_detail_view(request, pk):
     })
 
 
-@login_required
+@require_permission(Actions.CONTAINER_CHANGE_STATUS)
 def container_edit_view(request, pk):
     """Page dédiée de modification d'un conteneur programmé."""
-    if not request.user.can_edit_or_delete_containers:
-        messages.error(request, "Vous n'avez pas l'autorisation de modifier ce conteneur.")
-        return redirect('terminal:container_detail', pk=pk)
-
     container = get_object_or_404(Container, pk=pk)
     shipping_lines = ShippingLine.objects.filter(is_active=True)
     errors = {}
@@ -985,13 +948,10 @@ def container_edit_view(request, pk):
     })
 
 
-@login_required
+@require_permission(Actions.CONTAINER_VERIFY)
 @require_POST
 def container_set_verification_view(request, pk):
     """Marque un conteneur confirmé Vérifié / Non vérifié (ou annule le marquage)."""
-    if not request.user.can_mark_verification:
-        return redirect('terminal:home')
-
     container = get_object_or_404(Container, pk=pk)
     result = request.POST.get('result', '').strip()
     note = request.POST.get('verification_note', '').strip()[:255]
@@ -1005,13 +965,10 @@ def container_set_verification_view(request, pk):
     return redirect(_safe_next(request, _dashboard_url(container.scheduled_date)))
 
 
-@login_required
+@require_permission(Actions.CONTAINER_VERIFY)
 @require_POST
 def container_verify_bulk_view(request):
     """Clôture de séance : applique un résultat aux conteneurs cochés ou aux confirmés restants."""
-    if not request.user.can_mark_verification:
-        return redirect('terminal:home')
-
     today = timezone.localdate()
     target_date = _parse_date(request.POST.get('date', ''), today)
     result = request.POST.get('result', '').strip()
@@ -1050,12 +1007,9 @@ def container_verify_bulk_view(request):
     return redirect(_safe_next(request, fallback))
 
 
-@login_required
+@require_permission(Actions.CONTAINER_VERIFY)
 def inspection_view(request):
     """Onglet Inspection : marquer Vérifié / Non vérifié les conteneurs confirmés d'une séance."""
-    if not request.user.is_staff_member:
-        return redirect('terminal:home')
-
     today = timezone.localdate()
     # On n'inspecte qu'une séance commencée : aujourd'hui ou une date passée.
     selected_date = min(_parse_date(request.GET.get('date', ''), today), today)
@@ -1107,12 +1061,9 @@ def inspection_view(request):
     })
 
 
-@login_required
+@require_permission(Actions.REPORT_VIEW)
 def register_view(request):
     """Registre des vérifications : qui a été vérifié, quand, et les quantités sur un intervalle."""
-    if not request.user.is_staff_member:
-        return redirect('terminal:home')
-
     today = timezone.localdate()
     search_q = request.GET.get('q', '').strip()
     result_filter = request.GET.get('resultat', '').strip()
@@ -1189,12 +1140,9 @@ def register_view(request):
     })
 
 
-@login_required
+@require_permission(Actions.CONTAINER_CARRYOVER)
 def carryover_view(request):
     """Suivi de tous les conteneurs programmés mais pas encore vérifiés, et décision de reprise."""
-    if not request.user.is_staff_member:
-        return redirect('terminal:home')
-
     today = timezone.localdate()
     target_date = max(_parse_date(request.GET.get('date', ''), default_carry_target(request.user)), today)
     list_started = Container.objects.filter(scheduled_date=target_date).exists()
@@ -1242,13 +1190,10 @@ def carryover_view(request):
     })
 
 
-@login_required
+@require_permission(Actions.CONTAINER_CARRYOVER)
 @require_POST
 def carryover_decide_view(request):
     """Reprend (bouton en un clic ou sélection) ou rejette des conteneurs non vérifiés."""
-    if not request.user.is_staff_member:
-        return redirect('terminal:home')
-
     today = timezone.localdate()
     decision = request.POST.get('decision', '').strip()
     target_date = _parse_date(request.POST.get('date', ''), default_work_date(request.user))
@@ -1328,11 +1273,8 @@ def _stat_annotations():
     }
 
 
-@login_required
+@require_permission(Actions.REPORT_VIEW)
 def statistics_view(request):
-    if not request.user.is_staff_member:
-        return redirect('terminal:home')
-
     today = timezone.localdate()
     kind = request.GET.get('periode', 'semaine')
     if kind not in ('semaine', 'mois', 'perso'):
@@ -1449,11 +1391,8 @@ def statistics_view(request):
     })
 
 
-@login_required
+@require_permission(Actions.REPORT_VIEW)
 def container_export_pdf_view(request):
-    if not request.user.is_staff_member:
-        return redirect('terminal:home')
-
     import io
     from reportlab.lib import colors
     from reportlab.lib.pagesizes import A4
@@ -1593,11 +1532,8 @@ def container_export_pdf_view(request):
     return response
 
 
-@login_required
+@require_permission(Actions.REPORT_VIEW)
 def container_export_csv_view(request):
-    if not request.user.is_staff_member:
-        return redirect('terminal:home')
-
     today = timezone.localdate()
     selected_date = _parse_date(request.GET.get('date', ''), today)
     status_filter = request.GET.get('status', '').strip()
@@ -1646,11 +1582,8 @@ def container_export_csv_view(request):
     return response
 
 
-@login_required
+@require_permission(Actions.REPORT_VIEW)
 def status_logs_view(request):
-    if not request.user.is_staff_member:
-        return redirect('terminal:home')
-
     q = request.GET.get('q', '').strip()
     logs = ContainerStatusLog.objects.select_related(
         'container', 'container__shipping_line', 'changed_by'
@@ -1674,12 +1607,8 @@ def status_logs_view(request):
     })
 
 
-@login_required
+@require_permission(Actions.SHIPPING_LINE_MANAGE)
 def shipping_lines_view(request):
-    if not request.user.is_portal_admin:
-        messages.error(request, "Accès réservé aux administrateurs.")
-        return redirect('terminal:dashboard')
-
     if request.method == 'POST':
         action = request.POST.get('action', 'save_line')
         if action == 'save_line':
@@ -1726,13 +1655,9 @@ def shipping_lines_view(request):
     })
 
 
-@login_required
+@require_permission(Actions.SHIPPING_LINE_MANAGE)
 def shipping_line_create_view(request):
     """Page dédiée de création d'une ligne maritime."""
-    if not request.user.is_portal_admin:
-        messages.error(request, "Accès réservé aux administrateurs.")
-        return redirect('terminal:dashboard')
-
     error = ''
     name = ''
     if request.method == 'POST':
@@ -1754,13 +1679,9 @@ def shipping_line_create_view(request):
     })
 
 
-@login_required
+@require_permission(Actions.SHIPPING_LINE_MANAGE)
 def shipping_line_edit_view(request, pk):
     """Page dédiée de modification d'une ligne maritime."""
-    if not request.user.is_portal_admin:
-        messages.error(request, "Accès réservé aux administrateurs.")
-        return redirect('terminal:dashboard')
-
     line = get_object_or_404(ShippingLine, pk=pk)
     error = ''
     name = line.name
@@ -1785,13 +1706,9 @@ def shipping_line_edit_view(request, pk):
     })
 
 
-@login_required
+@require_permission(Actions.SHIPPING_LINE_MANAGE)
 @require_POST
 def shipping_line_delete_view(request, pk):
-    if not request.user.is_portal_admin:
-        messages.error(request, "Accès réservé aux administrateurs.")
-        return redirect('terminal:dashboard')
-
     line = get_object_or_404(ShippingLine, pk=pk)
     name = line.name
     line.delete()
@@ -1921,13 +1838,9 @@ class HeroSlideForm(forms.ModelForm):
                 field.widget.attrs.setdefault('class', 'form-control')
 
 
-@login_required
+@require_permission(Actions.SITE_SETTINGS_MANAGE)
 def site_settings_view(request):
     """Espace d'édition des textes et coordonnées publiques du portail."""
-    if not request.user.is_portal_admin:
-        messages.error(request, "Accès réservé aux administrateurs.")
-        return redirect('terminal:dashboard')
-
     instance = SiteSettings.get_solo()
     if request.method == 'POST':
         form = SiteSettingsForm(request.POST, instance=instance)
@@ -1951,14 +1864,10 @@ def site_settings_view(request):
     })
 
 
-@login_required
+@require_permission(Actions.SITE_SETTINGS_MANAGE)
 @require_POST
 def hero_slide_create_view(request):
     """Ajoute une image au carrousel d'arrière-plan de l'accueil."""
-    if not request.user.is_portal_admin:
-        messages.error(request, "Accès réservé aux administrateurs.")
-        return redirect('terminal:dashboard')
-
     form = HeroSlideForm(request.POST, request.FILES)
     if form.is_valid():
         slide = form.save()
@@ -1968,14 +1877,10 @@ def hero_slide_create_view(request):
     return redirect('terminal:site_settings')
 
 
-@login_required
+@require_permission(Actions.SITE_SETTINGS_MANAGE)
 @require_POST
 def hero_slide_toggle_view(request, pk):
     """Active ou désactive une image du carrousel."""
-    if not request.user.is_portal_admin:
-        messages.error(request, "Accès réservé aux administrateurs.")
-        return redirect('terminal:dashboard')
-
     slide = get_object_or_404(HeroSlide, pk=pk)
     slide.is_active = not slide.is_active
     slide.save(update_fields=['is_active'])
@@ -1984,14 +1889,10 @@ def hero_slide_toggle_view(request, pk):
     return redirect('terminal:site_settings')
 
 
-@login_required
+@require_permission(Actions.SITE_SETTINGS_MANAGE)
 @require_POST
 def hero_slide_delete_view(request, pk):
     """Supprime une image du carrousel."""
-    if not request.user.is_portal_admin:
-        messages.error(request, "Accès réservé aux administrateurs.")
-        return redirect('terminal:dashboard')
-
     slide = get_object_or_404(HeroSlide, pk=pk)
     label = str(slide)
     if slide.image:

@@ -8,6 +8,7 @@ class User(AbstractUser):
     class Role(models.TextChoices):
         ADMIN = 'admin', 'Administrateur'
         SUPERVISOR = 'supervisor', 'Superviseur'
+        AGENT = 'agent', 'Agent'
         CLIENT = 'client', 'Client'
 
     role = models.CharField(
@@ -54,16 +55,24 @@ class User(AbstractUser):
         return self.role == self.Role.SUPERVISOR
 
     @property
+    def is_agent(self) -> bool:
+        return self.role == self.Role.AGENT
+
+    @property
     def is_staff_member(self) -> bool:
-        return self.is_portal_admin or self.is_supervisor
+        return self.is_superuser or self.role in (
+            self.Role.ADMIN,
+            self.Role.SUPERVISOR,
+            self.Role.AGENT,
+        )
 
     @property
     def can_mark_verification(self) -> bool:
-        # Administrateur et Superviseur peuvent marquer la vérification (Vérifié / Non vérifié).
-        return self.is_staff_member
+        from accounts.permissions import Actions, peut
+        return peut(self, Actions.CONTAINER_VERIFY)
 
     @property
     def can_edit_or_delete_containers(self) -> bool:
-        # Droits compilés pour Administrateur et Superviseur.
-        return self.is_staff_member
+        from accounts.permissions import Actions, peut
+        return peut(self, Actions.CONTAINER_CHANGE_STATUS)
 

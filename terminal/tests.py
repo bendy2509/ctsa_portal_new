@@ -100,8 +100,18 @@ class CTSAPortalBusinessTests(TestCase):
         self.assertContains(response, 'Konfime')
         self.assertContains(response, 'CMA CGM')
 
-        # Test PDF export for confirmed containers
+        # Test PDF export for confirmed containers (Superviseur -> 403, Admin -> 200)
         self.client_http.login(username='sup_test', password='Password123!')
+        sup_pdf_resp = self.client_http.get(
+            reverse('terminal:container_export_pdf'),
+            {'date': timezone.localdate().isoformat(), 'status': 'confirmed'},
+        )
+        self.assertEqual(sup_pdf_resp.status_code, 403)
+
+        admin_pdf_user = User.objects.create_user(
+            username='adm_pdf_test', password='Password123!', role=User.Role.ADMIN
+        )
+        self.client_http.force_login(admin_pdf_user)
         pdf_resp = self.client_http.get(
             reverse('terminal:container_export_pdf'),
             {'date': timezone.localdate().isoformat(), 'status': 'confirmed'},
@@ -278,11 +288,11 @@ class CTSAPortalBusinessTests(TestCase):
         self.client_http.login(username='client_only', password='Password123!')
         self.assertEqual(
             self.client_http.get(reverse('terminal:container_detail', args=[c.pk])).status_code,
-            302,
+            403,
         )
         self.assertEqual(
             self.client_http.get(reverse('terminal:container_edit', args=[c.pk])).status_code,
-            302,
+            403,
         )
 
         # Staff user can view list without portal-dropdown, view detail, edit, and delete
@@ -351,6 +361,10 @@ class CTSAPortalBusinessTests(TestCase):
 class ShippingLinesAndStatisticsTests(TestCase):
     def setUp(self):
         self.client_http = Client()
+        self.superadmin_user = User.objects.create_user(
+            username='sl_superadmin', password='Password123!', role=User.Role.ADMIN,
+            is_superuser=True, is_staff=True,
+        )
         self.admin_user = User.objects.create_user(
             username='sl_admin', password='Password123!', role=User.Role.ADMIN
         )
@@ -446,13 +460,15 @@ class ShippingLinesAndStatisticsTests(TestCase):
         self.assertTrue(resp_with_line.context['show_lines'])
 
     def test_site_settings_edit_and_public_rendering(self):
-        # Non-admin cannot access site settings
+        # Non-superadmin (client and admin) cannot access site settings
         self.client_http.force_login(self.client_user)
         resp_forbidden = self.client_http.get(reverse('terminal:site_settings'))
-        self.assertIn(resp_forbidden.status_code, (302, 403))
-
-        # Admin views and updates site settings
+        self.assertEqual(resp_forbidden.status_code, 403)
         self.client_http.force_login(self.admin_user)
+        self.assertEqual(self.client_http.get(reverse('terminal:site_settings')).status_code, 403)
+
+        # Superadmin views and updates site settings
+        self.client_http.force_login(self.superadmin_user)
         get_resp = self.client_http.get(reverse('terminal:site_settings'))
         self.assertEqual(get_resp.status_code, 200)
         self.assertContains(get_resp, 'contact@bendyservilus.com')
@@ -527,6 +543,9 @@ class ShippingLinesAndStatisticsTests(TestCase):
         try:
             with override_settings(MEDIA_ROOT=tmp_media):
                 self.client_http.force_login(self.admin_user)
+                self.assertEqual(self.client_http.post(reverse('terminal:hero_slide_create')).status_code, 403)
+
+                self.client_http.force_login(self.superadmin_user)
                 for idx in range(1, 4):
                     resp = self.client_http.post(
                         reverse('terminal:hero_slide_create'),

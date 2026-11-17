@@ -141,10 +141,10 @@ class UserManagementPermissionsTests(TestCase):
             reverse('accounts:user_edit', args=[self.admin.pk]),
         ]:
             resp = self.client.get(route)
-            self.assertEqual(resp.status_code, 302)
+            self.assertEqual(resp.status_code, 403)
 
         del_resp = self.client.post(reverse('accounts:user_delete', args=[self.admin.pk]))
-        self.assertEqual(del_resp.status_code, 302)
+        self.assertEqual(del_resp.status_code, 403)
         self.assertTrue(User.objects.filter(pk=self.admin.pk).exists())
 
     def test_admin_can_create_edit_and_delete_user(self):

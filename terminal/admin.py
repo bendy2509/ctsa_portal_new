@@ -2,9 +2,12 @@ from django.contrib import admin
 from .models import (
     ShippingLine,
     ContainerPrefix,
+    Motif,
     Container,
+    VerificationEvent,
     ContainerStatusLog,
     SavedContainer,
+    PortalAuditLog,
 )
 
 # Register your models here.
@@ -59,4 +62,38 @@ class ContainerStatusLogAdmin(admin.ModelAdmin):
 class SavedContainerAdmin(admin.ModelAdmin):
     list_display = ('container_number', 'user', 'label', 'notify_whatsapp', 'created_at')
     search_fields = ('container_number', 'user__username', 'label')
+
+
+@admin.register(Motif)
+class MotifAdmin(admin.ModelAdmin):
+    list_display = ('type', 'label', 'display_order', 'is_active', 'is_system', 'requires_note')
+    list_filter = ('type', 'is_active', 'is_system')
+    search_fields = ('label',)
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+
+@admin.register(VerificationEvent)
+class VerificationEventAdmin(admin.ModelAdmin):
+    list_display = ('container', 'result', 'reason', 'created_by', 'created_at', 'archived_at', 'is_historical')
+    list_filter = ('result', 'is_historical', 'archived_at')
+    search_fields = ('container__container_number', 'note')
+
+
+@admin.register(PortalAuditLog)
+class PortalAuditLogAdmin(admin.ModelAdmin):
+    list_display = ('changed_at', 'category', 'target_label', 'old_value', 'new_value', 'changed_by')
+    list_filter = ('category', 'changed_at')
+    search_fields = ('target_label', 'old_value', 'new_value', 'reason')
+    readonly_fields = ('category', 'target_label', 'old_value', 'new_value', 'reason', 'changed_by', 'changed_at')
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
 

@@ -15,6 +15,7 @@ from .forms import (
     StaffUserUpdateForm,
 )
 from .models import User
+from .permissions import Actions, peut, render_403, require_permission
 from .utils import safe_next_url
 
 # Create your views here.
@@ -93,12 +94,8 @@ def profile_view(request):
     })
 
 
-@login_required
+@require_permission(Actions.USER_MANAGE)
 def user_list_view(request):
-    if not request.user.is_portal_admin:
-        messages.error(request, "Accès réservé aux administrateurs Cap Terminal S.A.")
-        return redirect('terminal:dashboard')
-
     role_filter = request.GET.get('role', '')
     q = request.GET.get('q', '').strip()
     users = User.objects.all().order_by('-date_joined')
@@ -138,13 +135,9 @@ def user_list_view(request):
     })
 
 
-@login_required
+@require_permission(Actions.USER_MANAGE)
 def user_create_view(request):
     """Page dédiée de création d'un compte utilisateur."""
-    if not request.user.is_portal_admin:
-        messages.error(request, "Accès réservé aux administrateurs Cap Terminal S.A.")
-        return redirect('terminal:dashboard')
-
     form = StaffUserCreateForm(request.POST or None)
     if request.method == 'POST' and form.is_valid():
         new_user = form.save()
@@ -160,16 +153,37 @@ def user_create_view(request):
     })
 
 
-@login_required
+@require_permission(Actions.USER_MANAGE)
 def user_edit_view(request, pk):
-    if not request.user.is_portal_admin:
-        messages.error(request, "Accès réservé aux administrateurs.")
-        return redirect('terminal:dashboard')
-
     target_user = get_object_or_404(User, pk=pk)
+    if not peut(request.user, Actions.USER_MANAGE, target_user):
+        return render_403(request, "Vous ne pouvez pas modifier un compte Superadmin.")
+
+    old_role = target_user.role
     form = StaffUserUpdateForm(request.POST or None, instance=target_user)
     if request.method == 'POST' and form.is_valid():
-        form.save()
+        # Protection du dernier Superadmin actif contre la désactivation
+        if (
+            target_user.is_superuser
+            and not form.cleaned_data.get('is_active', True)
+            and not User.objects.filter(is_superuser=True, is_active=True).exclude(pk=target_user.pk).exists()
+        ):
+            messages.error(request, "Impossible de désactiver le dernier Superadmin actif.")
+            return render(request, 'portal/user_edit.html', {
+                'target_user': target_user,
+                'form': form,
+            })
+
+        updated_user = form.save()
+        if old_role != updated_user.role:
+            from terminal.models import PortalAuditLog
+            PortalAuditLog.objects.create(
+                category=PortalAuditLog.Category.ROLE_CHANGE,
+                target_label=f"User:{updated_user.username}",
+                old_value=old_role,
+                new_value=updated_user.role,
+                changed_by=request.user,
+            )
         messages.success(request, f"L'utilisateur « {target_user.display_name} » a été mis à jour.")
         return redirect('accounts:user_list')
 
@@ -179,16 +193,22 @@ def user_edit_view(request, pk):
     })
 
 
-@login_required
+@require_permission(Actions.USER_MANAGE)
 @require_POST
 def user_delete_view(request, pk):
-    if not request.user.is_portal_admin:
-        messages.error(request, "Accès réservé aux administrateurs.")
-        return redirect('terminal:dashboard')
-
     target_user = get_object_or_404(User, pk=pk)
+    if not peut(request.user, Actions.USER_MANAGE, target_user):
+        return render_403(request, "Vous ne pouvez pas supprimer un compte Superadmin.")
+
     if target_user.pk == request.user.pk:
         messages.error(request, "Vous ne pouvez pas supprimer votre propre compte administrateur actif.")
+        return redirect('accounts:user_list')
+
+    if (
+        target_user.is_superuser
+        and not User.objects.filter(is_superuser=True, is_active=True).exclude(pk=target_user.pk).exists()
+    ):
+        messages.error(request, "Impossible de supprimer le dernier Superadmin actif.")
         return redirect('accounts:user_list')
 
     name = target_user.display_name
