@@ -864,16 +864,16 @@
           <h3 class="text-sm font-heading font-bold text-ctsa-slate m-0">Motifs d'indisponibilité</h3>
           <div class="divide-y divide-slate-100 border border-slate-200/80 rounded-xl overflow-hidden">
             {% for m in motifs_unavailable %}
-              <div class="p-3 bg-white flex flex-wrap items-center justify-between gap-2">
-                <div class="min-w-0">
-                  <div class="text-sm font-semibold text-ctsa-slate">{{ m.label }}</div>
+              <div class="p-3 bg-white flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5">
+                <div class="min-w-0 flex-1">
+                  <div class="text-sm font-semibold text-ctsa-slate leading-snug">{{ m.label }}</div>
                   <div class="text-[11px] text-slate-500">
                     Ordre {{ m.display_order }}
                     {% if m.requires_note %}· Précision obligatoire{% endif %}
                     {% if not m.is_active %}· Désactivé{% endif %}
                   </div>
                 </div>
-                <div class="flex items-center gap-2">
+                <div class="flex items-center gap-2 shrink-0">
                   {% if not m.is_system %}
                     <form action="{% url 'terminal:motif_update' m.pk %}" method="post" class="inline-flex items-center gap-1">
                       {% csrf_token %}
@@ -899,16 +899,16 @@
           <h3 class="text-sm font-heading font-bold text-ctsa-slate m-0">Motifs de non-vérification</h3>
           <div class="divide-y divide-slate-100 border border-slate-200/80 rounded-xl overflow-hidden">
             {% for m in motifs_not_verified %}
-              <div class="p-3 bg-white flex flex-wrap items-center justify-between gap-2">
-                <div class="min-w-0">
-                  <div class="text-sm font-semibold text-ctsa-slate">{{ m.label }}</div>
+              <div class="p-3 bg-white flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5">
+                <div class="min-w-0 flex-1">
+                  <div class="text-sm font-semibold text-ctsa-slate leading-snug">{{ m.label }}</div>
                   <div class="text-[11px] text-slate-500">
                     Ordre {{ m.display_order }}
                     {% if m.requires_note %}· Précision obligatoire{% endif %}
                     {% if not m.is_active %}· Désactivé{% endif %}
                   </div>
                 </div>
-                <div class="flex items-center gap-2">
+                <div class="flex items-center gap-2 shrink-0">
                   {% if not m.is_system %}
                     <form action="{% url 'terminal:motif_update' m.pk %}" method="post" class="inline-flex items-center gap-1">
                       {% csrf_token %}

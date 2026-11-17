@@ -52,7 +52,7 @@
 
   <!-- Formulaire pur d'inscription (Un conteneur / Coller une liste) -->
   <section aria-labelledby="prepare-add-title" class="bg-white rounded-xl border border-slate-200/80 shadow-xs overflow-hidden">
-    <div class="px-4 sm:px-6 pt-4 pb-0 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 border-b border-slate-200/80">
+    <div class="px-4 sm:px-6 pt-4 pb-0 flex flex-col lg:flex-row lg:items-end lg:justify-between gap-3 border-b border-slate-200/80">
       <div class="pb-2">
         <h2 id="prepare-add-title" class="text-base font-heading font-extrabold text-ctsa-slate m-0">
           Inscrire des conteneurs
@@ -61,14 +61,14 @@
           Ajoutés « En attente » jusqu'à leur confirmation sur la rampe.
         </p>
       </div>
-      <div class="list-tabs" role="tablist" aria-label="Mode d'enregistrement" style="border:0;padding:0">
-        <button type="button" data-tab-target="panel-single-add" aria-selected="{% if active_tab == 'bulk' %}false{% else %}true{% endif %}" class="tab-btn list-tab" style="border-top:0;border-inline:0;background:none;cursor:pointer">
+      <div class="list-tabs flex-nowrap overflow-x-auto whitespace-nowrap" role="tablist" aria-label="Mode d'enregistrement" style="border:0;padding:0">
+        <button type="button" data-tab-target="panel-single-add" aria-selected="{% if active_tab == 'bulk' %}false{% else %}true{% endif %}" class="tab-btn list-tab whitespace-nowrap shrink-0" style="border-top:0;border-inline:0;background:none;cursor:pointer">
           Un conteneur
         </button>
-        <button type="button" data-tab-target="panel-bulk-add" aria-selected="{% if active_tab == 'bulk' %}true{% else %}false{% endif %}" class="tab-btn list-tab" style="border-top:0;border-inline:0;background:none;cursor:pointer">
+        <button type="button" data-tab-target="panel-bulk-add" aria-selected="{% if active_tab == 'bulk' %}true{% else %}false{% endif %}" class="tab-btn list-tab whitespace-nowrap shrink-0" style="border-top:0;border-inline:0;background:none;cursor:pointer">
           Coller une liste
         </button>
-        <button type="button" data-tab-target="panel-search-registered" aria-selected="false" class="tab-btn list-tab" style="border-top:0;border-inline:0;background:none;cursor:pointer">
+        <button type="button" data-tab-target="panel-search-registered" aria-selected="false" class="tab-btn list-tab whitespace-nowrap shrink-0" style="border-top:0;border-inline:0;background:none;cursor:pointer">
           Chercher un conteneur enregistré
         </button>
       </div>
