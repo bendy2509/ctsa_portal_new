@@ -1,5 +1,5 @@
 {# Sélecteur 1 clic du statut d'un conteneur `c` (Confirmé / En attente / Indisponible), réutilisable sur toutes les pages d'exploitation. #}
-{% if user.can_edit_or_delete_containers %}
+{% if user.can_edit_or_delete_containers and not c.is_verified and not c.verification_result %}
   <div class="space-y-2">
     <div class="status-segmented" role="group" aria-label="Changer le statut de {{ c.container_number }}">
       <form action="{% url 'terminal:container_update_status' c.pk %}" method="post">

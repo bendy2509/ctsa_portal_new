@@ -435,13 +435,13 @@ class ShippingLinesAndStatisticsTests(TestCase):
         self.assertEqual(resp.status_code, 200)
         self.assertFalse(resp.context['show_lines'])
 
-        # CSV export uses unified "Restent a verifier" header
+        # CSV export uses unified "Restent a inspecter" header
         csv_resp = self.client_http.get(
             reverse('terminal:statistics'),
             {'periode': 'perso', 'du': du_fr, 'au': du_fr, 'export': 'csv'},
         )
         self.assertEqual(csv_resp.status_code, 200)
-        self.assertIn('Restent a verifier', csv_resp.content.decode('utf-8-sig'))
+        self.assertIn('Restent a inspecter', csv_resp.content.decode('utf-8-sig'))
 
         # Adding a container with a shipping line turns show_lines True
         cma = ShippingLine.objects.create(name='CMA CGM', code='CMA')

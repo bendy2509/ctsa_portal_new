@@ -3,7 +3,11 @@
   <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-ctsa-green-bg text-[#006b3f] border border-[#99d5bc] whitespace-nowrap">
     <span>{{ label }}</span>
   </span>
-{% elif variant == 'pending' or variant == 'not_verified' or variant == 'warning' %}
+{% elif variant == 'not_verified' %}
+  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-900 border border-amber-400 whitespace-nowrap">
+    <span>{{ label }}</span>
+  </span>
+{% elif variant == 'pending' or variant == 'warning' %}
   <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-ctsa-pending-bg text-ctsa-pending-text border border-ctsa-pending-border whitespace-nowrap">
     <span>{{ label }}</span>
   </span>
@@ -11,12 +15,20 @@
   <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-ctsa-red-bg text-ctsa-red-text border border-[#f5c2be] whitespace-nowrap">
     <span>{{ label }}</span>
   </span>
+{% elif variant == 'not_inspected' %}
+  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-slate-100 text-slate-600 border border-dashed border-slate-300 whitespace-nowrap">
+    <span>{{ label }}</span>
+  </span>
+{% elif variant == 'registered' %}
+  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-slate-200/80 text-slate-800 border border-slate-300 whitespace-nowrap">
+    <span>{{ label }}</span>
+  </span>
 {% elif variant == 'info' or variant == 'admin' %}
-  <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-ctsa-info-bg text-[#1d6fa5] border border-[#93c9ed] whitespace-nowrap">
+  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-ctsa-info-bg text-[#1d6fa5] border border-[#93c9ed] whitespace-nowrap">
     <span>{{ label }}</span>
   </span>
 {% else %}
-  <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-slate-100 text-slate-700 border border-slate-200 whitespace-nowrap">
+  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-slate-100 text-slate-700 border border-slate-200 whitespace-nowrap">
     <span>{{ label }}</span>
   </span>
 {% endif %}

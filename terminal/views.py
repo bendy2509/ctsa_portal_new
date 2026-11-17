@@ -134,6 +134,8 @@ def _carry_into(old: Container, target_date: datetime.date, user) -> Container:
     if new is None:
         new = Container(
             container_number=old.container_number,
+            origin=old.origin,
+            arrived_at=old.arrived_at,
             scheduled_date=target_date,
             status=Container.Status.PENDING,
             shipping_line=old.shipping_line,
@@ -143,9 +145,14 @@ def _carry_into(old: Container, target_date: datetime.date, user) -> Container:
         )
         new.save(acting_user=user)
     else:
-        Container.objects.filter(pk=new.pk).update(carried_from=old, first_scheduled_date=first_date)
+        Container.objects.filter(pk=new.pk).update(
+            carried_from=old,
+            first_scheduled_date=first_date,
+            origin=old.origin,
+        )
         new.carried_from = old
         new.first_scheduled_date = first_date
+        new.origin = old.origin
 
     _close_tracking(
         old,
@@ -762,27 +769,30 @@ def container_add_bulk_view(request):
 @require_permission(Actions.CONTAINER_CHANGE_STATUS)
 @require_POST
 def container_update_status_view(request, pk):
-    container = get_object_or_404(Container, pk=pk)
+    container = get_object_or_404(Container.all_objects, pk=pk)
     new_status = request.POST.get('status', container.status)
     note = request.POST.get('unavailability_note', '').strip()
     shipping_line_id = request.POST.get('shipping_line') or None
 
     if new_status in dict(Container.Status.choices):
-        container.status = new_status
         if shipping_line_id and shipping_line_id.isdigit():
             container.shipping_line_id = int(shipping_line_id)
-        if new_status == Container.Status.UNAVAILABLE:
-            if 'unavailability_note' in request.POST:
-                container.unavailability_note = note
+        try:
+            container.change_status(
+                new_status,
+                acting_user=request.user,
+                note=note if 'unavailability_note' in request.POST else container.unavailability_note,
+            )
+        except ValidationError as exc:
+            messages.error(request, exc.messages[0])
         else:
-            container.unavailability_note = ''
-        container.save(acting_user=request.user)
-        messages.success(
-            request,
-            f"Conteneur {container.container_number} mis à jour ({container.get_status_display()}).",
-        )
+            messages.success(
+                request,
+                f"Conteneur {container.container_number} mis à jour ({container.get_status_display()}).",
+            )
 
-    return redirect(_safe_next(request, _dashboard_url(container.scheduled_date)))
+    fallback = _dashboard_url(container.scheduled_date) if container.scheduled_date else reverse('terminal:containers')
+    return redirect(_safe_next(request, fallback))
 
 
 @require_permission(Actions.CONTAINER_CHANGE_STATUS)
@@ -810,14 +820,13 @@ def container_status_bulk_view(request):
         return redirect(_safe_next(request, fallback))
 
     updated_count = 0
+    skipped_locked = 0
     for container in qs:
-        container.status = new_status
-        if new_status == Container.Status.UNAVAILABLE:
-            container.unavailability_note = note
-        else:
-            container.unavailability_note = ''
-        container.save(acting_user=request.user)
-        updated_count += 1
+        try:
+            container.change_status(new_status, acting_user=request.user, note=note)
+            updated_count += 1
+        except ValidationError:
+            skipped_locked += 1
 
     label = dict(Container.Status.choices)[new_status]
     if updated_count:
@@ -825,7 +834,12 @@ def container_status_bulk_view(request):
             request,
             f"{updated_count} conteneur(s) passé(s) au statut « {label} » pour la séance du {target_date.strftime('%d/%m/Y').replace('/Y', '/' + target_date.strftime('%Y'))}.",
         )
-    else:
+    if skipped_locked:
+        messages.warning(
+            request,
+            f"{skipped_locked} conteneur(s) ignoré(s) car déjà inspecté(s) ou verrouillé(s).",
+        )
+    if not updated_count and not skipped_locked:
         messages.warning(request, "Aucun conteneur à modifier pour cette sélection.")
     return redirect(_safe_next(request, fallback))
 
@@ -838,15 +852,25 @@ def container_delete_view(request, pk):
         return render_403(request, "La fenêtre de suppression est dépassée pour votre rôle.")
     scheduled = container.scheduled_date
     num = container.container_number
-    # Si ce conteneur avait été repris d'une séance précédente, celle-ci redevient « à suivre » :
-    # sans cela, le conteneur disparaîtrait du suivi des non vérifiés sans avoir été vérifié.
-    if container.carried_from_id:
-        Container.objects.filter(
-            pk=container.carried_from_id, carry_decision=Container.CarryDecision.CARRIED
-        ).update(carry_decision='', carry_decided_by=None, carry_decided_at=None)
-    container.delete()
-    messages.info(request, f"Le conteneur {num} a été supprimé de la liste du {scheduled.strftime('%d/%m/%Y')}.")
-    return redirect(f"{reverse('terminal:containers')}?date={scheduled.isoformat()}")
+    reason = request.POST.get('archive_reason', '').strip()
+    try:
+        if container.status == Container.Status.REGISTERED:
+            container.archive(acting_user=request.user, reason=reason or "Archivage depuis la fiche")
+            messages.info(request, f"Le conteneur {num} a été archivé.")
+        else:
+            was_arrival = container.origin == Container.Origin.ARRIVE_SANS_LISTE
+            container.remove_from_list(acting_user=request.user, reason=reason or "Retiré de la liste")
+            if was_arrival:
+                messages.info(request, f"Le conteneur {num} a été retiré de la liste et remis à l'état Enregistré.")
+            else:
+                messages.info(request, f"Le conteneur {num} a été retiré de la liste du {scheduled.strftime('%d/%m/%Y')} et archivé.")
+    except ValidationError as exc:
+        messages.error(request, exc.messages[0])
+        return redirect('terminal:container_detail', pk=container.pk)
+
+    if scheduled:
+        return redirect(f"{reverse('terminal:containers')}?date={scheduled.isoformat()}")
+    return redirect('terminal:containers')
 
 
 @require_permission(Actions.CONTAINER_DETAIL)
@@ -929,12 +953,18 @@ def container_edit_view(request, pk):
                 f"Le conteneur {normalized} est déjà programmé le {parsed_date.strftime('%d/%m/%Y')}."
             )
 
+        if not errors and (new_status != container.status or parsed_date != container.scheduled_date):
+            ok, err = container.can_change_status(new_status)
+            if not ok:
+                errors['status'] = err
+
         if not errors:
             container.container_number = normalized
             container.shipping_line = line_obj
             container.scheduled_date = parsed_date
             container.status = new_status
             container.unavailability_note = note if new_status == Container.Status.UNAVAILABLE else ''
+            container.version = (container.version or 1) + 1
             container.save(acting_user=request.user)
             messages.success(request, f"Conteneur {container.container_number} enregistré.")
             return redirect('terminal:container_detail', pk=container.pk)
@@ -1359,7 +1389,7 @@ def statistics_view(request):
         response.write('﻿')
         writer = csv.writer(response, delimiter=';')
         writer.writerow([
-            'Periode', 'Programmes', 'Confirmes', 'Verifies', 'Restent a verifier',
+            'Periode', 'Programmes', 'Confirmes', 'Verifies', 'Restent a inspecter',
             'Repris', 'Rejetes', 'Taux de verification (%)',
         ])
         for b in buckets + [{'label': 'TOTAL', **totals}]:

@@ -434,13 +434,214 @@ class Container(models.Model):
             return 0
         return max((timezone.localdate() - start).days, 0)
 
-    def set_verification(self, result: str, acting_user=None, note: str = '', reason=None):
+    ALLOWED_STATUS_TRANSITIONS = {
+        Status.REGISTERED: {Status.REGISTERED, Status.PENDING},
+        Status.PENDING: {Status.PENDING, Status.CONFIRMED, Status.UNAVAILABLE},
+        Status.CONFIRMED: {Status.CONFIRMED, Status.PENDING, Status.UNAVAILABLE},
+        Status.UNAVAILABLE: {Status.UNAVAILABLE, Status.PENDING, Status.CONFIRMED},
+    }
+
+    def can_change_status(self, new_status: str):
+        """Vérifie si la transition vers `new_status` est autorisée par la machine à états."""
+        if self.archived_at is not None:
+            return False, "Un conteneur archivé ne peut pas changer de statut."
+        if new_status not in dict(self.Status.choices):
+            return False, "Statut cible inconnu."
+        if self.is_verified:
+            return False, (
+                "Ce conteneur est déjà vérifié et verrouillé. "
+                "Corrigez ou annulez d'abord la vérification."
+            )
+        if self.verification_result == self.Verification.NOT_VERIFIED and new_status != self.status:
+            return False, (
+                "Ce conteneur a un résultat « Non vérifié ». "
+                "Corrigez ou supprimez d'abord le mouvement de vérification."
+            )
+        allowed = self.ALLOWED_STATUS_TRANSITIONS.get(self.status, set())
+        if new_status not in allowed:
+            if self.status == self.Status.REGISTERED and new_status in (
+                self.Status.CONFIRMED,
+                self.Status.UNAVAILABLE,
+            ):
+                return False, (
+                    "Un conteneur enregistré hors liste doit d'abord être ajouté à une liste "
+                    "(En attente) avant d'être confirmé ou marqué indisponible."
+                )
+            return False, "Transition de statut non autorisée."
+        return True, ""
+
+    def change_status(
+        self,
+        new_status: str,
+        acting_user=None,
+        reason=None,
+        note: str = '',
+        expected_version=None,
+    ):
+        """Applique une transition de disponibilité dans une transaction atomique."""
+        with transaction.atomic():
+            if expected_version is not None and self.version != expected_version:
+                raise ValidationError(
+                    "Conflit de concurrence : ce conteneur a été modifié entre-temps. Actualisez la page."
+                )
+            ok, err = self.can_change_status(new_status)
+            if not ok:
+                raise ValidationError(err)
+
+            self.status = new_status
+            if new_status == self.Status.UNAVAILABLE:
+                self.unavailability_reason = reason
+                self.unavailability_note = (note or '')[:255]
+            else:
+                self.unavailability_reason = None
+                self.unavailability_note = ''
+            self.version = (self.version or 1) + 1
+            self.save(acting_user=acting_user)
+
+    def remove_from_list(self, acting_user=None, reason: str = ''):
+        """Retire un conteneur de sa liste : retour à Enregistré (arrive_sans_liste) ou archivage (programme)."""
+        if self.archived_at is not None:
+            raise ValidationError("Ce conteneur est déjà archivé.")
+        if self.status == self.Status.REGISTERED:
+            raise ValidationError("Ce conteneur n'est sur aucune liste.")
+        if self.is_verified:
+            raise ValidationError(
+                "Un conteneur vérifié est verrouillé et ne peut pas être retiré directement."
+            )
+        user = acting_user if getattr(acting_user, 'is_authenticated', False) else None
+        with transaction.atomic():
+            if self.carried_from_id:
+                Container.all_objects.filter(
+                    pk=self.carried_from_id,
+                    carry_decision=self.CarryDecision.CARRIED,
+                ).update(carry_decision='', carry_decided_by=None, carry_decided_at=None)
+
+            if self.origin == self.Origin.ARRIVE_SANS_LISTE:
+                old_status = self.status
+                old_date = self.scheduled_date
+                self.status = self.Status.REGISTERED
+                self.scheduled_date = None
+                self.first_scheduled_date = None
+                self.unavailability_reason = None
+                self.unavailability_note = ''
+                self.carried_from = None
+                self.carry_decision = ''
+                self.carry_decided_by = None
+                self.carry_decided_at = None
+                self.version = (self.version or 1) + 1
+                self.save(acting_user=user, skip_status_log=True)
+                ContainerStatusLog.objects.create(
+                    container=self,
+                    action=ContainerStatusLog.Action.STATUS_CHANGE,
+                    old_status=old_status,
+                    new_status=self.Status.REGISTERED,
+                    reason_text=(
+                        f"Retiré de la liste du {old_date.strftime('%d/%m/%Y')} → retour à Enregistré"
+                        if old_date
+                        else "Retiré de la liste → retour à Enregistré"
+                    ),
+                    changed_by=user,
+                )
+            else:
+                archive_reason = (reason or '').strip() or "Retiré de la liste"
+                self.archived_at = timezone.now()
+                self.archived_by = user
+                self.archive_reason = archive_reason[:255]
+                self.version = (self.version or 1) + 1
+                self.save(acting_user=user, skip_status_log=True)
+                ContainerStatusLog.objects.create(
+                    container=self,
+                    action=ContainerStatusLog.Action.CONTAINER_ARCHIVED,
+                    old_status=self.status,
+                    new_status=self.status,
+                    reason_text=self.archive_reason,
+                    changed_by=user,
+                )
+
+    def archive(self, acting_user=None, reason: str = ''):
+        """Archive un conteneur Enregistré (hors liste) sans suppression physique."""
+        if self.archived_at is not None:
+            raise ValidationError("Ce conteneur est déjà archivé.")
+        if self.is_verified:
+            raise ValidationError(
+                "Un conteneur vérifié ne peut pas être archivé directement. Annulez d'abord la vérification."
+            )
+        if self.status != self.Status.REGISTERED:
+            raise ValidationError(
+                "Un conteneur sur une liste ne peut pas être archivé directement : retirez-le d'abord de la liste."
+            )
+        clean_reason = (reason or '').strip() or "Archivage manuel"
+        user = acting_user if getattr(acting_user, 'is_authenticated', False) else None
+        with transaction.atomic():
+            self.archived_at = timezone.now()
+            self.archived_by = user
+            self.archive_reason = clean_reason[:255]
+            self.version = (self.version or 1) + 1
+            self.save(acting_user=user, skip_status_log=True)
+            ContainerStatusLog.objects.create(
+                container=self,
+                action=ContainerStatusLog.Action.CONTAINER_ARCHIVED,
+                old_status=self.status,
+                new_status=self.status,
+                reason_text=self.archive_reason,
+                changed_by=user,
+            )
+
+    def restore(self, acting_user=None, reason: str = ''):
+        """Restaure un conteneur archivé (réservé Superadmin)."""
+        if self.archived_at is None:
+            raise ValidationError("Ce conteneur n'est pas archivé.")
+        user = acting_user if getattr(acting_user, 'is_authenticated', False) else None
+        clean_reason = (reason or '').strip() or "Restauration Superadmin"
+        with transaction.atomic():
+            self.archived_at = None
+            self.archived_by = None
+            self.archive_reason = ''
+            self.version = (self.version or 1) + 1
+            self.save(acting_user=user, skip_status_log=True)
+            ContainerStatusLog.objects.create(
+                container=self,
+                action=ContainerStatusLog.Action.CONTAINER_RESTORED,
+                old_status=self.status,
+                new_status=self.status,
+                reason_text=clean_reason[:255],
+                changed_by=user,
+            )
+            PortalAuditLog.objects.create(
+                category=PortalAuditLog.Category.ARCHIVE_RESTORE,
+                target_label=f"Container:{self.normalized_number}",
+                old_value="archived",
+                new_value=f"active ({self.status})",
+                reason=clean_reason[:255],
+                changed_by=user,
+            )
+
+    def set_verification(
+        self,
+        result: str,
+        acting_user=None,
+        note: str = '',
+        reason=None,
+        expected_version=None,
+    ):
         """Marque le conteneur Vérifié / Non vérifié ('' pour annuler) via VerificationEvent atomique."""
+        if expected_version is not None and self.version != expected_version:
+            raise ValidationError(
+                "Conflit de concurrence : ce conteneur a été modifié par un autre utilisateur. Veuillez actualiser."
+            )
         if result not in ('', *self.Verification.values):
             raise ValidationError("Résultat de vérification inconnu.")
         if result and not self.can_be_verified:
             raise ValidationError(
                 "Seul un conteneur confirmé, dont la séance a commencé, peut être marqué vérifié ou non vérifié."
+            )
+        if (
+            self.verification_result == self.Verification.NOT_VERIFIED
+            and self.carry_decision in (self.CarryDecision.CARRIED, self.CarryDecision.REJECTED)
+            and result != self.verification_result
+        ):
+            raise ValidationError(
+                "Impossible de corriger ou supprimer le mouvement d'un conteneur déjà repris ou rejeté."
             )
         note = (note or '')[:255] if result == self.Verification.NOT_VERIFIED else ''
         reason_obj = reason if result == self.Verification.NOT_VERIFIED else None
