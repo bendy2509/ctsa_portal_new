@@ -52,7 +52,7 @@ class PermissionsMatrixAndDefaultDenyTests(TestCase):
         cls.admin = User.objects.create_user(
             username='adm_test',
             password='Password123!',
-            role=User.Role.ADMIN,
+            role=User.Role.MANAGER,
         )
         cls.supervisor = User.objects.create_user(
             username='sup_test',
@@ -233,7 +233,7 @@ class PermissionsMatrixAndDefaultDenyTests(TestCase):
         resp_del = self.client.post(reverse('accounts:user_delete', args=[self.superadmin.pk]))
         self.assertEqual(resp_del.status_code, 403)
 
-        # Le dernier Superadmin ne peut pas se désactiver ni être supprimé
+        # Le dernier Admin (Superadmin) ne peut pas se désactiver ni être supprimé
         self.client.force_login(self.superadmin)
         self.client.post(
             reverse('accounts:user_edit', args=[self.superadmin.pk]),
@@ -303,31 +303,31 @@ class PermissionsMatrixAndDefaultDenyTests(TestCase):
             motif.delete()
 
     def test_superadmin_can_create_superadmin_and_admin_cannot(self):
-        # 1. Superadmin voit la case is_superuser et peut créer un autre Superadmin
+        # 1. Admin (Superadmin) voit le rôle Administrateur dans le select et peut en créer un autre
         self.client.force_login(self.superadmin)
         get_sa = self.client.get(reverse('accounts:user_create'))
-        self.assertContains(get_sa, 'name="is_superuser"')
+        self.assertContains(get_sa, 'value="admin"')
 
         resp_sa = self.client.post(
             reverse('accounts:user_create'),
             {
                 'username': 'sa_second',
-                'full_name': 'Deuxième Superadmin',
+                'full_name': 'Deuxième Admin',
                 'role': User.Role.ADMIN,
                 'password': 'Password123!',
                 'is_active': 'on',
-                'is_superuser': 'on',
             },
         )
         self.assertRedirects(resp_sa, reverse('accounts:user_list'))
         created_sa = User.objects.get(username='sa_second')
+        self.assertEqual(created_sa.role, User.Role.ADMIN)
         self.assertTrue(created_sa.is_superuser)
         self.assertTrue(created_sa.is_staff)
 
-        # 2. Admin ne voit pas is_superuser, reçoit 403 s'il tente de créer ou promouvoir un Superadmin
+        # 2. Manager ne voit pas le rôle Administrateur, reçoit 403 s'il tente de créer ou promouvoir un Admin
         self.client.force_login(self.admin)
         get_adm = self.client.get(reverse('accounts:user_create'))
-        self.assertNotContains(get_adm, 'name="is_superuser"')
+        self.assertNotContains(get_adm, 'value="admin"')
         self.assertNotContains(get_adm, reverse('terminal:site_settings'))
 
         resp_forbid_create = self.client.post(
@@ -338,7 +338,6 @@ class PermissionsMatrixAndDefaultDenyTests(TestCase):
                 'role': User.Role.ADMIN,
                 'password': 'Password123!',
                 'is_active': 'on',
-                'is_superuser': 'on',
             },
         )
         self.assertEqual(resp_forbid_create.status_code, 403)
@@ -351,15 +350,14 @@ class PermissionsMatrixAndDefaultDenyTests(TestCase):
                 'full_name': 'Agent Promoted',
                 'role': User.Role.ADMIN,
                 'is_active': 'on',
-                'is_superuser': 'on',
             },
         )
         self.assertEqual(resp_forbid_edit.status_code, 403)
         self.agent.refresh_from_db()
         self.assertFalse(self.agent.is_superuser)
 
-        # 3. Admin peut créer tous les autres rôles (Agent, Superviseur, Admin, Client)
-        for role_val in (User.Role.AGENT, User.Role.SUPERVISOR, User.Role.ADMIN, User.Role.CLIENT):
+        # 3. Manager peut créer tous les autres rôles (Manager, Superviseur, Agent, Client)
+        for role_val in (User.Role.MANAGER, User.Role.SUPERVISOR, User.Role.AGENT, User.Role.CLIENT):
             uname = f"adm_created_{role_val}"
             ok_resp = self.client.post(
                 reverse('accounts:user_create'),

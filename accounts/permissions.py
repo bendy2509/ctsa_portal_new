@@ -58,7 +58,7 @@ ROLE_ALLOWLIST = {
         Actions.CONTAINER_CARRYOVER,
         Actions.CLIENT_WATCHLIST,
     }),
-    User.Role.ADMIN: frozenset({
+    User.Role.MANAGER: frozenset({
         Actions.PORTAL_DASHBOARD,
         Actions.CONTAINER_LIST,
         Actions.CONTAINER_DETAIL,
@@ -75,6 +75,29 @@ ROLE_ALLOWLIST = {
         Actions.USER_MANAGE,
         Actions.USER_MANAGE_AGENT_SUPERVISOR,
         Actions.USER_MANAGE_ADMIN,
+        Actions.CLIENT_WATCHLIST,
+    }),
+    User.Role.ADMIN: frozenset({
+        Actions.PORTAL_DASHBOARD,
+        Actions.CONTAINER_LIST,
+        Actions.CONTAINER_DETAIL,
+        Actions.CONTAINER_PREPARE,
+        Actions.CONTAINER_CHANGE_STATUS,
+        Actions.CONTAINER_ARRIVAL_CREATE,
+        Actions.CONTAINER_ARCHIVE,
+        Actions.CONTAINER_RESTORE,
+        Actions.CONTAINER_VERIFY,
+        Actions.CONTAINER_VERIFY_CORRECT,
+        Actions.CONTAINER_VERIFY_DELETE_MOVEMENT,
+        Actions.CONTAINER_CARRYOVER,
+        Actions.REPORT_VIEW,
+        Actions.SHIPPING_LINE_MANAGE,
+        Actions.USER_MANAGE,
+        Actions.USER_MANAGE_AGENT_SUPERVISOR,
+        Actions.USER_MANAGE_ADMIN,
+        Actions.USER_MANAGE_SUPERADMIN,
+        Actions.SITE_SETTINGS_MANAGE,
+        Actions.MOTIF_MANAGE,
         Actions.CLIENT_WATCHLIST,
     }),
     User.Role.CLIENT: frozenset({
@@ -154,8 +177,8 @@ def peut(utilisateur, action: str, objet=None) -> bool:
     if not getattr(utilisateur, 'is_active', False):
         return False
 
-    # Superadmin (= Django is_superuser) : accès total garanti.
-    if getattr(utilisateur, 'is_superuser', False):
+    # Admin (= Superadmin is_superuser=True) : accès total garanti.
+    if getattr(utilisateur, 'is_superuser', False) or getattr(utilisateur, 'role', None) == User.Role.ADMIN:
         return True
 
     role = getattr(utilisateur, 'role', None)
@@ -220,8 +243,8 @@ def peut(utilisateur, action: str, objet=None) -> bool:
         return True
 
     if action == Actions.USER_MANAGE:
-        # Un Admin ne peut jamais toucher un compte Superadmin.
-        if getattr(objet, 'is_superuser', False):
+        # Un Manager ne peut jamais toucher un compte Admin (Superadmin).
+        if getattr(objet, 'is_superuser', False) or getattr(objet, 'role', None) == User.Role.ADMIN:
             return False
         return True
 

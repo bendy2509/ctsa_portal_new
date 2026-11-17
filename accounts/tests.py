@@ -125,7 +125,7 @@ class UserManagementPermissionsTests(TestCase):
         self.admin = User.objects.create_user(
             username='admin_mgr',
             password='Password123!',
-            role=User.Role.ADMIN,
+            role=User.Role.MANAGER,
         )
         self.supervisor = User.objects.create_user(
             username='sup_nonadmin',

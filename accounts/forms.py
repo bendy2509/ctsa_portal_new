@@ -78,31 +78,22 @@ class StaffUserCreateForm(forms.ModelForm):
         required=True,
         widget=forms.PasswordInput,
     )
-    is_superuser = forms.BooleanField(
-        label="Superadmin (accès total, paramètres et restauration)",
-        required=False,
-    )
 
     class Meta:
         model = User
-        fields = ['username', 'full_name', 'email', 'role', 'company_name', 'phone', 'is_active', 'is_superuser']
+        fields = ['username', 'full_name', 'email', 'role', 'company_name', 'phone', 'is_active']
 
     def __init__(self, *args, acting_user=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.acting_user = acting_user
         if not getattr(acting_user, 'is_superuser', False):
-            self.fields.pop('is_superuser', None)
+            self.fields['role'].choices = [
+                c for c in User.Role.choices if c[0] != User.Role.ADMIN
+            ]
 
     def save(self, commit=True):
         user = super().save(commit=False)
         user.set_password(self.cleaned_data['password'])
-        if getattr(self.acting_user, 'is_superuser', False) and self.cleaned_data.get('is_superuser'):
-            user.is_superuser = True
-            user.is_staff = True
-            user.role = User.Role.ADMIN
-        else:
-            user.is_superuser = False
-            user.is_staff = user.role == User.Role.ADMIN
         if commit:
             user.save()
         return user
@@ -115,31 +106,24 @@ class StaffUserUpdateForm(forms.ModelForm):
         required=False,
         widget=forms.PasswordInput,
     )
-    is_superuser = forms.BooleanField(
-        label="Superadmin (accès total, paramètres et restauration)",
-        required=False,
-    )
 
     class Meta:
         model = User
-        fields = ['username', 'full_name', 'email', 'role', 'company_name', 'phone', 'is_active', 'is_superuser']
+        fields = ['username', 'full_name', 'email', 'role', 'company_name', 'phone', 'is_active']
 
     def __init__(self, *args, acting_user=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.acting_user = acting_user
         if not getattr(acting_user, 'is_superuser', False):
-            self.fields.pop('is_superuser', None)
+            self.fields['role'].choices = [
+                c for c in User.Role.choices if c[0] != User.Role.ADMIN
+            ]
 
     def save(self, commit=True):
         user = super().save(commit=False)
         pwd = self.cleaned_data.get('new_password')
         if pwd:
             user.set_password(pwd)
-        if getattr(self.acting_user, 'is_superuser', False):
-            user.is_superuser = bool(self.cleaned_data.get('is_superuser'))
-            if user.is_superuser:
-                user.role = User.Role.ADMIN
-        user.is_staff = user.role == User.Role.ADMIN or user.is_superuser
         if commit:
             user.save()
         return user

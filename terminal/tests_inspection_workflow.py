@@ -20,7 +20,7 @@ class InspectionAndArchiveWorkflowTests(TestCase):
             is_staff=True,
         )
         cls.admin = User.objects.create_user(
-            username='iw_admin', password='Password123!', role=User.Role.ADMIN
+            username='iw_admin', password='Password123!', role=User.Role.MANAGER
         )
         cls.supervisor = User.objects.create_user(
             username='iw_sup', password='Password123!', role=User.Role.SUPERVISOR

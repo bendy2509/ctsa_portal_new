@@ -372,7 +372,7 @@ class ShippingLinesAndStatisticsTests(TestCase):
             is_superuser=True, is_staff=True,
         )
         self.admin_user = User.objects.create_user(
-            username='sl_admin', password='Password123!', role=User.Role.ADMIN
+            username='sl_admin', password='Password123!', role=User.Role.MANAGER
         )
         self.client_user = User.objects.create_user(
             username='sl_client', password='Password123!', role=User.Role.CLIENT

@@ -18,7 +18,7 @@ class MotifsAndSettingsTests(TestCase):
         cls.admin = User.objects.create_user(
             username='ms_admin',
             password='Password123!',
-            role=User.Role.ADMIN,
+            role=User.Role.MANAGER,
         )
 
     def test_seeded_motifs_and_historical_not_selectable(self):
