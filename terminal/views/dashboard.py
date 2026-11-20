@@ -39,6 +39,7 @@ from terminal.models import (
     sync_container_verification,
 )
 
+from terminal.services.reports import _rate
 from terminal.services.containers import (
     PAGE_SIZE,
     _backlog_breakdown,
