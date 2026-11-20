@@ -99,7 +99,7 @@ def shipping_lines_view(request):
     lines = ShippingLine.objects.annotate(
         container_count=Count('containers')
     ).order_by('name')
-    return render(request, 'portal/shipping_lines.html', {
+    return render(request, 'portal/parametres/shipping_lines.html', {
         'lines': lines,
     })
 
@@ -121,7 +121,7 @@ def shipping_line_create_view(request):
             messages.success(request, f"Ligne maritime « {name} » ajoutée.")
             return redirect('terminal:shipping_lines')
 
-    return render(request, 'portal/shipping_line_form.html', {
+    return render(request, 'portal/parametres/shipping_line_form.html', {
         'line': None,
         'name': name,
         'error': error,
@@ -148,7 +148,7 @@ def shipping_line_edit_view(request, pk):
             messages.success(request, f"Ligne maritime renommée en « {name} ».")
             return redirect('terminal:shipping_lines')
 
-    return render(request, 'portal/shipping_line_form.html', {
+    return render(request, 'portal/parametres/shipping_line_form.html', {
         'line': line,
         'name': name,
         'error': error,
