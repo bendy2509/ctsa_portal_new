@@ -60,6 +60,7 @@
   /* Alias sémantiques rétrocompatibles */
   --color-success: #065f46;
   --color-success-surface: #ecfdf5;
+  --color-success-border: #a7f3d0;
   --color-warning: #92400e;
   --color-warning-surface: #fef3c7;
   --color-danger: #991b1b;

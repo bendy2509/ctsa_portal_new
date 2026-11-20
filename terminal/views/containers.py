@@ -70,18 +70,18 @@ def container_list_view(request):
 
     base_qs = Container.objects.filter(scheduled_date=selected_date).select_related(
         'shipping_line', 'prefix_ref', 'created_by', 'updated_by',
-        'carried_from', 'verified_by',
+        'carried_from', 'verified_by', 'unavailability_reason',
     )
 
-    stats = {
-        'total': base_qs.count(),
-        'confirmed': base_qs.filter(status=Container.Status.CONFIRMED).count(),
-        'pending': base_qs.filter(status=Container.Status.PENDING).count(),
-        'unavailable': base_qs.filter(status=Container.Status.UNAVAILABLE).count(),
-        'verified': base_qs.filter(verification_result=Container.Verification.VERIFIED).count(),
-        'not_verified': base_qs.filter(verification_result=Container.Verification.NOT_VERIFIED).count(),
-        'to_verify': base_qs.filter(status=Container.Status.CONFIRMED, verification_result='').count(),
-    }
+    stats = base_qs.aggregate(
+        total=Count('id'),
+        confirmed=Count('id', filter=Q(status=Container.Status.CONFIRMED)),
+        pending=Count('id', filter=Q(status=Container.Status.PENDING)),
+        unavailable=Count('id', filter=Q(status=Container.Status.UNAVAILABLE)),
+        verified=Count('id', filter=Q(verification_result=Container.Verification.VERIFIED)),
+        not_verified=Count('id', filter=Q(verification_result=Container.Verification.NOT_VERIFIED)),
+        to_verify=Count('id', filter=Q(status=Container.Status.CONFIRMED, verification_result='')),
+    )
     # La vérification ne se marque que pour une séance commencée (aujourd'hui ou passée).
     show_verification = selected_date <= today
 

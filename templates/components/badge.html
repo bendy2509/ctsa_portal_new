@@ -1,6 +1,6 @@
 {# Composant badge : variantes de statut et de rôle (jetons @theme WCAG AA, sans icône décorative). #}
 {% if variant == 'confirmed' or variant == 'verified' or variant == 'active' %}
-  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-status-confirmed-bg text-status-confirmed-fg border border-status-confirmed-bd whitespace-nowrap">
+  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-success-surface text-success border border-success-border whitespace-nowrap">
     {{ label }}
   </span>
 {% elif variant == 'pending' or variant == 'warning' or variant == 'not_verified' %}

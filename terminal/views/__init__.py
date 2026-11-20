@@ -3,6 +3,7 @@
 from terminal.services.containers import (
     PAGE_SIZE,
     _carry_into,
+    _close_tracking,
     default_carry_target,
     default_work_date,
     unverified_backlog,

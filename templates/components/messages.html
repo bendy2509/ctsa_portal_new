@@ -3,7 +3,7 @@
   <div class="flex items-center gap-3 px-4 py-3 rounded-xl border text-sm font-semibold shadow-xs
     {% if message.tags == 'error' %}bg-status-unavailable-bg border-status-unavailable-bd text-status-unavailable-fg
     {% elif message.tags == 'warning' %}bg-status-pending-bg border-status-pending-bd text-status-pending-fg
-    {% elif message.tags == 'success' %}bg-status-confirmed-bg border-status-confirmed-bd text-status-confirmed-fg
+    {% elif message.tags == 'success' %}bg-success-surface border-success-border text-success
     {% else %}bg-surface border-border text-text{% endif %}">
     {% if message.tags == 'error' %}
       <svg class="portal-icon shrink-0" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>
