@@ -1,0 +1,70 @@
+{% extends 'portal/base_portal.html' %}
+
+{% block title %}Textes & coordonnées — Paramètres · Cap Terminal S.A.{% endblock %}
+{% block page_title %}Textes & coordonnées{% endblock %}
+{% block portal_body_extra %}portal-has-form-actions{% endblock %}
+
+{% block portal_content %}
+<div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-5 space-y-5">
+
+  {% url 'terminal:site_settings' as settings_home_url %}
+  {% include 'components/page_header.html' with back_url=settings_home_url back_label="Retour aux paramètres" title="Textes & coordonnées" subtitle="Informations publiques du portail RAMPE en français et en kreyòl." %}
+
+  <form method="post" action="{% url 'terminal:site_settings_texts' %}" class="space-y-5">
+    {% csrf_token %}
+    <input type="hidden" name="correction_window_minutes" value="{{ site_obj.correction_window_minutes }}">
+    <input type="hidden" name="delete_window_hours" value="{{ site_obj.delete_window_hours }}">
+    <input type="hidden" name="unscheduled_alert_days" value="{{ site_obj.unscheduled_alert_days }}">
+    <input type="hidden" name="hero_carousel_limit" value="{{ site_obj.hero_carousel_limit }}">
+    {% if site_obj.hero_carousel_enabled %}<input type="hidden" name="hero_carousel_enabled" value="on">{% endif %}
+
+    <!-- Onglets Français / Kreyòl -->
+    <div class="bg-surface rounded-xl border border-border shadow-xs overflow-hidden">
+      <div class="list-tabs px-4" role="tablist" aria-label="Langue des textes">
+        <button type="button" data-tab-target="panel-lang-fr" aria-selected="true" class="tab-btn list-tab border-t-0 border-x-0 bg-transparent cursor-pointer">
+          Français &amp; Coordonnées
+        </button>
+        <button type="button" data-tab-target="panel-lang-ht" aria-selected="false" class="tab-btn list-tab border-t-0 border-x-0 bg-transparent cursor-pointer">
+          Kreyòl ayisyen
+        </button>
+      </div>
+
+      <div id="panel-lang-fr" class="p-4 sm:p-6 space-y-5">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {% for field in form %}
+            {% if not field.name|slice:"-3:" == "_ht" and field.name != "hero_carousel_enabled" and field.name != "hero_carousel_limit" and field.name != "correction_window_minutes" and field.name != "delete_window_hours" and field.name != "unscheduled_alert_days" %}
+              <div class="space-y-1.5 {% if field.field.widget.input_type == None %}sm:col-span-2{% endif %}">
+                <label for="{{ field.id_for_label }}" class="block text-sm font-semibold text-text">{{ field.label }}</label>
+                {{ field }}
+                {% if field.errors %}
+                  <p class="text-xs font-semibold text-danger m-0" role="alert">{{ field.errors.0 }}</p>
+                {% endif %}
+              </div>
+            {% endif %}
+          {% endfor %}
+        </div>
+      </div>
+
+      <div id="panel-lang-ht" hidden class="p-4 sm:p-6 space-y-5">
+        <p class="text-xs text-text-muted m-0">Les textes créoles existants sont conservés tels quels. Modifiez uniquement les libellés souhaités.</p>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {% for field in form %}
+            {% if field.name|slice:"-3:" == "_ht" %}
+              <div class="space-y-1.5 {% if field.field.widget.input_type == None %}sm:col-span-2{% endif %}">
+                <label for="{{ field.id_for_label }}" class="block text-sm font-semibold text-text">{{ field.label }}</label>
+                {{ field }}
+                {% if field.errors %}
+                  <p class="text-xs font-semibold text-danger m-0" role="alert">{{ field.errors.0 }}</p>
+                {% endif %}
+              </div>
+            {% endif %}
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    {% include 'components/form_actions.html' with cancel_url=settings_home_url cancel_label="Annuler" submit_label="Enregistrer les textes" %}
+  </form>
+
+</div>
+{% endblock %}

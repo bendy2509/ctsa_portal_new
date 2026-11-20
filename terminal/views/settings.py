@@ -243,7 +243,7 @@ def site_settings_view(request):
         .filter(category=PortalAuditLog.Category.SETTING_CHANGE)[:15]
     )
 
-    return render(request, 'portal/site_settings.html', {
+    return render(request, 'portal/parametres/settings_home.html', {
         'form': form,
         'site_obj': instance,
         'slides': slides,
@@ -253,6 +253,118 @@ def site_settings_view(request):
         'motifs_not_verified': motifs_not_verified,
         'motif_types': Motif.Type.choices,
         'settings_logs': settings_logs,
+    })
+
+
+class SiteSettingsWindowsForm(forms.ModelForm):
+    class Meta:
+        model = SiteSettings
+        fields = ['correction_window_minutes', 'delete_window_hours', 'unscheduled_alert_days']
+        widgets = {
+            'correction_window_minutes': forms.NumberInput(attrs={'min': 1, 'max': 1440, 'class': 'form-control'}),
+            'delete_window_hours': forms.NumberInput(attrs={'min': 1, 'max': 168, 'class': 'form-control'}),
+            'unscheduled_alert_days': forms.NumberInput(attrs={'min': 1, 'max': 90, 'class': 'form-control'}),
+        }
+
+
+class SiteSettingsCarouselConfigForm(forms.ModelForm):
+    class Meta:
+        model = SiteSettings
+        fields = ['hero_carousel_enabled', 'hero_carousel_limit']
+        widgets = {
+            'hero_carousel_limit': forms.NumberInput(attrs={'min': 1, 'max': 6, 'class': 'form-control'}),
+        }
+
+
+def _audit_settings_diff(instance, saved, field_names, user):
+    for field_name in field_names:
+        old_val = instance.get(field_name)
+        new_val = getattr(saved, field_name)
+        if old_val != new_val:
+            PortalAuditLog.objects.create(
+                category=PortalAuditLog.Category.SETTING_CHANGE,
+                target_label=f"SiteSettings.{field_name}",
+                old_value=str(old_val),
+                new_value=str(new_val),
+                changed_by=user,
+            )
+
+
+@require_permission(Actions.SITE_SETTINGS_MANAGE)
+def site_settings_texts_view(request):
+    """Sous-page Paramètres : textes et coordonnées publiques (FR / Kreyòl)."""
+    instance = SiteSettings.get_solo()
+    if request.method == 'POST':
+        old_snapshot = {f: getattr(instance, f) for f in SiteSettingsForm.Meta.fields}
+        form = SiteSettingsForm(request.POST, instance=instance)
+        if form.is_valid():
+            saved = form.save()
+            _audit_settings_diff(old_snapshot, saved, SiteSettingsForm.Meta.fields, request.user)
+            messages.success(request, "Les textes et coordonnées ont été mis à jour.")
+            return redirect('terminal:site_settings_texts')
+        messages.error(request, "Veuillez corriger les champs signalés ci-dessous.")
+    else:
+        form = SiteSettingsForm(instance=instance)
+
+    return render(request, 'portal/parametres/settings_texts.html', {
+        'form': form,
+        'site_obj': instance,
+    })
+
+
+@require_permission(Actions.SITE_SETTINGS_MANAGE)
+def site_settings_windows_view(request):
+    """Sous-page Paramètres : fenêtres temporelles (correction, suppression, alerte)."""
+    instance = SiteSettings.get_solo()
+    if request.method == 'POST':
+        old_snapshot = {f: getattr(instance, f) for f in SiteSettingsWindowsForm.Meta.fields}
+        form = SiteSettingsWindowsForm(request.POST, instance=instance)
+        if form.is_valid():
+            saved = form.save()
+            _audit_settings_diff(old_snapshot, saved, SiteSettingsWindowsForm.Meta.fields, request.user)
+            messages.success(request, "Les fenêtres de temps ont été mises à jour.")
+            return redirect('terminal:site_settings_windows')
+        messages.error(request, "Veuillez corriger les valeurs indiquées.")
+    else:
+        form = SiteSettingsWindowsForm(instance=instance)
+
+    return render(request, 'portal/parametres/settings_windows.html', {
+        'form': form,
+        'site_obj': instance,
+    })
+
+
+@require_permission(Actions.SITE_SETTINGS_MANAGE)
+def site_settings_carousel_view(request):
+    """Sous-page Paramètres : configuration et diapositives du carrousel d'accueil."""
+    instance = SiteSettings.get_solo()
+    if request.method == 'POST':
+        old_snapshot = {f: getattr(instance, f) for f in SiteSettingsCarouselConfigForm.Meta.fields}
+        config_form = SiteSettingsCarouselConfigForm(request.POST, instance=instance)
+        if config_form.is_valid():
+            saved = config_form.save()
+            _audit_settings_diff(old_snapshot, saved, SiteSettingsCarouselConfigForm.Meta.fields, request.user)
+            messages.success(request, "La configuration du carrousel a été mise à jour.")
+            return redirect('terminal:site_settings_carousel')
+    else:
+        config_form = SiteSettingsCarouselConfigForm(instance=instance)
+
+    slides = list(HeroSlide.objects.all())
+    return render(request, 'portal/parametres/settings_carousel.html', {
+        'config_form': config_form,
+        'slides': slides,
+        'active_slides_count': sum(1 for s in slides if s.is_active),
+        'slide_form': HeroSlideForm(initial={'display_order': len(slides) + 1}),
+    })
+
+
+@require_permission(Actions.MOTIF_MANAGE)
+def site_settings_motifs_view(request):
+    """Sous-page Paramètres : gestion des motifs d'indisponibilité et de non-vérification."""
+    return render(request, 'portal/parametres/settings_motifs.html', {
+        'motifs_unavailable': list(Motif.objects.filter(type=Motif.Type.UNAVAILABLE)),
+        'motifs_not_verified': list(Motif.objects.filter(type=Motif.Type.NOT_VERIFIED)),
+        'motif_types': Motif.Type.choices,
     })
 
 

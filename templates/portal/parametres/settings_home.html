@@ -1,0 +1,85 @@
+{% extends 'portal/base_portal.html' %}
+{% load permissions_tags %}
+
+{% block title %}Paramètres du site — Cap Terminal S.A.{% endblock %}
+{% block page_title %}Paramètres du site{% endblock %}
+
+{% block portal_content %}
+<div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-5 space-y-6">
+
+  {% include 'components/page_header.html' with title="Paramètres du site" subtitle="Configuration du portail public, des fenêtres temporelles, du carrousel et des motifs." %}
+
+  <!-- 4 cartes vers les sous-pages dédiées -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+    <a href="{% url 'terminal:site_settings_texts' %}"
+       class="block bg-surface rounded-xl border border-border shadow-xs p-5 no-underline hover:border-primary space-y-2">
+      <div class="flex items-center justify-between gap-2">
+        <h2 class="text-base font-heading font-bold text-text m-0">Textes &amp; coordonnées</h2>
+        <span class="text-xs font-semibold text-primary">Ouvrir →</span>
+      </div>
+      <p class="text-sm text-text-muted m-0">
+        Identité, adresse, téléphone, courriel et textes publics en français et en kreyòl.
+      </p>
+    </a>
+
+    <a href="{% url 'terminal:site_settings_windows' %}"
+       class="block bg-surface rounded-xl border border-border shadow-xs p-5 no-underline hover:border-primary space-y-2">
+      <div class="flex items-center justify-between gap-2">
+        <h2 class="text-base font-heading font-bold text-text m-0">Fenêtres de temps</h2>
+        <span class="text-xs font-semibold text-primary">Ouvrir →</span>
+      </div>
+      <p class="text-sm text-text-muted m-0 tabular-nums">
+        Correction : {{ site_obj.correction_window_minutes }} min · Suppression : {{ site_obj.delete_window_hours }} h · Alerte sans liste : {{ site_obj.unscheduled_alert_days }} j.
+      </p>
+    </a>
+
+    <a href="{% url 'terminal:site_settings_carousel' %}"
+       class="block bg-surface rounded-xl border border-border shadow-xs p-5 no-underline hover:border-primary space-y-2">
+      <div class="flex items-center justify-between gap-2">
+        <h2 class="text-base font-heading font-bold text-text m-0">Carrousel d'accueil</h2>
+        <span class="text-xs font-semibold text-primary">Ouvrir →</span>
+      </div>
+      <p class="text-sm text-text-muted m-0 tabular-nums">
+        {{ active_slides_count }} diapositive{{ active_slides_count|pluralize }} active{{ active_slides_count|pluralize }} sur {{ slides|length }} (limite : {{ site_obj.hero_carousel_limit }}).
+      </p>
+    </a>
+
+    {% can 'motif.manage' as can_motifs %}
+    {% if can_motifs %}
+      <a href="{% url 'terminal:site_settings_motifs' %}"
+         class="block bg-surface rounded-xl border border-border shadow-xs p-5 no-underline hover:border-primary space-y-2">
+        <div class="flex items-center justify-between gap-2">
+          <h2 class="text-base font-heading font-bold text-text m-0">Motifs prédéfinis</h2>
+          <span class="text-xs font-semibold text-primary">Ouvrir →</span>
+        </div>
+        <p class="text-sm text-text-muted m-0 tabular-nums">
+          {{ motifs_unavailable|length }} motif{{ motifs_unavailable|length|pluralize }} d'indisponibilité · {{ motifs_not_verified|length }} motif{{ motifs_not_verified|length|pluralize }} de non-vérification.
+        </p>
+      </a>
+    {% endif %}
+  </div>
+
+  <!-- Journal des dernières modifications de paramètres -->
+  {% if settings_logs %}
+    <section aria-labelledby="settings-audit-title" class="bg-surface rounded-xl border border-border shadow-xs overflow-hidden">
+      <div class="px-4 sm:px-5 py-3.5 border-b border-border">
+        <h2 id="settings-audit-title" class="text-base font-heading font-bold text-text m-0">Dernières modifications</h2>
+      </div>
+      <ul class="list-none m-0 p-0 divide-y divide-border">
+        {% for entry in settings_logs %}
+          <li class="px-4 sm:px-5 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 text-sm">
+            <div class="min-w-0">
+              <strong class="font-mono text-xs text-text">{{ entry.target_label }}</strong>
+              <span class="text-xs text-text-muted ml-2">{{ entry.new_value|truncatechars:80 }}</span>
+            </div>
+            <span class="text-xs text-text-muted tabular-nums shrink-0">
+              {{ entry.changed_at|date:"d/m/Y H:i" }}{% if entry.changed_by %} · {{ entry.changed_by.display_name }}{% endif %}
+            </span>
+          </li>
+        {% endfor %}
+      </ul>
+    </section>
+  {% endif %}
+
+</div>
+{% endblock %}

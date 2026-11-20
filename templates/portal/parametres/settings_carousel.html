@@ -1,0 +1,105 @@
+{% extends 'portal/base_portal.html' %}
+
+{% block title %}Carrousel d'accueil — Paramètres · Cap Terminal S.A.{% endblock %}
+{% block page_title %}Carrousel d'accueil{% endblock %}
+
+{% block portal_content %}
+<div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-5 space-y-6">
+
+  {% url 'terminal:site_settings' as settings_home_url %}
+  {% include 'components/page_header.html' with back_url=settings_home_url back_label="Retour aux paramètres" title="Carrousel d'accueil" subtitle="Activation et gestion des diapositives affichées sur la page d'accueil." count=slides|length %}
+
+  <!-- Configuration générale -->
+  <section class="bg-surface rounded-xl border border-border shadow-xs p-4 sm:p-6 space-y-4">
+    <h2 class="text-base font-heading font-bold text-text m-0">Réglages d'affichage</h2>
+    <form method="post" action="{% url 'terminal:site_settings_carousel' %}" class="space-y-4">
+      {% csrf_token %}
+      <label class="flex items-center gap-3 p-3 rounded-lg bg-ctsa-surface border border-border min-h-[44px] cursor-pointer">
+        {{ config_form.hero_carousel_enabled }}
+        <span class="text-sm font-semibold text-text">Activer le carrousel sur la page d'accueil</span>
+      </label>
+      <div class="max-w-xs space-y-1.5">
+        <label for="{{ config_form.hero_carousel_limit.id_for_label }}" class="block text-sm font-semibold text-text">Nombre maximal d'images affichées</label>
+        {{ config_form.hero_carousel_limit }}
+      </div>
+      <button type="submit" data-submit-guard class="ui-btn ui-btn-primary">Enregistrer les réglages</button>
+    </form>
+  </section>
+
+  <!-- Ajouter une diapositive (action secondaire) -->
+  <section class="bg-surface rounded-xl border border-border shadow-xs p-4 sm:p-6 space-y-4">
+    <h2 class="text-base font-heading font-bold text-text m-0">Ajouter une diapositive</h2>
+    <form method="post" action="{% url 'terminal:hero_slide_create' %}" enctype="multipart/form-data" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      {% csrf_token %}
+      <div class="space-y-1.5 sm:col-span-2">
+        <label for="{{ slide_form.image.id_for_label }}" class="block text-sm font-semibold text-text">Image</label>
+        {{ slide_form.image }}
+      </div>
+      <div class="space-y-1.5">
+        <label for="{{ slide_form.title.id_for_label }}" class="block text-sm font-semibold text-text">Titre / Légende</label>
+        {{ slide_form.title }}
+      </div>
+      <div class="space-y-1.5">
+        <label for="{{ slide_form.display_order.id_for_label }}" class="block text-sm font-semibold text-text">Ordre</label>
+        {{ slide_form.display_order }}
+      </div>
+      <div class="sm:col-span-2 flex items-center justify-between gap-3 flex-wrap">
+        <label class="inline-flex items-center gap-2 text-sm font-semibold text-text cursor-pointer min-h-[44px]">
+          {{ slide_form.is_active }}
+          <span>Active immédiatement</span>
+        </label>
+        <button type="submit" data-submit-guard class="ui-btn ui-btn-secondary">Ajouter la diapositive</button>
+      </div>
+    </form>
+  </section>
+
+  <!-- Liste des diapositives -->
+  <section class="bg-surface rounded-xl border border-border shadow-xs overflow-hidden">
+    <div class="px-4 sm:px-5 py-3.5 border-b border-border">
+      <h2 class="text-base font-heading font-bold text-text m-0">Diapositives enregistrées ({{ slides|length }})</h2>
+    </div>
+    {% if slides %}
+      <ul class="list-none m-0 p-0 divide-y divide-border">
+        {% for slide in slides %}
+          <li class="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div class="flex items-center gap-3 min-w-0">
+              {% if slide.image %}
+                <img src="{{ slide.image.url }}" alt="{{ slide.title }}" class="w-16 h-12 rounded object-cover border border-border shrink-0">
+              {% endif %}
+              <div class="min-w-0">
+                <div class="text-sm font-bold text-text truncate">{{ slide.title|default:"Sans titre" }}</div>
+                <div class="text-xs text-text-muted tabular-nums">Ordre {{ slide.display_order }}</div>
+              </div>
+            </div>
+            <div class="flex items-center gap-2 shrink-0">
+              {% if slide.is_active %}
+                {% include 'components/badge.html' with variant='active' label='Active' %}
+              {% else %}
+                {% include 'components/badge.html' with variant='inactive' label='Inactive' %}
+              {% endif %}
+              <form method="post" action="{% url 'terminal:hero_slide_toggle' slide.pk %}">
+                {% csrf_token %}
+                <button type="submit" class="ui-btn ui-btn-secondary ui-btn-sm">
+                  {% if slide.is_active %}Désactiver{% else %}Activer{% endif %}
+                </button>
+              </form>
+              <button type="button"
+                      class="ui-btn ui-btn-ghost ui-btn-sm text-status-unavailable-fg"
+                      data-confirm-modal
+                      data-confirm-action="{% url 'terminal:hero_slide_delete' slide.pk %}"
+                      data-confirm-title="Supprimer cette diapositive ?"
+                      data-confirm-message="Cette image sera retirée du carrousel."
+                      data-confirm-label="Supprimer">
+                Supprimer
+              </button>
+            </div>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="p-5 text-sm text-text-muted m-0">Aucune diapositive enregistrée.</p>
+    {% endif %}
+  </section>
+
+</div>
+{% endblock %}

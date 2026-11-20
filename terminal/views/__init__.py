@@ -57,7 +57,11 @@ from .settings import (
     motif_create_view,
     motif_toggle_view,
     motif_update_view,
+    site_settings_carousel_view,
+    site_settings_motifs_view,
+    site_settings_texts_view,
     site_settings_view,
+    site_settings_windows_view,
 )
 from .shipping_lines import (
     shipping_line_create_view,

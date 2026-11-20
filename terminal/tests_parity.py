@@ -46,6 +46,10 @@ PARITY_INVENTORY = frozenset({
     'terminal:shipping_line_delete',
     # Paramètres du site, carrousel & motifs
     'terminal:site_settings',
+    'terminal:site_settings_texts',
+    'terminal:site_settings_windows',
+    'terminal:site_settings_carousel',
+    'terminal:site_settings_motifs',
     'terminal:hero_slide_create',
     'terminal:hero_slide_toggle',
     'terminal:hero_slide_delete',
