@@ -1,9 +1,10 @@
 {% load static %}
-const CACHE_NAME = 'ctsa-rampe-v2';
+const CACHE_NAME = 'ctsa-rampe-v3';
 const STATIC_ASSETS = [
   "{% static 'css/output.css' %}",
   "{% static 'css/ctsa.css' %}",
   "{% static 'js/ctsa.js' %}",
+  "{% static 'fonts/fira-sans-400.woff2' %}",
   "{% static 'img/cap-terminal-logo.png' %}",
   "{% static 'img/icon-192.png' %}",
   "{% static 'img/icon-512.png' %}",
