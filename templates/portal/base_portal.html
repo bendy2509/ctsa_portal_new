@@ -1,289 +1,240 @@
-{% extends 'base.html' %}
-{% load permissions_tags %}
+{% load static permissions_tags %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Exploitation RAMPE — Cap Terminal S.A.{% endblock %}</title>
+  <link rel="manifest" href="{% url 'terminal:pwa_manifest' %}">
+  <meta name="theme-color" content="#1e293b">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="CTSA RAMPE">
+  <link rel="icon" type="image/png" href="{% static 'img/cap-terminal-logo.png' %}">
+  <link rel="apple-touch-icon" href="{% static 'img/icon-192.png' %}">
+  <link rel="stylesheet" href="{% static 'css/ctsa.css' %}">
+  <link rel="stylesheet" href="{% static 'css/output.css' %}">
+</head>
+<body class="min-h-screen flex flex-col bg-ctsa-surface text-text portal-body {% block portal_body_extra %}{% endblock %}">
+  <a href="#portal-main-content" class="skip-link">Aller au contenu principal</a>
 
-{% block body_class %}portal-body bg-[#f8fafc] {% block portal_body_extra %}{% endblock %}{% endblock %}
+  {% with current=request.resolver_match.url_name %}
+  <div class="portal">
 
-{# L'administration a sa propre coque : pas d'en-tête ni de pied de page du site public. #}
-{% block chrome_top %}{% endblock %}
-{% block chrome_bottom %}{% endblock %}
-
-{% block main %}
-{% with current=request.resolver_match.url_name %}
-<div class="portal">
-
-  <!-- Sidebar : navigation directe pour le quotidien + sous-menus pour les outils secondaires -->
-  <div id="portal-nav-backdrop" class="portal-backdrop" hidden></div>
-  <aside id="portal-nav" class="portal-sidebar" aria-label="Navigation de l'exploitation">
-    <div class="portal-brand">
-      <a href="{% url 'terminal:dashboard' %}" class="flex items-center gap-3 text-white no-underline min-w-0">
-        <span class="portal-brand-mark" aria-hidden="true">CTSA</span>
-        <span class="portal-brand-text">
-          <strong>Exploitation RAMPE</strong>
-          <span>Cap Terminal S.A.</span>
-        </span>
-      </a>
-      <button type="button" id="portal-nav-close" class="portal-sidebar-close" aria-label="Fermer le menu">
-        <svg class="portal-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
-      </button>
-    </div>
-
-    <nav class="portal-nav">
-      <div class="portal-nav-group">
-        <div class="portal-nav-title">Opérations</div>
-
-        <a href="{% url 'terminal:dashboard' %}"
-           {% if current == 'dashboard' %}aria-current="page"{% endif %}
-           class="portal-nav-link">
-          <!-- Lucide: layout-dashboard -->
-          <svg class="portal-icon" viewBox="0 0 24 24" aria-hidden="true"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>
-          <span>Tableau de bord</span>
+    <!-- Voile et barre latérale (tiroir < 1024px, fixe >= 1024px) -->
+    <div id="portal-nav-backdrop" class="portal-backdrop" hidden></div>
+    <aside id="portal-nav" class="portal-sidebar" aria-label="Navigation de l'exploitation">
+      <div class="portal-brand">
+        <a href="{% url 'terminal:dashboard' %}" class="flex items-center gap-3 text-white no-underline min-w-0">
+          <span class="portal-brand-mark" aria-hidden="true">CTSA</span>
+          <span class="portal-brand-text">
+            <strong>Exploitation RAMPE</strong>
+            <span>Cap Terminal S.A.</span>
+          </span>
         </a>
-
-        <a href="{% url 'terminal:containers' %}"
-           {% if current == 'containers' %}aria-current="page"{% endif %}
-           class="portal-nav-link">
-          <!-- Lucide: list -->
-          <svg class="portal-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 6h13"/><path d="M8 12h13"/><path d="M8 18h13"/><path d="M3 6h.01"/><path d="M3 12h.01"/><path d="M3 18h.01"/></svg>
-          <span>Conteneurs du jour</span>
-        </a>
-
-        {% can 'container.arrival_create' as can_arrival %}
-        {% if can_arrival %}
-          <a href="{% url 'terminal:arrival_create' %}"
-             {% if current == 'arrival_create' %}aria-current="page"{% endif %}
-             class="portal-nav-link">
-            <!-- Lucide: package-plus -->
-            <svg class="portal-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M16 16h6"/><path d="M19 13v6"/><path d="M21 10V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l2-1.14"/><path d="m7.5 4.27 9 5.15"/><polyline points="3.29 7 12 12 20.71 7"/><line x1="12" x2="12" y1="22" y2="12"/></svg>
-            <span>Enregistrer une arrivée</span>
-          </a>
-        {% endif %}
-
-        {% can 'container.prepare' as can_prepare %}
-        {% if can_prepare %}
-          <a href="{% url 'terminal:prepare' %}"
-             {% if current == 'prepare' %}aria-current="page"{% endif %}
-             class="portal-nav-link">
-            <!-- Lucide: plus-square -->
-            <svg class="portal-icon" viewBox="0 0 24 24" aria-hidden="true"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M8 12h8"/><path d="M12 8v8"/></svg>
-            <span>Préparer une liste</span>
-          </a>
-        {% endif %}
-
-        <a href="{% url 'terminal:inspection' %}"
-           {% if current == 'inspection' or current == 'carryover' %}aria-current="page"{% endif %}
-           class="portal-nav-link">
-          <!-- Lucide: clipboard-check -->
-          <svg class="portal-icon" viewBox="0 0 24 24" aria-hidden="true"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="m9 14 2 2 4-4"/></svg>
-          <span>Inspection</span>
-        </a>
-
+        <button type="button" id="portal-nav-close" class="portal-sidebar-close min-h-[44px] min-w-[44px]" aria-label="Fermer le menu">
+          <svg class="portal-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+        </button>
       </div>
 
-      {% can 'report.view' as can_reports %}
-      {% can 'shipping_line.manage' as can_shipping %}
-      {% can 'user.manage' as can_users %}
-      {% can 'site_settings.manage' as can_settings %}
+      <nav class="portal-nav" aria-label="Menu principal d'exploitation">
+        <div class="portal-nav-group">
+          <div class="portal-nav-title">Opérations</div>
 
-      {% if can_reports or can_shipping or can_users or can_settings %}
-      <!-- Sous-menu 1 : Rapports & Historique -->
-      <div class="portal-nav-group">
-        <div class="portal-nav-title">Gestion &amp; Suivi</div>
-        {% if can_reports %}
-        <details class="portal-submenu" {% if current == 'statistics' or current == 'register' or current == 'status_logs' %}open{% endif %}>
-          <summary class="portal-submenu-trigger {% if current == 'statistics' or current == 'register' or current == 'status_logs' %}text-white bg-white/8{% endif %}">
-            <!-- Lucide: bar-chart-3 -->
-            <svg class="portal-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg>
-            <span>Rapports & Historique</span>
-            <!-- Lucide: chevron-right -->
-            <svg class="portal-icon portal-submenu-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
-          </summary>
-          <div class="portal-submenu-list">
-            <a href="{% url 'terminal:statistics' %}"
-               {% if current == 'statistics' %}aria-current="page"{% endif %}
-               class="portal-sublink {% if current == 'statistics' %}is-active{% endif %}">
-              <span>Statistiques</span>
+          {% can 'portal.dashboard' as can_dash %}
+          {% if can_dash %}
+            <a href="{% url 'terminal:dashboard' %}"
+               {% if current == 'dashboard' %}aria-current="page"{% endif %}
+               class="portal-nav-link">
+              <svg class="portal-icon" viewBox="0 0 24 24" aria-hidden="true"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>
+              <span>Tableau de bord</span>
             </a>
-            <a href="{% url 'terminal:register' %}"
-               {% if current == 'register' %}aria-current="page"{% endif %}
-               class="portal-sublink {% if current == 'register' %}is-active{% endif %}">
-              <span>Registre des vérifications</span>
+          {% endif %}
+
+          {% can 'container.list' as can_list %}
+          {% if can_list %}
+            <a href="{% url 'terminal:containers' %}"
+               {% if current == 'containers' or current == 'container_detail' or current == 'container_edit' %}aria-current="page"{% endif %}
+               class="portal-nav-link">
+              <svg class="portal-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 6h13"/><path d="M8 12h13"/><path d="M8 18h13"/><path d="M3 6h.01"/><path d="M3 12h.01"/><path d="M3 18h.01"/></svg>
+              <span>Conteneurs du jour</span>
             </a>
-            <a href="{% url 'terminal:status_logs' %}"
-               {% if current == 'status_logs' %}aria-current="page"{% endif %}
-               class="portal-sublink {% if current == 'status_logs' %}is-active{% endif %}">
-              <span>Historique des statuts</span>
+          {% endif %}
+
+          {% can 'container.arrival_create' as can_arrival %}
+          {% if can_arrival %}
+            <a href="{% url 'terminal:arrival_create' %}"
+               {% if current == 'arrival_create' %}aria-current="page"{% endif %}
+               class="portal-nav-link">
+              <svg class="portal-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M16 16h6"/><path d="M19 13v6"/><path d="M21 10V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l2-1.14"/><path d="m7.5 4.27 9 5.15"/><polyline points="3.29 7 12 12 20.71 7"/><line x1="12" x2="12" y1="22" y2="12"/></svg>
+              <span>Enregistrer une arrivée</span>
             </a>
+          {% endif %}
+
+          {% can 'container.prepare' as can_prepare %}
+          {% if can_prepare %}
+            <a href="{% url 'terminal:prepare' %}"
+               {% if current == 'prepare' %}aria-current="page"{% endif %}
+               class="portal-nav-link">
+              <svg class="portal-icon" viewBox="0 0 24 24" aria-hidden="true"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M8 12h8"/><path d="M12 8v8"/></svg>
+              <span>Préparer une liste</span>
+            </a>
+          {% endif %}
+
+          {% can 'container.verify' as can_verify %}
+          {% if can_verify %}
+            <a href="{% url 'terminal:inspection' %}"
+               {% if current == 'inspection' or current == 'carryover' %}aria-current="page"{% endif %}
+               class="portal-nav-link">
+              <svg class="portal-icon" viewBox="0 0 24 24" aria-hidden="true"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="m9 14 2 2 4-4"/></svg>
+              <span>Inspection</span>
+            </a>
+          {% endif %}
+        </div>
+
+        {% can 'report.view' as can_reports %}
+        {% can 'shipping_line.manage' as can_shipping %}
+        {% can 'user.manage' as can_users %}
+        {% can 'site_settings.manage' as can_settings %}
+
+        {% if can_reports or can_shipping or can_users or can_settings %}
+        <div class="portal-nav-group">
+          <div class="portal-nav-title">Gestion &amp; Suivi</div>
+
+          {% if can_reports %}
+            <details class="portal-submenu" {% if current == 'statistics' or current == 'register' or current == 'status_logs' %}open{% endif %}>
+              <summary class="portal-submenu-trigger {% if current == 'statistics' or current == 'register' or current == 'status_logs' %}text-white bg-white/8{% endif %}">
+                <svg class="portal-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg>
+                <span>Rapports &amp; Historique</span>
+                <svg class="portal-icon portal-submenu-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
+              </summary>
+              <div class="portal-submenu-list">
+                <a href="{% url 'terminal:statistics' %}"
+                   {% if current == 'statistics' %}aria-current="page"{% endif %}
+                   class="portal-sublink {% if current == 'statistics' %}is-active{% endif %}">
+                  <span>Statistiques</span>
+                </a>
+                <a href="{% url 'terminal:register' %}"
+                   {% if current == 'register' %}aria-current="page"{% endif %}
+                   class="portal-sublink {% if current == 'register' %}is-active{% endif %}">
+                  <span>Registre des vérifications</span>
+                </a>
+                <a href="{% url 'terminal:status_logs' %}"
+                   {% if current == 'status_logs' %}aria-current="page"{% endif %}
+                   class="portal-sublink {% if current == 'status_logs' %}is-active{% endif %}">
+                  <span>Historique des statuts</span>
+                </a>
+              </div>
+            </details>
+          {% endif %}
+
+          {% if can_shipping or can_users or can_settings %}
+            <details class="portal-submenu" {% if current == 'shipping_lines' or current == 'shipping_line_create' or current == 'shipping_line_edit' or current == 'user_list' or current == 'user_create' or current == 'user_edit' or current == 'site_settings' %}open{% endif %}>
+              <summary class="portal-submenu-trigger {% if current == 'shipping_lines' or current == 'shipping_line_create' or current == 'shipping_line_edit' or current == 'user_list' or current == 'user_create' or current == 'user_edit' or current == 'site_settings' %}text-white bg-white/8{% endif %}">
+                <svg class="portal-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+                <span>Paramètres</span>
+                <svg class="portal-icon portal-submenu-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
+              </summary>
+              <div class="portal-submenu-list">
+                {% if can_shipping %}
+                  <a href="{% url 'terminal:shipping_lines' %}"
+                     {% if current == 'shipping_lines' or current == 'shipping_line_create' or current == 'shipping_line_edit' %}aria-current="page"{% endif %}
+                     class="portal-sublink {% if current == 'shipping_lines' or current == 'shipping_line_create' or current == 'shipping_line_edit' %}is-active{% endif %}">
+                    <span>Lignes maritimes</span>
+                  </a>
+                {% endif %}
+                {% if can_users %}
+                  <a href="{% url 'accounts:user_list' %}"
+                     {% if current == 'user_list' or current == 'user_create' or current == 'user_edit' %}aria-current="page"{% endif %}
+                     class="portal-sublink {% if current == 'user_list' or current == 'user_create' or current == 'user_edit' %}is-active{% endif %}">
+                    <span>Utilisateurs</span>
+                  </a>
+                {% endif %}
+                {% if can_settings %}
+                  <a href="{% url 'terminal:site_settings' %}"
+                     {% if current == 'site_settings' %}aria-current="page"{% endif %}
+                     class="portal-sublink {% if current == 'site_settings' %}is-active{% endif %}">
+                    <span>Paramètres du site</span>
+                  </a>
+                {% endif %}
+              </div>
+            </details>
+          {% endif %}
+        </div>
+        {% endif %}
+      </nav>
+
+      <div class="portal-sidebar-foot space-y-1">
+        <div class="portal-user-card">
+          <span class="portal-user-avatar" aria-hidden="true">{{ user.display_name|slice:":1"|upper }}</span>
+          <div class="min-w-0 flex-1">
+            <div class="text-[13px] font-bold text-white truncate leading-tight">{{ user.display_name }}</div>
+            <div class="text-[11px] text-slate-300 truncate mt-0.5">{{ user.get_role_display }}</div>
           </div>
-        </details>
-        {% endif %}
+        </div>
 
-        {% if can_shipping or can_users or can_settings %}
-          <!-- Sous-menu 2 : Paramètres -->
-          <details class="portal-submenu" {% if current == 'shipping_lines' or current == 'shipping_line_create' or current == 'shipping_line_edit' or current == 'user_list' or current == 'user_create' or current == 'user_edit' or current == 'site_settings' %}open{% endif %}>
-            <summary class="portal-submenu-trigger {% if current == 'shipping_lines' or current == 'shipping_line_create' or current == 'shipping_line_edit' or current == 'user_list' or current == 'user_create' or current == 'user_edit' or current == 'site_settings' %}text-white bg-white/8{% endif %}">
-              <!-- Lucide: settings -->
-              <svg class="portal-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
-              <span>Paramètres</span>
-              <svg class="portal-icon portal-submenu-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
-            </summary>
-            <div class="portal-submenu-list">
-              {% if can_shipping %}
-              <a href="{% url 'terminal:shipping_lines' %}"
-                 {% if current == 'shipping_lines' or current == 'shipping_line_create' or current == 'shipping_line_edit' %}aria-current="page"{% endif %}
-                 class="portal-sublink {% if current == 'shipping_lines' or current == 'shipping_line_create' or current == 'shipping_line_edit' %}is-active{% endif %}">
-                <span>Lignes maritimes</span>
-              </a>
-              {% endif %}
-              {% if can_users %}
-              <a href="{% url 'accounts:user_list' %}"
-                 {% if current == 'user_list' or current == 'user_create' or current == 'user_edit' %}aria-current="page"{% endif %}
-                 class="portal-sublink {% if current == 'user_list' or current == 'user_create' or current == 'user_edit' %}is-active{% endif %}">
-                <span>Utilisateurs</span>
-              </a>
-              {% endif %}
-              {% if can_settings %}
-              <a href="{% url 'terminal:site_settings' %}"
-                 {% if current == 'site_settings' %}aria-current="page"{% endif %}
-                 class="portal-sublink {% if current == 'site_settings' %}is-active{% endif %}">
-                <span>Textes &amp; Coordonnées</span>
-              </a>
-              {% endif %}
-            </div>
-          </details>
-        {% endif %}
+        <a href="{% url 'accounts:profile' %}"
+           {% if current == 'profile' %}aria-current="page"{% endif %}
+           class="portal-nav-link">
+          <svg class="portal-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          <span>Mon profil</span>
+        </a>
+
+        <a href="{% url 'terminal:home' %}" class="portal-nav-link">
+          <svg class="portal-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>
+          <span>Portail public</span>
+        </a>
+
+        <form action="{% url 'accounts:logout' %}" method="post">
+          {% csrf_token %}
+          <button type="submit" class="portal-nav-link portal-nav-link-logout w-full text-left border-0 bg-transparent cursor-pointer">
+            <svg class="portal-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>
+            <span>Déconnexion</span>
+          </button>
+        </form>
       </div>
+    </aside>
+
+    <div class="portal-frame bg-ctsa-surface">
+      <header class="portal-topbar bg-surface border-border">
+        <div class="flex items-center gap-2.5 min-w-0">
+          <button type="button"
+                  id="portal-nav-toggle"
+                  aria-expanded="false"
+                  aria-controls="portal-nav"
+                  aria-label="Ouvrir le menu"
+                  class="portal-menu-btn shrink-0 min-h-[44px]">
+            <svg class="portal-icon" viewBox="0 0 24 24" aria-hidden="true"><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="18" y2="18"/></svg>
+            <span>Menu</span>
+          </button>
+
+          <span class="lg:hidden text-sm font-heading font-bold text-text truncate">
+            {% block page_title %}Exploitation RAMPE{% endblock %}
+          </span>
+        </div>
+
+        <div class="portal-topbar-date ml-auto tabular-nums">
+          {% now "d/m/Y" %}
+        </div>
+      </header>
+
+      {% if messages %}
+        <div class="portal-messages" role="status" aria-live="polite">
+          {% include 'components/messages.html' %}
+        </div>
       {% endif %}
-    </nav>
 
-    <div class="portal-sidebar-foot space-y-1">
-      <div class="portal-user-card">
-        <span class="portal-user-avatar" aria-hidden="true">{{ user.display_name|slice:":1"|upper }}</span>
-        <div class="min-w-0 flex-1">
-          <div class="text-[13px] font-bold text-white truncate leading-tight">{{ user.display_name }}</div>
-          <div class="text-[11px] text-slate-300/85 truncate mt-0.5">{{ user.get_role_display }}</div>
-        </div>
-      </div>
+      <main id="portal-main-content" class="portal-main" tabindex="-1">
+        {% block portal_content %}{% endblock %}
+      </main>
 
-      <a href="{% url 'accounts:profile' %}"
-         {% if current == 'profile' %}aria-current="page"{% endif %}
-         class="portal-nav-link">
-        <svg class="portal-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-        <span>Mon profil</span>
-      </a>
-
-      <a href="{% url 'terminal:home' %}" class="portal-nav-link">
-        <!-- Lucide: external-link -->
-        <svg class="portal-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>
-        <span>Portail public</span>
-      </a>
-
-      <form action="{% url 'accounts:logout' %}" method="post">
-        {% csrf_token %}
-        <button type="submit" class="portal-nav-link portal-nav-link-logout w-full text-left border-0 bg-transparent cursor-pointer">
-          <svg class="portal-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>
-          <span>Déconnexion</span>
-        </button>
-      </form>
+      {% include 'components/bottom_nav.html' %}
+      {% include 'components/confirm_modal.html' %}
+      {% include 'components/bottom_sheet.html' %}
     </div>
-  </aside>
-
-  <div class="portal-frame bg-[#f8fafc]">
-    <header class="portal-topbar bg-white/95 backdrop-blur-xs border-slate-200/80">
-      <div class="flex items-center gap-2.5 min-w-0">
-        <button type="button"
-                id="portal-nav-toggle"
-                aria-expanded="false"
-                aria-controls="portal-nav"
-                aria-label="Ouvrir le menu"
-                class="portal-menu-btn shrink-0">
-          <!-- Lucide: menu -->
-          <svg class="portal-icon" viewBox="0 0 24 24" aria-hidden="true"><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="18" y2="18"/></svg>
-          <span>Menu</span>
-        </button>
-
-        <span class="lg:hidden text-sm font-heading font-extrabold text-[#2c3741] truncate">
-          {% if current == 'dashboard' %}Tableau de bord
-          {% elif current == 'containers' or current == 'container_detail' or current == 'container_edit' %}Conteneurs
-          {% elif current == 'prepare' %}Préparer
-          {% elif current == 'inspection' %}Inspection
-          {% elif current == 'carryover' %}Non vérifiés
-          {% elif current == 'statistics' %}Statistiques
-          {% elif current == 'register' %}Registre
-          {% elif current == 'status_logs' %}Historique
-          {% elif current == 'shipping_lines' or current == 'shipping_line_create' or current == 'shipping_line_edit' %}Lignes maritimes
-          {% elif current == 'user_list' or current == 'user_create' or current == 'user_edit' or current == 'user_detail' %}Utilisateurs
-          {% elif current == 'profile' %}Mon profil
-          {% else %}Exploitation RAMPE{% endif %}
-        </span>
-      </div>
-
-      <div class="portal-topbar-date">
-        {% now "l j F Y" as today_label %}{{ today_label|capfirst }}
-      </div>
-    </header>
-
-    {% if messages %}
-      <div class="portal-messages" role="status" aria-live="polite">
-        {% include 'components/messages.html' %}
-      </div>
-    {% endif %}
-
-    <main class="portal-main">
-      {% block portal_content %}{% endblock %}
-    </main>
-
-    {% include 'components/bottom_nav.html' %}
-    {% include 'components/confirm_modal.html' %}
-
-    <!-- Bottom sheet réutilisable pour la note d'inspection « Non vérifié » -->
-    <dialog id="verification-note-dialog" class="ui-dialog ui-bottom-sheet" closedby="any" aria-labelledby="verification-note-title">
-      <form id="verification-note-form" method="post" action="" class="p-5 sm:p-6 space-y-4">
-        {% csrf_token %}
-        <input type="hidden" name="result" value="not_verified">
-        <input type="hidden" name="next" id="verification-note-next" value="">
-        <input type="hidden" name="version" id="verification-note-version" value="">
-        <div class="space-y-1">
-          <h2 id="verification-note-title" class="text-lg font-heading font-extrabold text-ctsa-slate m-0">
-            Marquer non vérifié
-          </h2>
-          <p id="verification-note-subtitle" class="text-sm font-mono font-bold text-slate-600 m-0"></p>
-        </div>
-        <div class="space-y-1.5">
-          <label for="verification-reason-select" class="block text-sm font-bold text-ctsa-slate">
-            Motif <span class="text-red-600" aria-hidden="true">*</span>
-          </label>
-          <select id="verification-reason-select"
-                  name="verification_reason"
-                  required
-                  class="w-full min-h-[44px] rounded-lg border border-slate-300 px-3.5 py-2 text-sm text-ctsa-slate bg-white focus:outline-none focus:ring-2 focus:ring-ctsa-blue/30 focus:border-ctsa-blue">
-            <option value="">— Choisissez un motif —</option>
-            {% for m in not_verified_motifs %}
-              <option value="{{ m.pk }}" data-requires-note="{% if m.requires_note %}1{% else %}0{% endif %}">{{ m.label }}</option>
-            {% endfor %}
-          </select>
-        </div>
-        <div class="space-y-1.5">
-          <label for="verification-note-input" class="block text-sm font-bold text-ctsa-slate">
-            Précision <span id="verification-note-req" class="text-xs font-normal text-slate-500">(facultatif)</span>
-          </label>
-          <input type="text"
-                 id="verification-note-input"
-                 name="verification_note"
-                 maxlength="255"
-                 placeholder="Ex. scellé absent, file fermée..."
-                 class="w-full min-h-[44px] rounded-lg border border-slate-300 px-3.5 py-2 text-sm text-ctsa-slate bg-white focus:outline-none focus:ring-2 focus:ring-ctsa-blue/30 focus:border-ctsa-blue">
-        </div>
-        <div class="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 pt-2">
-          <button type="button" data-verification-note-cancel class="ui-btn ui-btn-secondary">
-            Annuler
-          </button>
-          <button type="submit" data-submit-guard class="ui-btn ui-btn-primary">
-            Confirmer non vérifié
-          </button>
-        </div>
-      </form>
-    </dialog>
   </div>
-</div>
-{% endwith %}
-{% endblock main %}
+  {% endwith %}
+
+  <script src="{% static 'js/ctsa.js' %}"></script>
+</body>
+</html>

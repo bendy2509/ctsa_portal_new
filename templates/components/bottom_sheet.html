@@ -1,0 +1,171 @@
+{# Composant bottom_sheet : tiroir mobile / modale desktop (focus trap, Échap, retour focus, pied collant clavier mobile, conservation saisie). #}
+
+<!-- 1. Motif d'indisponibilité -->
+<dialog id="unavailable-reason-dialog"
+        class="ui-dialog ui-bottom-sheet"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="unavail-dialog-title">
+  <form id="unavail-dialog-form" method="post" action="" class="ui-sheet-form">
+    {% csrf_token %}
+    <input type="hidden" name="status" value="unavailable">
+    <input type="hidden" name="next" id="unavail-dialog-next" value="">
+    <div id="unavail-dialog-extra-fields"></div>
+
+    <div class="ui-sheet-header">
+      <h2 id="unavail-dialog-title" class="text-lg font-heading font-bold text-text m-0">
+        Motif d'indisponibilité
+      </h2>
+      <p id="unavail-dialog-subtitle" class="text-sm font-mono font-semibold text-text-muted mt-1 mb-0"></p>
+    </div>
+
+    <div class="ui-sheet-body space-y-4">
+      <div class="space-y-1.5">
+        <label for="unavail-dialog-reason" class="block text-sm font-semibold text-text">
+          Motif <span class="text-danger" aria-hidden="true">*</span>
+        </label>
+        <select id="unavail-dialog-reason"
+                name="unavailability_reason"
+                required
+                class="w-full min-h-[44px] rounded-lg border border-border-ui px-3 py-2 text-base text-text bg-surface">
+          <option value="">— Choisissez un motif —</option>
+          {% for m in unavailable_motifs %}
+            <option value="{{ m.pk }}" data-requires-note="{% if m.requires_note %}1{% else %}0{% endif %}">{{ m.label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="space-y-1.5">
+        <label for="unavail-dialog-note" class="block text-sm font-semibold text-text">
+          Précision <span id="unavail-note-req" class="text-xs font-normal text-text-muted">(facultative)</span>
+        </label>
+        <textarea id="unavail-dialog-note"
+                  name="unavailability_note"
+                  rows="2"
+                  maxlength="255"
+                  placeholder="Précisez si nécessaire..."
+                  class="w-full rounded-lg border border-border-ui px-3 py-2 text-base text-text bg-surface"></textarea>
+      </div>
+
+      <p id="unavail-dialog-error" class="text-xs font-semibold text-danger m-0" role="alert" hidden></p>
+    </div>
+
+    <div class="ui-sheet-footer">
+      <button type="button" data-sheet-cancel class="ui-btn ui-btn-secondary">
+        Annuler
+      </button>
+      <button type="submit" data-submit-guard class="ui-btn ui-btn-danger">
+        Enregistrer l'indisponibilité
+      </button>
+    </div>
+  </form>
+</dialog>
+
+<!-- 2. Motif d'inspection « Non vérifié » -->
+<dialog id="verification-note-dialog"
+        class="ui-dialog ui-bottom-sheet"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="verification-note-title">
+  <form id="verification-note-form" method="post" action="" class="ui-sheet-form">
+    {% csrf_token %}
+    <input type="hidden" name="result" value="not_verified">
+    <input type="hidden" name="next" id="verification-note-next" value="">
+    <input type="hidden" name="version" id="verification-note-version" value="">
+
+    <div class="ui-sheet-header">
+      <h2 id="verification-note-title" class="text-lg font-heading font-bold text-text m-0">
+        Marquer non vérifié
+      </h2>
+      <p id="verification-note-subtitle" class="text-sm font-mono font-semibold text-text-muted mt-1 mb-0"></p>
+    </div>
+
+    <div class="ui-sheet-body space-y-4">
+      <div class="space-y-1.5">
+        <label for="verification-reason-select" class="block text-sm font-semibold text-text">
+          Motif <span class="text-danger" aria-hidden="true">*</span>
+        </label>
+        <select id="verification-reason-select"
+                name="verification_reason"
+                required
+                class="w-full min-h-[44px] rounded-lg border border-border-ui px-3 py-2 text-base text-text bg-surface">
+          <option value="">— Choisissez un motif —</option>
+          {% for m in not_verified_motifs %}
+            <option value="{{ m.pk }}" data-requires-note="{% if m.requires_note %}1{% else %}0{% endif %}">{{ m.label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="space-y-1.5">
+        <label for="verification-note-input" class="block text-sm font-semibold text-text">
+          Précision <span id="verification-note-req" class="text-xs font-normal text-text-muted">(facultatif)</span>
+        </label>
+        <input type="text"
+               id="verification-note-input"
+               name="verification_note"
+               maxlength="255"
+               placeholder="Ex. scellé absent, file fermée..."
+               class="w-full min-h-[44px] rounded-lg border border-border-ui px-3 py-2 text-base text-text bg-surface">
+      </div>
+
+      <p id="verification-note-error" class="text-xs font-semibold text-danger m-0" role="alert" hidden></p>
+    </div>
+
+    <div class="ui-sheet-footer">
+      <button type="button" data-sheet-cancel class="ui-btn ui-btn-secondary">
+        Annuler
+      </button>
+      <button type="submit" data-submit-guard class="ui-btn ui-btn-primary">
+        Enregistrer non vérifié
+      </button>
+    </div>
+  </form>
+</dialog>
+
+<!-- 3. Suppression d'un mouvement d'inspection (hors tableau) -->
+<dialog id="delete-movement-dialog"
+        class="ui-dialog ui-bottom-sheet"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="delete-movement-title">
+  <form id="delete-movement-form" method="post" action="" class="ui-sheet-form">
+    {% csrf_token %}
+    <input type="hidden" name="result" value="">
+    <input type="hidden" name="delete_movement" value="1">
+    <input type="hidden" name="next" id="delete-movement-next" value="">
+    <input type="hidden" name="version" id="delete-movement-version" value="">
+
+    <div class="ui-sheet-header">
+      <h2 id="delete-movement-title" class="text-lg font-heading font-bold text-text m-0">
+        Supprimer le mouvement d'inspection
+      </h2>
+      <p id="delete-movement-subtitle" class="text-sm font-mono font-semibold text-text-muted mt-1 mb-0"></p>
+    </div>
+
+    <div class="ui-sheet-body space-y-4">
+      <div class="space-y-1.5">
+        <label for="delete-movement-reason" class="block text-sm font-semibold text-text">
+          Motif d'annulation <span class="text-danger" aria-hidden="true">*</span>
+        </label>
+        <input type="text"
+               id="delete-movement-reason"
+               name="archive_reason"
+               required
+               maxlength="255"
+               placeholder="Indiquez la raison de la suppression..."
+               class="w-full min-h-[44px] rounded-lg border border-border-ui px-3 py-2 text-base text-text bg-surface">
+      </div>
+
+      <p id="delete-movement-error" class="text-xs font-semibold text-danger m-0" role="alert" hidden></p>
+    </div>
+
+    <div class="ui-sheet-footer">
+      <button type="button" data-sheet-cancel class="ui-btn ui-btn-secondary">
+        Annuler
+      </button>
+      <button type="submit" data-submit-guard class="ui-btn ui-btn-danger">
+        Enregistrer la suppression
+      </button>
+    </div>
+  </form>
+</dialog>

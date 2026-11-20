@@ -1,38 +1,87 @@
 /* ==========================================================================
-   CTSA Portal — Charte Graphique Officielle Cap Terminal S.A. (capterminal.com)
-   Palette extraite de https://www.capterminal.com/css/custom.css & theme.css :
-   - Slate Maritime Foncé (Top-bar, Footer, Titres) : #2c3741
-   - Barre secondaire / sous-navigation             : #687077
-   - Bleu Action CTSA (.btn-primary, .bg-secondary-2): #3498db (hover #217dbb)
-   - Vert Logo CTSA (Confirmé / Identité)            : #008751
-   - Rouge Corail CTSA (.bg-primary / Indisponible)  : #e74c3c
-   - Fond de section alterné                         : #f4f4f4
-   - Texte principal / secondaire                    : #333333 / #777777
-   - Bordures                                        : #dadada
+   CTSA Portal — Polices auto-hébergées & Composants (MASTER.md)
    ========================================================================== */
 
+@font-face {
+  font-family: "Fira Sans";
+  src: url("../fonts/fira-sans-400.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Fira Sans";
+  src: url("../fonts/fira-sans-500.woff2") format("woff2");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Fira Sans";
+  src: url("../fonts/fira-sans-600.woff2") format("woff2");
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Fira Sans";
+  src: url("../fonts/fira-sans-700.woff2") format("woff2");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Fira Code";
+  src: url("../fonts/fira-code-400.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Fira Code";
+  src: url("../fonts/fira-code-500.woff2") format("woff2");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Fira Code";
+  src: url("../fonts/fira-code-600.woff2") format("woff2");
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Fira Code";
+  src: url("../fonts/fira-code-700.woff2") format("woff2");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Alias de compatibilité pointant exclusivement vers les jetons @theme (input.css) */
 :root {
-  --ctsa-slate: #2c3741;
-  --ctsa-slate-dark: #232c34;
-  --ctsa-slate-secondary: #2c3e50;
-  --ctsa-subnav: #687077;
-  --ctsa-blue: #3498db;
-  --ctsa-blue-hover: #217dbb;
-  --ctsa-green: #008751;
-  --ctsa-green-bg: #eef8f3;
-  --ctsa-red: #e74c3c;
-  --ctsa-red-bg: #fdf2f1;
-  /* « En attente » : ambre, pour ne pas le confondre avec le bleu des boutons et des liens */
-  --ctsa-pending: #b26a00;
-  --ctsa-pending-text: #8a5300;
-  --ctsa-pending-bg: #fff6e0;
-  --ctsa-pending-border: #f0c36d;
-  --ctsa-info-bg: #eef7fd;
-  --ctsa-bg-alt: #f4f4f4;
-  --ctsa-surface: #ffffff;
-  --ctsa-text: #333333;
-  --ctsa-text-muted: #666666;
-  --ctsa-border: #dadada;
+  --ctsa-slate: var(--color-chrome-dark);
+  --ctsa-slate-dark: var(--color-chrome-darker);
+  --ctsa-slate-secondary: var(--color-chrome-dark);
+  --ctsa-subnav: var(--color-text-muted);
+  --ctsa-blue: var(--color-primary);
+  --ctsa-blue-dark: var(--color-primary-hover);
+  --ctsa-blue-hover: var(--color-primary-hover);
+  --ctsa-green: var(--color-brand-green);
+  --ctsa-green-bg: var(--color-status-confirmed-bg);
+  --ctsa-red: var(--color-status-unavailable-fg);
+  --ctsa-red-bg: var(--color-status-unavailable-bg);
+  --ctsa-pending: var(--color-ctsa-pending);
+  --ctsa-pending-text: var(--color-status-pending-fg);
+  --ctsa-pending-bg: var(--color-status-pending-bg);
+  --ctsa-pending-border: var(--color-status-pending-bd);
+  --ctsa-info-bg: var(--color-status-info-bg);
+  --ctsa-bg-alt: var(--color-ctsa-bgalt);
+  --ctsa-surface: var(--color-surface);
+  --ctsa-text: var(--color-text);
+  --ctsa-text-muted: var(--color-text-muted);
+  --ctsa-border: var(--color-border);
 }
 
 *, *::before, *::after {
@@ -40,19 +89,46 @@
 }
 
 body {
-  font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
-  color: var(--ctsa-text);
-  background-color: #ffffff;
+  color: var(--color-text);
+  background-color: var(--color-surface);
   margin: 0;
-  line-height: 1.6;
+  line-height: 1.5;
 }
 
 h1, h2, h3, h4, h5, h6 {
-  font-family: "Raleway", "Open Sans", Arial, sans-serif;
-  font-weight: 800;
-  color: var(--ctsa-slate);
+  font-family: var(--font-heading);
+  font-weight: 700;
+  color: var(--color-text);
   margin-block-start: 0;
+}
+
+code, kbd, samp, .font-mono {
+  font-family: var(--font-mono);
+  font-variant-ligatures: none;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.skip-link {
+  position: absolute;
+  inset-inline-start: 1rem;
+  inset-block-start: -3.5rem;
+  z-index: 60;
+  padding: 0.65rem 1rem;
+  border-radius: var(--radius-control);
+  background: var(--color-primary);
+  color: var(--color-surface);
+  font-weight: 700;
+  font-size: 0.875rem;
+  text-decoration: none;
+}
+.skip-link:focus {
+  inset-block-start: 0.75rem;
 }
 
 /* Visually hidden utility (keeps element in accessibility tree) */
@@ -586,7 +662,7 @@ input.form-control:user-valid {
 @keyframes confirm-dialog-in {
   from {
     opacity: 0;
-    transform: translateY(8px) scale(0.98);
+    transform: translateY(6px);
   }
 }
 
@@ -772,7 +848,8 @@ html {
   flex-direction: column;
   gap: 0.5rem;
   padding: 1rem 0.75rem max(1rem, env(safe-area-inset-bottom));
-  background: linear-gradient(180deg, #222b35 0%, var(--ctsa-slate) 55%, #202932 100%);
+  background: var(--color-chrome-dark);
+  border-top: 3px solid var(--color-brand-green);
   border-inline-end: 1px solid rgba(255, 255, 255, 0.08);
   color: var(--portal-side-text);
   scrollbar-width: thin;
@@ -843,9 +920,8 @@ html {
 .portal-brand-mark {
   padding: 0.38rem 0.55rem;
   border-radius: 0.45rem;
-  background: linear-gradient(135deg, #2ecc71 0%, var(--ctsa-green) 100%);
-  box-shadow: 0 2px 10px rgba(39, 174, 96, 0.32), inset 0 1px 0 rgba(255, 255, 255, 0.25);
-  font-family: "Raleway", "Open Sans", sans-serif;
+  background: var(--color-brand-green);
+  font-family: var(--font-heading);
   font-size: 0.9rem;
   font-weight: 800;
   letter-spacing: 0.04em;
@@ -915,8 +991,8 @@ html {
 }
 
 .portal-nav-link[aria-current="page"] {
-  background: linear-gradient(90deg, rgba(52, 152, 219, 0.24) 0%, rgba(52, 152, 219, 0.08) 100%);
-  color: #ffffff;
+  background: var(--color-primary);
+  color: var(--color-surface);
   font-weight: 600;
   box-shadow: inset 3px 0 0 var(--ctsa-blue);
 }
@@ -1082,9 +1158,9 @@ html {
   inline-size: 2rem;
   block-size: 2rem;
   border-radius: 999px;
-  background: linear-gradient(135deg, var(--ctsa-blue) 0%, #1d6fa5 100%);
-  color: #ffffff;
-  font-family: "Raleway", "Open Sans", sans-serif;
+  background: var(--color-primary);
+  color: var(--color-surface);
+  font-family: var(--font-heading);
   font-size: 0.8125rem;
   font-weight: 800;
   flex-shrink: 0;
@@ -1839,7 +1915,7 @@ a.kpi-card:hover {
 }
 
 .ui-btn:focus-visible {
-  outline: 2px solid var(--ctsa-blue);
+  outline: 2px solid var(--color-primary);
   outline-offset: 2px;
 }
 
@@ -1852,36 +1928,41 @@ a.kpi-card:hover {
 }
 
 .ui-btn-primary {
-  background-color: var(--ctsa-blue-hover, #217dbb);
-  color: #ffffff;
-  border-color: var(--ctsa-blue-hover, #217dbb);
+  background-color: var(--color-primary);
+  color: var(--color-surface);
+  border-color: var(--color-primary);
 }
-.ui-btn-primary:hover { background-color: #1a6394; border-color: #1a6394; }
-.ui-btn-primary:active { background-color: #15517a; }
+.ui-btn-primary:hover { background-color: var(--color-primary-hover); border-color: var(--color-primary-hover); }
+.ui-btn-primary:active { background-color: var(--color-primary-hover); }
 
 .ui-btn-secondary {
-  background-color: #ffffff;
-  color: var(--ctsa-slate);
-  border-color: #cbd5e1;
+  background-color: var(--color-surface);
+  color: var(--color-text);
+  border-color: var(--color-border-ui);
 }
-.ui-btn-secondary:hover { background-color: #f8fafc; border-color: #94a3b8; }
-.ui-btn-secondary:active { background-color: #f1f5f9; }
+.ui-btn-secondary:hover { background-color: var(--color-ctsa-surface); border-color: var(--color-text-muted); }
+.ui-btn-secondary:active { background-color: var(--color-ctsa-bgalt); }
 
 .ui-btn-danger {
-  background-color: #b82c1f;
-  color: #ffffff;
-  border-color: #b82c1f;
+  background-color: var(--color-status-unavailable-fg);
+  color: var(--color-surface);
+  border-color: var(--color-status-unavailable-fg);
 }
-.ui-btn-danger:hover { background-color: #992217; border-color: #992217; }
-.ui-btn-danger:active { background-color: #7d1b12; }
+.ui-btn-danger:hover { background-color: var(--color-chrome-darker); border-color: var(--color-chrome-darker); }
 
 .ui-btn-ghost {
   background-color: transparent;
-  color: #475569;
+  color: var(--color-text-muted);
   border-color: transparent;
 }
-.ui-btn-ghost:hover { background-color: #f1f5f9; color: var(--ctsa-slate); }
-.ui-btn-ghost:active { background-color: #e2e8f0; }
+.ui-btn-ghost:hover { background-color: var(--color-ctsa-bgalt); color: var(--color-text); }
+.ui-btn-ghost:active { background-color: var(--color-border); }
+
+.ui-btn-sm {
+  min-block-size: 40px;
+  padding: 0.375rem 0.75rem;
+  font-size: 0.8125rem;
+}
 
 /* Barre d'actions sticky en bas des pages de formulaire */
 .ui-form-actions {
@@ -1896,10 +1977,9 @@ a.kpi-card:hover {
   margin-inline: 0;
   padding: var(--ui-space-3) var(--ui-space-4);
   padding-bottom: calc(var(--ui-space-3) + env(safe-area-inset-bottom, 0px));
-  background: rgba(255, 255, 255, 0.96);
-  backdrop-filter: blur(8px);
-  border-radius: var(--ui-radius-card);
-  border: 1px solid #e2e8f0;
+  background: var(--color-surface);
+  border-radius: var(--radius-card);
+  border: 1px solid var(--color-border);
 }
 
 /* Sur les pages de formulaire, la bottom_nav est masquée pour éviter toute superposition */
@@ -1910,18 +1990,21 @@ body.portal-has-form-actions .portal-main {
   padding-bottom: 1.5rem;
 }
 
-/* Modales natives <dialog> (z-index géré par le top-layer du navigateur) */
+/* Modales & Bottom Sheets natives <dialog> (clavier mobile pris en compte via --vvh) */
 dialog.ui-dialog:modal {
   overscroll-behavior: contain;
   margin: auto;
   padding: 0;
-  border: 1px solid #e2e8f0;
-  border-radius: var(--ui-radius-card);
-  background: #ffffff;
-  color: var(--ctsa-slate);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  color: var(--color-text);
   inline-size: min(100vw - 2rem, 28rem);
-  max-block-size: calc(100dvh - 2rem);
+  max-block-size: min(85dvh, calc(var(--vvh, 100dvh) - 2rem));
   box-shadow: var(--shadow-float);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 dialog.ui-dialog::backdrop {
@@ -1930,14 +2013,56 @@ dialog.ui-dialog::backdrop {
   overscroll-behavior: contain;
 }
 
-@media (max-width: 639px) {
+.ui-sheet-form {
+  display: flex;
+  flex-direction: column;
+  min-block-size: 0;
+  max-block-size: inherit;
+  flex: 1 1 auto;
+}
+
+.ui-sheet-header {
+  padding: 1rem 1.25rem 0.75rem;
+  border-bottom: 1px solid var(--color-border);
+  flex-shrink: 0;
+}
+
+.ui-sheet-body {
+  padding: 1rem 1.25rem;
+  overflow-y: auto;
+  flex: 1 1 auto;
+  min-block-size: 0;
+}
+
+.ui-sheet-footer {
+  position: sticky;
+  inset-block-end: 0;
+  z-index: 2;
+  padding: 0.75rem 1.25rem;
+  padding-bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px));
+  border-top: 1px solid var(--color-border);
+  background: var(--color-surface);
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+@media (min-width: 640px) {
+  .ui-sheet-footer {
+    flex-direction: row;
+    justify-content: flex-end;
+  }
+}
+
+@media (max-width: 767px) {
   dialog.ui-dialog.ui-bottom-sheet:modal {
     margin: auto 0 0 0;
     inline-size: 100vw;
     max-inline-size: 100vw;
+    max-block-size: min(88dvh, calc(var(--vvh, 100dvh) - 0.5rem));
     border-bottom-left-radius: 0;
     border-bottom-right-radius: 0;
-    padding-bottom: env(safe-area-inset-bottom, 0px);
   }
 }
 
@@ -1947,8 +2072,11 @@ dialog.ui-dialog::backdrop {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .ui-btn {
-    transition: none;
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }
 

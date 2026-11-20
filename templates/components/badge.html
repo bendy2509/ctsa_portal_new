@@ -1,34 +1,30 @@
-{# Composant badge : variantes de statut et de rôle centralisées (contraste WCAG AA). #}
+{# Composant badge : variantes de statut et de rôle (jetons @theme WCAG AA, sans icône décorative). #}
 {% if variant == 'confirmed' or variant == 'verified' or variant == 'active' %}
-  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-ctsa-green-bg text-[#006b3f] border border-[#99d5bc] whitespace-nowrap">
-    <span>{{ label }}</span>
+  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-status-confirmed-bg text-status-confirmed-fg border border-status-confirmed-bd whitespace-nowrap">
+    {{ label }}
   </span>
-{% elif variant == 'not_verified' %}
-  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-900 border border-amber-400 whitespace-nowrap">
-    <span>{{ label }}</span>
-  </span>
-{% elif variant == 'pending' or variant == 'warning' %}
-  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-ctsa-pending-bg text-ctsa-pending-text border border-ctsa-pending-border whitespace-nowrap">
-    <span>{{ label }}</span>
+{% elif variant == 'pending' or variant == 'warning' or variant == 'not_verified' %}
+  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-status-pending-bg text-status-pending-fg border border-status-pending-bd whitespace-nowrap">
+    {{ label }}
   </span>
 {% elif variant == 'unavailable' or variant == 'danger' or variant == 'inactive' %}
-  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-ctsa-red-bg text-ctsa-red-text border border-[#f5c2be] whitespace-nowrap">
-    <span>{{ label }}</span>
+  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-status-unavailable-bg text-status-unavailable-fg border border-status-unavailable-bd whitespace-nowrap">
+    {{ label }}
   </span>
 {% elif variant == 'not_inspected' %}
-  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-slate-100 text-slate-600 border border-dashed border-slate-300 whitespace-nowrap">
-    <span>{{ label }}</span>
+  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-ctsa-surface text-text-muted border border-dashed border-status-registered-bd whitespace-nowrap">
+    {{ label }}
   </span>
 {% elif variant == 'registered' %}
-  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-slate-200/80 text-slate-800 border border-slate-300 whitespace-nowrap">
-    <span>{{ label }}</span>
+  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-status-registered-bg text-status-registered-fg border border-status-registered-bd whitespace-nowrap">
+    {{ label }}
   </span>
 {% elif variant == 'info' or variant == 'admin' or variant == 'manager' %}
-  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-ctsa-info-bg text-[#1d6fa5] border border-[#93c9ed] whitespace-nowrap">
-    <span>{{ label }}</span>
+  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-status-info-bg text-status-info-fg border border-status-info-bd whitespace-nowrap">
+    {{ label }}
   </span>
 {% else %}
-  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-slate-100 text-slate-700 border border-slate-200 whitespace-nowrap">
-    <span>{{ label }}</span>
+  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-status-registered-bg text-text-muted border border-border whitespace-nowrap">
+    {{ label }}
   </span>
 {% endif %}

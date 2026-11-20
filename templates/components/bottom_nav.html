@@ -1,14 +1,22 @@
-{# Composant bottom_nav : 4 entrées max sur mobile (< 1024px), safe-area gérée. #}
+{# Composant bottom_nav : 4 entrées max sur mobile (< 1024px), droits via peut(), masquée sur les formulaires. #}
 {% load permissions_tags %}
 <nav class="portal-bottom-nav lg:hidden" aria-label="Navigation rapide">
+  {% can 'portal.dashboard' as can_dash %}
+  {% if can_dash %}
   <a href="{% url 'terminal:dashboard' %}" {% if current == 'dashboard' %}aria-current="page"{% endif %} class="portal-bottom-link">
     <svg class="portal-icon" viewBox="0 0 24 24" aria-hidden="true"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>
     <span>Accueil</span>
   </a>
+  {% endif %}
+
+  {% can 'container.list' as can_list %}
+  {% if can_list %}
   <a href="{% url 'terminal:containers' %}" {% if current == 'containers' or current == 'container_detail' or current == 'container_edit' %}aria-current="page"{% endif %} class="portal-bottom-link">
     <svg class="portal-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 6h13"/><path d="M8 12h13"/><path d="M8 18h13"/><path d="M3 6h.01"/><path d="M3 12h.01"/><path d="M3 18h.01"/></svg>
     <span>Conteneurs</span>
   </a>
+  {% endif %}
+
   {% can 'container.prepare' as can_prepare %}
   {% if can_prepare %}
   <a href="{% url 'terminal:prepare' %}" {% if current == 'prepare' %}aria-current="page"{% endif %} class="portal-bottom-link">
@@ -16,6 +24,9 @@
     <span>Préparer</span>
   </a>
   {% endif %}
+
+  {% can 'container.verify' as can_verify %}
+  {% if can_verify %}
   <a href="{% url 'terminal:inspection' %}" {% if current == 'inspection' or current == 'carryover' %}aria-current="page"{% endif %} class="portal-bottom-link">
     <span class="relative inline-flex">
       <svg class="portal-icon" viewBox="0 0 24 24" aria-hidden="true"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="m9 14 2 2 4-4"/></svg>
@@ -25,4 +36,5 @@
     </span>
     <span>Inspection</span>
   </a>
+  {% endif %}
 </nav>

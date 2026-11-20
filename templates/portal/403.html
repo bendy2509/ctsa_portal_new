@@ -1,34 +1,56 @@
-{% extends 'base.html' %}
+{% extends request.user.is_staff_member|yesno:'portal/base_portal.html,base.html' %}
 
 {% block title %}Accès refusé (403) — Cap Terminal S.A.{% endblock %}
+{% block page_title %}Accès refusé{% endblock %}
 
 {% block content %}
-<div class="max-w-lg mx-auto px-4 sm:px-6 py-12 sm:py-16">
-  <div class="bg-white rounded-2xl p-6 sm:p-8 border border-slate-200/90 border-t-4 border-t-ctsa-red shadow-sm">
-    <div class="text-xs font-heading uppercase tracking-widest text-ctsa-red-text font-bold mb-1">
-      Erreur 403 · Cap Terminal S.A.
-    </div>
-    <h1 class="font-heading text-2xl font-extrabold text-ctsa-slate m-0">
-      Accès refusé
-    </h1>
-    <p class="text-sm text-slate-600 mt-2 mb-6 leading-relaxed">
-      {{ error_message|default:"Vous n'avez pas les droits nécessaires pour accéder à cette ressource." }}
-    </p>
-    <div class="flex flex-wrap items-center gap-3">
-      {% if request.user.is_authenticated and request.user.is_staff_member %}
-        <a href="{% url 'terminal:dashboard' %}" class="btn btn-primary">
+{% if not request.user.is_staff_member %}
+  <div class="max-w-lg mx-auto px-4 sm:px-6 py-12 sm:py-16">
+    <section class="bg-surface rounded-xl p-6 sm:p-8 border border-border border-t-4 border-t-danger shadow-xs space-y-4">
+      <div class="text-xs font-heading uppercase tracking-wider text-danger font-bold">
+        Erreur 403 · Cap Terminal S.A.
+      </div>
+      <h1 class="font-heading text-2xl font-bold text-text m-0">
+        Accès refusé
+      </h1>
+      <p class="text-sm text-text-muted m-0 leading-relaxed">
+        {{ error_message|default:"Vous n'avez pas les droits nécessaires pour accéder à cette ressource." }}
+      </p>
+      <div class="pt-2">
+        {% if request.user.is_authenticated %}
+          <a href="{% url 'terminal:client_watchlist' %}" class="ui-btn ui-btn-primary">
+            Retour à mes conteneurs
+          </a>
+        {% else %}
+          <a href="{% url 'terminal:home' %}" class="ui-btn ui-btn-primary">
+            Retour à l'accueil
+          </a>
+        {% endif %}
+      </div>
+    </section>
+  </div>
+{% endif %}
+{% endblock %}
+
+{% block portal_content %}
+{% if request.user.is_staff_member %}
+  <div class="max-w-lg mx-auto px-4 sm:px-6 py-10 sm:py-14">
+    <section class="bg-surface rounded-xl p-6 sm:p-8 border border-border border-t-4 border-t-danger shadow-xs space-y-4">
+      <div class="text-xs font-heading uppercase tracking-wider text-danger font-bold">
+        Erreur 403 · Cap Terminal S.A.
+      </div>
+      <h1 class="font-heading text-2xl font-bold text-text m-0">
+        Accès refusé
+      </h1>
+      <p class="text-sm text-text-muted m-0 leading-relaxed">
+        {{ error_message|default:"Vous n'avez pas les droits nécessaires pour accéder à cette ressource." }}
+      </p>
+      <div class="pt-2">
+        <a href="{% url 'terminal:dashboard' %}" class="ui-btn ui-btn-primary">
           Retour au tableau de bord
         </a>
-      {% elif request.user.is_authenticated %}
-        <a href="{% url 'terminal:client_watchlist' %}" class="btn btn-primary">
-          Retour à mes conteneurs
-        </a>
-      {% else %}
-        <a href="{% url 'terminal:home' %}" class="btn btn-primary">
-          Retour à l'accueil
-        </a>
-      {% endif %}
-    </div>
+      </div>
+    </section>
   </div>
-</div>
+{% endif %}
 {% endblock %}
