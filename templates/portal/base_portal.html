@@ -25,7 +25,7 @@
     <div id="portal-nav-backdrop" class="portal-backdrop" hidden></div>
     <aside id="portal-nav" class="portal-sidebar" aria-label="Navigation de l'exploitation">
       <div class="portal-brand">
-        <a href="{% url 'terminal:dashboard' %}" class="flex items-center gap-3 text-white no-underline min-w-0">
+        <a href="{% url 'terminal:dashboard' %}" class="flex items-center gap-3 text-text no-underline min-w-0">
           <span class="portal-brand-mark" aria-hidden="true">CTSA</span>
           <span class="portal-brand-text">
             <strong>Exploitation RAMPE</strong>
@@ -103,7 +103,7 @@
 
           {% if can_reports %}
             <details class="portal-submenu" {% if current == 'statistics' or current == 'register' or current == 'status_logs' %}open{% endif %}>
-              <summary class="portal-submenu-trigger {% if current == 'statistics' or current == 'register' or current == 'status_logs' %}text-white bg-white/8{% endif %}">
+              <summary class="portal-submenu-trigger {% if current == 'statistics' or current == 'register' or current == 'status_logs' %}is-current-parent{% endif %}">
                 <svg class="portal-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg>
                 <span>Rapports &amp; Historique</span>
                 <svg class="portal-icon portal-submenu-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
@@ -130,7 +130,7 @@
 
           {% if can_shipping or can_users or can_settings %}
             <details class="portal-submenu" {% if current == 'shipping_lines' or current == 'shipping_line_create' or current == 'shipping_line_edit' or current == 'user_list' or current == 'user_create' or current == 'user_edit' or current == 'site_settings' or current == 'site_settings_texts' or current == 'site_settings_windows' or current == 'site_settings_carousel' or current == 'site_settings_motifs' %}open{% endif %}>
-              <summary class="portal-submenu-trigger {% if current == 'shipping_lines' or current == 'shipping_line_create' or current == 'shipping_line_edit' or current == 'user_list' or current == 'user_create' or current == 'user_edit' or current == 'site_settings' or current == 'site_settings_texts' or current == 'site_settings_windows' or current == 'site_settings_carousel' or current == 'site_settings_motifs' %}text-white bg-white/8{% endif %}">
+              <summary class="portal-submenu-trigger {% if current == 'shipping_lines' or current == 'shipping_line_create' or current == 'shipping_line_edit' or current == 'user_list' or current == 'user_create' or current == 'user_edit' or current == 'site_settings' or current == 'site_settings_texts' or current == 'site_settings_windows' or current == 'site_settings_carousel' or current == 'site_settings_motifs' %}is-current-parent{% endif %}">
                 <svg class="portal-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
                 <span>Paramètres</span>
                 <svg class="portal-icon portal-submenu-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
@@ -152,8 +152,8 @@
                 {% endif %}
                 {% if can_settings %}
                   <a href="{% url 'terminal:site_settings' %}"
-                     {% if current == 'site_settings' %}aria-current="page"{% endif %}
-                     class="portal-sublink {% if current == 'site_settings' %}is-active{% endif %}">
+                     {% if current == 'site_settings' or current == 'site_settings_texts' or current == 'site_settings_windows' or current == 'site_settings_carousel' or current == 'site_settings_motifs' %}aria-current="page"{% endif %}
+                     class="portal-sublink {% if current == 'site_settings' or current == 'site_settings_texts' or current == 'site_settings_windows' or current == 'site_settings_carousel' or current == 'site_settings_motifs' %}is-active{% endif %}">
                     <span>Paramètres du site</span>
                   </a>
                 {% endif %}
@@ -168,8 +168,8 @@
         <div class="portal-user-card">
           <span class="portal-user-avatar" aria-hidden="true">{{ user.display_name|slice:":1"|upper }}</span>
           <div class="min-w-0 flex-1">
-            <div class="text-[13px] font-bold text-white truncate leading-tight">{{ user.display_name }}</div>
-            <div class="text-[11px] text-slate-300 truncate mt-0.5">{{ user.get_role_display }}</div>
+            <div class="text-[13px] font-semibold text-text truncate leading-tight">{{ user.display_name }}</div>
+            <div class="text-[11px] text-text-muted truncate mt-0.5">{{ user.get_role_display }}</div>
           </div>
         </div>
 
@@ -208,13 +208,15 @@
             <span>Menu</span>
           </button>
 
-          <span class="lg:hidden text-sm font-heading font-bold text-text truncate">
-            {% block page_title %}Exploitation RAMPE{% endblock %}
+          <span class="text-sm font-heading font-semibold text-text truncate">
+            <span class="hidden lg:inline text-text-muted font-normal">Exploitation RAMPE / </span>{% block page_title %}Exploitation RAMPE{% endblock %}
           </span>
         </div>
 
         <div class="portal-topbar-date ml-auto tabular-nums">
-          {% now "d/m/Y" %}
+          <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-ctsa-surface border border-border text-xs font-medium text-text-muted">
+            {% now "d/m/Y" %}
+          </span>
         </div>
       </header>
 

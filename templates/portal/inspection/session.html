@@ -5,77 +5,80 @@
 {% block page_title %}Inspection{% endblock %}
 
 {% block portal_content %}
-<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 space-y-5">
+<div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-5">
 
   {% can 'container.verify' as can_verify %}
   {% include 'components/page_header.html' with title="Inspection" subtitle="Marquez chaque conteneur confirmé comme vérifié ou non vérifié." count=stats.confirmed %}
   {% include 'portal/inspection/_inspection_tabs.html' with tab='session' %}
 
-  <!-- Sélecteur de séance -->
-  <div class="flex flex-wrap items-center justify-between gap-2">
-    <div class="flex items-center gap-1.5">
-      <a href="{% url 'terminal:inspection' %}?date={{ previous_date|date:'Y-m-d' }}"
-         class="ui-btn ui-btn-secondary ui-btn-sm"
-         aria-label="Jour précédent">
-        ←
+  <!-- Bandeau KPI filtrant unifié (4 cellules séparées par des filets) -->
+  <section aria-label="Filtrer par état d'inspection" class="bg-surface rounded-xl border border-border overflow-hidden">
+    <div class="grid grid-cols-2 lg:grid-cols-4 divide-y lg:divide-y-0 divide-x divide-border">
+      <a href="{% url 'terminal:inspection' %}?date={{ selected_date|date:'Y-m-d' }}"
+         class="p-4 flex flex-col justify-between gap-1.5 no-underline transition-colors {% if not state %}bg-primary-tint/50 border-t-2 border-t-primary{% else %}hover:bg-ctsa-surface{% endif %}">
+        <span class="text-xs font-medium text-text-muted">Confirmés</span>
+        <span class="text-2xl sm:text-3xl font-heading font-semibold tracking-tight text-text tabular-nums">{{ stats.confirmed }}</span>
+        <span class="text-xs text-text-muted">sur {{ stats.scheduled }} programmé{{ stats.scheduled|pluralize }}</span>
       </a>
-      <form action="{% url 'terminal:inspection' %}" method="get" class="inline-flex">
-        <label for="inspection-date" class="visually-hidden">Choisir une séance</label>
-        <input type="date"
-               id="inspection-date"
-               name="date"
-               max="{{ today|date:'Y-m-d' }}"
-               value="{{ selected_date|date:'Y-m-d' }}"
-               data-auto-submit-date
-               class="border border-border-ui rounded-lg px-3 py-1.5 min-h-[44px] text-sm font-semibold text-text bg-surface">
-      </form>
-      {% if next_date %}
-        <a href="{% url 'terminal:inspection' %}?date={{ next_date|date:'Y-m-d' }}"
-           class="ui-btn ui-btn-secondary ui-btn-sm"
-           aria-label="Jour suivant">
-          →
-        </a>
-      {% endif %}
-      {% if selected_date != today %}
-        <a href="{% url 'terminal:inspection' %}" class="text-xs font-semibold text-primary hover:underline px-2">Aujourd'hui</a>
-      {% endif %}
+
+      <a href="{% url 'terminal:inspection' %}?date={{ selected_date|date:'Y-m-d' }}&amp;etat=to_verify"
+         class="p-4 flex flex-col justify-between gap-1.5 no-underline transition-colors {% if state == 'to_verify' %}bg-primary-tint/50 border-t-2 border-t-primary{% else %}hover:bg-ctsa-surface{% endif %}">
+        <span class="text-xs font-medium text-text-muted">Restent à inspecter</span>
+        <span class="text-2xl sm:text-3xl font-heading font-semibold tracking-tight {% if stats.to_verify %}text-status-pending-fg{% else %}text-text{% endif %} tabular-nums">{{ stats.to_verify }}</span>
+        <span class="text-xs text-text-muted">{% if stats.to_verify %}en tête de liste{% else %}tout est marqué{% endif %}</span>
+      </a>
+
+      <a href="{% url 'terminal:inspection' %}?date={{ selected_date|date:'Y-m-d' }}&amp;etat=verified"
+         class="p-4 flex flex-col justify-between gap-1.5 no-underline transition-colors {% if state == 'verified' %}bg-primary-tint/50 border-t-2 border-t-primary{% else %}hover:bg-ctsa-surface{% endif %}">
+        <span class="text-xs font-medium text-text-muted">Vérifiés</span>
+        <span class="text-2xl sm:text-3xl font-heading font-semibold tracking-tight text-success tabular-nums">{{ stats.verified }}</span>
+        <span class="text-xs text-text-muted">{% if stats.rate is not None %}{{ stats.rate }} % des confirmés{% else %}aucun confirmé{% endif %}</span>
+      </a>
+
+      <a href="{% url 'terminal:inspection' %}?date={{ selected_date|date:'Y-m-d' }}&amp;etat=not_verified"
+         class="p-4 flex flex-col justify-between gap-1.5 no-underline transition-colors {% if state == 'not_verified' %}bg-primary-tint/50 border-t-2 border-t-primary{% else %}hover:bg-ctsa-surface{% endif %}">
+        <span class="text-xs font-medium text-text-muted">Non vérifiés</span>
+        <span class="text-2xl sm:text-3xl font-heading font-semibold tracking-tight {% if stats.not_verified %}text-status-unavailable-fg{% else %}text-text{% endif %} tabular-nums">{{ stats.not_verified }}</span>
+        <span class="text-xs text-text-muted">à reprendre ensuite</span>
+      </a>
     </div>
-    <span class="text-xs text-text-muted tabular-nums">{{ selected_date|date:"d/m/Y" }}</span>
-  </div>
+  </section>
 
-  <!-- 4 indicateurs filtrants en grille 2x2 -->
-  <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
-    <a href="{% url 'terminal:inspection' %}?date={{ selected_date|date:'Y-m-d' }}"
-       class="bg-surface rounded-xl border {% if not state %}border-primary ring-1 ring-primary/20{% else %}border-border{% endif %} shadow-xs p-3.5 no-underline">
-      <div class="text-xs font-bold uppercase tracking-wider text-text-muted">Confirmés</div>
-      <div class="text-2xl font-heading font-bold text-text tabular-nums mt-1">{{ stats.confirmed }}</div>
-      <div class="text-xs text-text-muted mt-0.5">sur {{ stats.scheduled }} programmé{{ stats.scheduled|pluralize }}</div>
-    </a>
-    <a href="{% url 'terminal:inspection' %}?date={{ selected_date|date:'Y-m-d' }}&amp;etat=to_verify"
-       class="bg-surface rounded-xl border {% if state == 'to_verify' %}border-primary ring-1 ring-primary/20{% else %}border-border{% endif %} shadow-xs p-3.5 no-underline">
-      <div class="text-xs font-bold uppercase tracking-wider text-text-muted">Restent à inspecter</div>
-      <div class="text-2xl font-heading font-bold text-status-pending-fg tabular-nums mt-1">{{ stats.to_verify }}</div>
-      <div class="text-xs text-text-muted mt-0.5">{% if stats.to_verify %}en tête de liste{% else %}tout est marqué{% endif %}</div>
-    </a>
-    <a href="{% url 'terminal:inspection' %}?date={{ selected_date|date:'Y-m-d' }}&amp;etat=verified"
-       class="bg-surface rounded-xl border {% if state == 'verified' %}border-primary ring-1 ring-primary/20{% else %}border-border{% endif %} shadow-xs p-3.5 no-underline">
-      <div class="text-xs font-bold uppercase tracking-wider text-text-muted">Vérifiés</div>
-      <div class="text-2xl font-heading font-bold text-status-confirmed-fg tabular-nums mt-1">{{ stats.verified }}</div>
-      <div class="text-xs text-text-muted mt-0.5">{% if stats.rate is not None %}{{ stats.rate }} % des confirmés{% else %}aucun confirmé{% endif %}</div>
-    </a>
-    <a href="{% url 'terminal:inspection' %}?date={{ selected_date|date:'Y-m-d' }}&amp;etat=not_verified"
-       class="bg-surface rounded-xl border {% if state == 'not_verified' %}border-primary ring-1 ring-primary/20{% else %}border-border{% endif %} shadow-xs p-3.5 no-underline">
-      <div class="text-xs font-bold uppercase tracking-wider text-text-muted">Non vérifiés</div>
-      <div class="text-2xl font-heading font-bold text-status-unavailable-fg tabular-nums mt-1">{{ stats.not_verified }}</div>
-      <div class="text-xs text-text-muted mt-0.5">à reprendre ensuite</div>
-    </a>
-  </div>
-
-  <!-- Barre d'actions groupées et recherche (1 seul bouton primaire) -->
-  <section aria-label="Actions et recherche" class="bg-surface rounded-xl border border-border shadow-xs p-3.5 sm:p-4">
-    <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+  <!-- Feuille opérationnelle unifiée : séance + recherche + actions par lot + tableau -->
+  <section class="bg-surface rounded-xl border border-border overflow-hidden" aria-label="Liste d'inspection de la séance">
+    <div class="px-4 py-3 border-b border-border bg-ctsa-surface/50 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
       <div class="flex flex-wrap items-center gap-2">
+        <div class="inline-flex items-center rounded-lg border border-border bg-surface overflow-hidden">
+          <a href="{% url 'terminal:inspection' %}?date={{ previous_date|date:'Y-m-d' }}"
+             class="inline-flex items-center justify-center min-w-[40px] min-h-[40px] text-sm font-medium text-text-muted hover:text-text hover:bg-ctsa-surface border-r border-border no-underline"
+             aria-label="Jour précédent">
+            ←
+          </a>
+          <form action="{% url 'terminal:inspection' %}" method="get" class="inline-flex">
+            <label for="inspection-date" class="visually-hidden">Choisir une séance</label>
+            <input type="date"
+                   id="inspection-date"
+                   name="date"
+                   max="{{ today|date:'Y-m-d' }}"
+                   value="{{ selected_date|date:'Y-m-d' }}"
+                   data-auto-submit-date
+                   class="border-0 px-2.5 py-1.5 min-h-[40px] text-xs font-semibold text-text bg-transparent">
+          </form>
+          {% if next_date %}
+            <a href="{% url 'terminal:inspection' %}?date={{ next_date|date:'Y-m-d' }}"
+               class="inline-flex items-center justify-center min-w-[40px] min-h-[40px] text-sm font-medium text-text-muted hover:text-text hover:bg-ctsa-surface border-l border-border no-underline"
+               aria-label="Jour suivant">
+              →
+            </a>
+          {% endif %}
+        </div>
+
+        {% if selected_date != today %}
+          <a href="{% url 'terminal:inspection' %}" class="text-xs font-medium text-primary hover:underline px-1 no-underline">Aujourd'hui</a>
+        {% endif %}
+
         {% if can_verify and rows %}
+          <span class="hidden sm:inline-block h-5 w-px bg-border mx-1" aria-hidden="true"></span>
           <form id="inspection-bulk-form" action="{% url 'terminal:container_verify_bulk' %}" method="post" class="flex flex-wrap items-center gap-2">
             {% csrf_token %}
             <input type="hidden" name="date" value="{{ selected_date|date:'Y-m-d' }}">
@@ -94,7 +97,7 @@
                       data-confirm-title="Marquer les confirmés restants comme vérifiés ?"
                       data-confirm="{{ stats.to_verify }} conteneur{{ stats.to_verify|pluralize }} confirmé{{ stats.to_verify|pluralize }} {{ stats.to_verify|pluralize:'sera,seront' }} marqué{{ stats.to_verify|pluralize }} « Vérifié »."
                       data-confirm-label="Marquer vérifiés"
-                      class="text-xs sm:text-sm font-semibold text-primary hover:underline px-1 bg-transparent border-0 cursor-pointer">
+                      class="text-xs font-semibold text-primary hover:underline px-1 bg-transparent border-0 cursor-pointer">
                 Tout marquer vérifié ({{ stats.to_verify }})
               </button>
             </form>
@@ -115,54 +118,52 @@
                  autocapitalize="characters"
                  autocomplete="off"
                  spellcheck="false"
-                 class="border border-border-ui rounded-lg px-3 py-1.5 min-h-[44px] text-base font-mono uppercase tracking-wider bg-surface text-text flex-1 lg:flex-none lg:w-56 min-w-0">
+                 class="border border-border rounded-lg px-3 py-1.5 min-h-[40px] text-base font-mono uppercase tracking-wider bg-surface text-text flex-1 lg:flex-none lg:w-60 min-w-0">
           <button type="submit" class="ui-btn ui-btn-secondary ui-btn-sm shrink-0">Filtrer</button>
           {% if search_q or state %}
-            <a href="{% url 'terminal:inspection' %}?date={{ selected_date|date:'Y-m-d' }}" class="text-xs font-bold text-primary hover:underline shrink-0">Effacer</a>
+            <a href="{% url 'terminal:inspection' %}?date={{ selected_date|date:'Y-m-d' }}" class="text-xs font-semibold text-primary hover:underline shrink-0 no-underline">Effacer</a>
           {% endif %}
         </form>
       </search>
     </div>
-  </section>
 
-  {% if rows %}
-    <!-- Mobile : cartes -->
-    <div class="lg:hidden space-y-3" aria-label="Liste mobile d'inspection">
-      {% for c in rows %}
-        <article class="bg-surface rounded-xl border border-border shadow-xs p-3.5 space-y-3">
-          <div class="flex items-start gap-2.5">
-            {% if can_verify %}
-              <input type="checkbox"
-                     name="ids"
-                     value="{{ c.pk }}"
-                     form="inspection-bulk-form"
-                     data-check-group="inspection"
-                     aria-label="Sélectionner {{ c.container_number }}"
-                     class="mt-1 w-5 h-5 rounded shrink-0">
-            {% endif %}
-            <a href="{% url 'terminal:container_detail' c.pk %}" class="min-w-0 flex-1 no-underline block">
-              <div class="flex items-center justify-between gap-2">
-                <span class="text-base font-bold font-mono tabular-nums text-text">{{ c.container_number }}</span>
-                <span class="text-xs font-semibold text-primary shrink-0">Détail</span>
-              </div>
-              <p class="text-xs text-text-muted mt-0.5 mb-0 truncate tabular-nums">
-                {{ c.shipping_line.name|default:"Ligne non renseignée" }}{% if c.verified_at %} · {{ c.verified_by.display_name|default:"—" }} ({{ c.verified_at|date:"H:i" }}){% endif %}
-              </p>
-            </a>
-          </div>
+    {% if rows %}
+      <!-- Mobile : liste compacte -->
+      <div class="lg:hidden divide-y divide-border" aria-label="Liste mobile d'inspection">
+        {% for c in rows %}
+          <article class="p-4 space-y-3">
+            <div class="flex items-start gap-2.5">
+              {% if can_verify %}
+                <input type="checkbox"
+                       name="ids"
+                       value="{{ c.pk }}"
+                       form="inspection-bulk-form"
+                       data-check-group="inspection"
+                       aria-label="Sélectionner {{ c.container_number }}"
+                       class="mt-1 w-5 h-5 rounded shrink-0">
+              {% endif %}
+              <a href="{% url 'terminal:container_detail' c.pk %}" class="min-w-0 flex-1 no-underline block">
+                <div class="flex items-center justify-between gap-2">
+                  <span class="text-base font-semibold font-mono tabular-nums text-text">{{ c.container_number }}</span>
+                  <span class="text-xs font-medium text-primary shrink-0">Détail ›</span>
+                </div>
+                <p class="text-xs text-text-muted mt-0.5 mb-0 truncate tabular-nums">
+                  {{ c.shipping_line.name|default:"Ligne non renseignée" }}{% if c.verified_at %} · {{ c.verified_by.display_name|default:"—" }} ({{ c.verified_at|date:"H:i" }}){% endif %}
+                </p>
+              </a>
+            </div>
 
-          <div class="pt-2 border-t border-border">
-            {% include 'portal/inspection/_verification_actions.html' with c=c %}
-          </div>
-        </article>
-      {% endfor %}
-    </div>
+            <div>
+              {% include 'portal/inspection/_verification_actions.html' with c=c %}
+            </div>
+          </article>
+        {% endfor %}
+      </div>
 
-    <!-- Desktop : tableau -->
-    <section class="hidden lg:block bg-surface rounded-xl border border-border shadow-xs overflow-hidden" aria-label="Tableau d'inspection">
-      <div class="overflow-x-auto">
+      <!-- Desktop : tableau pleine largeur intégré -->
+      <div class="hidden lg:block overflow-x-auto" aria-label="Tableau d'inspection">
         <table class="ctsa-table w-full">
-          <thead class="bg-ctsa-surface">
+          <thead>
             <tr>
               <th scope="col">
                 <label class="inline-flex items-center gap-2">
@@ -184,7 +185,7 @@
                       <input type="checkbox" name="ids" value="{{ c.pk }}" form="inspection-bulk-form" data-check-group="inspection" class="mt-1 w-4 h-4 rounded">
                     {% endif %}
                     <div>
-                      <a href="{% url 'terminal:container_detail' c.pk %}" class="font-mono text-sm font-bold text-primary hover:underline no-underline tabular-nums">{{ c.container_number }}</a>
+                      <a href="{% url 'terminal:container_detail' c.pk %}" class="font-mono text-sm font-semibold text-primary hover:underline no-underline tabular-nums">{{ c.container_number }}</a>
                       {% if c.carried_from %}
                         <div class="text-xs font-sans font-normal text-text-muted mt-0.5">
                           Repris du {{ c.carried_from.scheduled_date|date:"d/m/Y" }} · {{ c.days_since_first_scheduled }} j
@@ -206,24 +207,29 @@
           </tbody>
         </table>
       </div>
-    </section>
+    {% else %}
+      <div class="px-6 py-12 text-center space-y-1.5">
+        <p class="text-sm font-semibold text-text m-0">Aucun conteneur confirmé à inspecter</p>
+        <p class="text-sm text-text-muted m-0">Aucun conteneur confirmé ne correspond à ce filtre pour cette séance.</p>
+      </div>
+    {% endif %}
+  </section>
 
+  {% if rows %}
     {% include 'components/pagination.html' %}
-  {% else %}
-    {% include 'components/empty_state.html' with title="Aucun conteneur confirmé à inspecter" description="Aucun conteneur confirmé ne correspond à ce filtre pour cette séance." %}
   {% endif %}
 
   {% if not_confirmed_rows %}
-    <details class="bg-surface rounded-xl border border-border shadow-xs overflow-hidden">
-      <summary class="px-4 sm:px-5 py-3.5 cursor-pointer flex flex-wrap items-center justify-between gap-2 text-sm font-bold text-text">
+    <details class="bg-surface rounded-xl border border-border overflow-hidden">
+      <summary class="px-5 py-3.5 cursor-pointer flex flex-wrap items-center justify-between gap-2 text-sm font-semibold text-text">
         <span>Pas encore confirmés ({{ stats.not_confirmed }}) : en attente ou indisponibles</span>
-        <span class="text-xs font-semibold text-text-muted">Voir la liste</span>
+        <span class="text-xs font-medium text-primary">Voir la liste</span>
       </summary>
       <div class="border-t border-border divide-y divide-border">
         {% for c in not_confirmed_rows %}
-          <div class="px-4 sm:px-5 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+          <div class="px-5 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
             <div>
-              <a href="{% url 'terminal:container_detail' c.pk %}" class="font-mono text-sm font-bold text-primary hover:underline no-underline">{{ c.container_number }}</a>
+              <a href="{% url 'terminal:container_detail' c.pk %}" class="font-mono text-sm font-semibold text-primary hover:underline no-underline">{{ c.container_number }}</a>
               <span class="text-xs text-text-muted ml-2">{{ c.shipping_line.name|default:"—" }}</span>
             </div>
             {% include 'portal/conteneurs/_status_segmented.html' with c=c %}

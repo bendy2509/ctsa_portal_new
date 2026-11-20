@@ -5,7 +5,7 @@
 {% block page_title %}Tableau de bord{% endblock %}
 
 {% block portal_content %}
-<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 space-y-5">
+<div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
 
   {% can 'container.arrival_create' as can_arrival %}
   {% can 'container.prepare' as can_prepare %}
@@ -24,11 +24,11 @@
     {% endif %}
   {% endwith %}
 
-  <!-- Sélecteur de séance -->
-  <div class="flex flex-wrap items-center justify-between gap-2">
-    <div class="flex items-center gap-1.5">
+  <!-- Barre de séance compacte -->
+  <div class="flex flex-wrap items-center justify-between gap-3">
+    <div class="inline-flex items-center rounded-lg border border-border bg-surface overflow-hidden">
       <a href="{% url 'terminal:dashboard' %}?date={{ previous_date|date:'Y-m-d' }}"
-         class="ui-btn ui-btn-secondary ui-btn-sm"
+         class="inline-flex items-center justify-center min-w-[44px] min-h-[44px] text-sm font-medium text-text-muted hover:text-text hover:bg-ctsa-surface border-r border-border no-underline"
          aria-label="Jour précédent">
         ←
       </a>
@@ -39,88 +39,109 @@
                name="date"
                value="{{ selected_date|date:'Y-m-d' }}"
                data-auto-submit-date
-               class="border border-border-ui rounded-lg px-3 py-1.5 min-h-[44px] text-sm font-semibold text-text bg-surface">
+               class="border-0 px-3 py-1.5 min-h-[44px] text-sm font-medium text-text bg-transparent">
       </form>
       <a href="{% url 'terminal:dashboard' %}?date={{ next_date|date:'Y-m-d' }}"
-         class="ui-btn ui-btn-secondary ui-btn-sm"
+         class="inline-flex items-center justify-center min-w-[44px] min-h-[44px] text-sm font-medium text-text-muted hover:text-text hover:bg-ctsa-surface border-l border-border no-underline"
          aria-label="Jour suivant">
         →
       </a>
-      {% if selected_date != today %}
-        <a href="{% url 'terminal:dashboard' %}" class="text-xs font-semibold text-primary hover:underline px-2">
-          Aujourd'hui
-        </a>
-      {% endif %}
     </div>
 
-    <a href="{% url 'terminal:containers' %}?date={{ selected_date|date:'Y-m-d' }}"
-       class="text-xs sm:text-sm font-semibold text-primary hover:underline">
-      Voir tous les conteneurs
-    </a>
+    <div class="flex items-center gap-4">
+      {% if selected_date != today %}
+        <a href="{% url 'terminal:dashboard' %}" class="text-sm font-medium text-primary hover:underline no-underline">
+          Revenir à aujourd'hui
+        </a>
+      {% endif %}
+      <a href="{% url 'terminal:containers' %}?date={{ selected_date|date:'Y-m-d' }}"
+         class="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline no-underline">
+        <span>Voir tous les conteneurs</span>
+        <span aria-hidden="true">→</span>
+      </a>
+    </div>
   </div>
 
-  <!-- 1. KPI : 4 indicateurs principaux (sans icône décorative) -->
-  <section aria-label="Indicateurs clés de la séance">
-    <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+  <!-- 1. Bandeau KPI unifié (4 indicateurs principaux, séparation par filets) -->
+  <section aria-label="Indicateurs clés de la séance" class="bg-surface rounded-xl border border-border overflow-hidden">
+    <div class="grid grid-cols-2 lg:grid-cols-4 divide-y lg:divide-y-0 divide-x divide-border">
       <a href="{% url 'terminal:containers' %}?date={{ selected_date|date:'Y-m-d' }}"
-         class="bg-surface rounded-xl border border-border shadow-xs p-4 flex flex-col justify-between gap-1.5 no-underline hover:border-primary">
-        <span class="text-xs font-bold uppercase tracking-wider text-text-muted">Programmés</span>
-        <span class="text-2xl sm:text-3xl font-heading font-bold text-text tabular-nums">{{ stats.total }}</span>
+         class="p-4 sm:p-5 flex flex-col justify-between gap-2 no-underline hover:bg-ctsa-surface transition-colors">
+        <span class="text-xs font-medium text-text-muted">Programmés</span>
+        <span class="text-3xl font-heading font-semibold tracking-tight text-text tabular-nums">{{ stats.total }}</span>
         <span class="text-xs text-text-muted">Sur la séance</span>
       </a>
 
       <a href="{% url 'terminal:containers' %}?date={{ selected_date|date:'Y-m-d' }}&amp;status=confirmed"
-         class="bg-surface rounded-xl border border-border shadow-xs p-4 flex flex-col justify-between gap-1.5 no-underline hover:border-primary">
-        <span class="text-xs font-bold uppercase tracking-wider text-text-muted">Confirmés</span>
-        <span class="text-2xl sm:text-3xl font-heading font-bold text-status-confirmed-fg tabular-nums">{{ stats.confirmed }}</span>
+         class="p-4 sm:p-5 flex flex-col justify-between gap-2 no-underline hover:bg-ctsa-surface transition-colors">
+        <span class="text-xs font-medium text-text-muted">Confirmés</span>
+        <span class="text-3xl font-heading font-semibold tracking-tight text-success tabular-nums">{{ stats.confirmed }}</span>
         <span class="text-xs text-text-muted">Prêts sur la rampe</span>
       </a>
 
       <a href="{% url 'terminal:inspection' %}?date={{ selected_date|date:'Y-m-d' }}&amp;etat=verified"
-         class="bg-surface rounded-xl border border-border shadow-xs p-4 flex flex-col justify-between gap-1.5 no-underline hover:border-primary">
-        <span class="text-xs font-bold uppercase tracking-wider text-text-muted">Vérifiés</span>
-        <span class="text-2xl sm:text-3xl font-heading font-bold text-status-confirmed-fg tabular-nums">{{ stats.verified }}</span>
+         class="p-4 sm:p-5 flex flex-col justify-between gap-2 no-underline hover:bg-ctsa-surface transition-colors">
+        <span class="text-xs font-medium text-text-muted">Vérifiés</span>
+        <span class="text-3xl font-heading font-semibold tracking-tight text-primary tabular-nums">{{ stats.verified }}</span>
         <span class="text-xs text-text-muted tabular-nums">
           {% if stats.verified_rate is not None %}{{ stats.verified_rate }} % des confirmés{% else %}—{% endif %}
         </span>
       </a>
 
       <a href="{% url 'terminal:inspection' %}?date={{ selected_date|date:'Y-m-d' }}&amp;etat=to_verify"
-         class="bg-surface rounded-xl border border-border shadow-xs p-4 flex flex-col justify-between gap-1.5 no-underline hover:border-primary">
-        <span class="text-xs font-bold uppercase tracking-wider text-text-muted">Restent à inspecter</span>
-        <span class="text-2xl sm:text-3xl font-heading font-bold text-status-pending-fg tabular-nums">{{ stats.to_verify }}</span>
+         class="p-4 sm:p-5 flex flex-col justify-between gap-2 no-underline hover:bg-ctsa-surface transition-colors {% if stats.to_verify %}bg-status-pending-bg/30{% endif %}">
+        <span class="text-xs font-medium text-text-muted">Restent à inspecter</span>
+        <span class="text-3xl font-heading font-semibold tracking-tight {% if stats.to_verify %}text-status-pending-fg{% else %}text-text{% endif %} tabular-nums">{{ stats.to_verify }}</span>
         <span class="text-xs text-text-muted">Confirmés non inspectés</span>
       </a>
     </div>
   </section>
 
-  <!-- 2. À traiter -->
-  <section aria-labelledby="dash-todo-title" class="bg-surface rounded-xl border border-border shadow-xs overflow-hidden">
-    <div class="px-4 sm:px-5 py-3.5 border-b border-border">
-      <h2 id="dash-todo-title" class="text-base font-heading font-bold text-text m-0">À traiter</h2>
+  <!-- 2. À traiter (priorisation visuelle : les éléments > 0 ressortent) -->
+  <section aria-labelledby="dash-todo-title" class="bg-surface rounded-xl border border-border overflow-hidden">
+    <div class="px-5 py-3.5 border-b border-border flex items-center justify-between gap-2">
+      <h2 id="dash-todo-title" class="text-sm font-heading font-semibold text-text m-0">À traiter</h2>
+      <span class="text-xs text-text-muted">Cliquez pour ouvrir la file correspondante</span>
     </div>
     <ul class="list-none m-0 p-0 divide-y divide-border">
       <li>
         <a href="{% url 'terminal:containers' %}?date={{ selected_date|date:'Y-m-d' }}&amp;status=pending"
-           class="flex items-center justify-between gap-3 px-4 sm:px-5 py-3 min-h-[48px] text-inherit no-underline hover:bg-ctsa-surface">
-          <span class="text-sm font-medium text-text">En attente de confirmation</span>
-          {% include 'components/badge.html' with variant='pending' label=stats.pending %}
+           class="flex items-center justify-between gap-3 px-5 py-3.5 min-h-[48px] text-inherit no-underline hover:bg-ctsa-surface transition-colors">
+          <span class="text-sm {% if stats.pending %}font-semibold text-text{% else %}font-normal text-text-muted{% endif %}">En attente de confirmation</span>
+          <span class="inline-flex items-center gap-2.5">
+            {% if stats.pending %}
+              {% include 'components/badge.html' with variant='pending' label=stats.pending %}
+            {% else %}
+              <span class="text-xs font-medium text-text-muted tabular-nums">0</span>
+            {% endif %}
+            <span class="text-text-muted" aria-hidden="true">›</span>
+          </span>
         </a>
       </li>
       {% if show_verification %}
         <li>
           <a href="{% url 'terminal:inspection' %}?date={{ selected_date|date:'Y-m-d' }}&amp;etat=to_verify"
-             class="flex items-center justify-between gap-3 px-4 sm:px-5 py-3 min-h-[48px] text-inherit no-underline hover:bg-ctsa-surface">
-            <span class="text-sm font-medium text-text">Confirmés restant à inspecter</span>
-            {% include 'components/badge.html' with variant='info' label=stats.to_verify %}
+             class="flex items-center justify-between gap-3 px-5 py-3.5 min-h-[48px] text-inherit no-underline hover:bg-ctsa-surface transition-colors">
+            <span class="text-sm {% if stats.to_verify %}font-semibold text-text{% else %}font-normal text-text-muted{% endif %}">Confirmés restant à inspecter</span>
+            <span class="inline-flex items-center gap-2.5">
+              {% if stats.to_verify %}
+                {% include 'components/badge.html' with variant='info' label=stats.to_verify %}
+              {% else %}
+                <span class="text-xs font-medium text-text-muted tabular-nums">0</span>
+              {% endif %}
+              <span class="text-text-muted" aria-hidden="true">›</span>
+            </span>
           </a>
         </li>
         {% if stats.not_verified %}
           <li>
             <a href="{% url 'terminal:inspection' %}?date={{ selected_date|date:'Y-m-d' }}&amp;etat=not_verified"
-               class="flex items-center justify-between gap-3 px-4 sm:px-5 py-3 min-h-[48px] text-inherit no-underline hover:bg-ctsa-surface">
-              <span class="text-sm font-medium text-text">Non vérifiés / rejetés sur la séance</span>
-              {% include 'components/badge.html' with variant='unavailable' label=stats.not_verified %}
+               class="flex items-center justify-between gap-3 px-5 py-3.5 min-h-[48px] text-inherit no-underline hover:bg-ctsa-surface transition-colors">
+              <span class="text-sm font-semibold text-text">Non vérifiés / rejetés sur la séance</span>
+              <span class="inline-flex items-center gap-2.5">
+                {% include 'components/badge.html' with variant='unavailable' label=stats.not_verified %}
+                <span class="text-text-muted" aria-hidden="true">›</span>
+              </span>
             </a>
           </li>
         {% endif %}
@@ -128,25 +149,31 @@
       {% if can_carryover %}
         <li>
           <a href="{% url 'terminal:carryover' %}"
-             class="flex items-center justify-between gap-3 px-4 sm:px-5 py-3 min-h-[48px] text-inherit no-underline hover:bg-ctsa-surface">
-            <span class="text-sm font-medium text-text">Non vérifiés des séances passées</span>
-            {% if backlog.total %}
-              {% include 'components/badge.html' with variant='warning' label=backlog.total %}
-            {% else %}
-              {% include 'components/badge.html' with variant='neutral' label='0' %}
-            {% endif %}
+             class="flex items-center justify-between gap-3 px-5 py-3.5 min-h-[48px] text-inherit no-underline hover:bg-ctsa-surface transition-colors">
+            <span class="text-sm {% if backlog.total %}font-semibold text-text{% else %}font-normal text-text-muted{% endif %}">Non vérifiés des séances passées</span>
+            <span class="inline-flex items-center gap-2.5">
+              {% if backlog.total %}
+                {% include 'components/badge.html' with variant='warning' label=backlog.total %}
+              {% else %}
+                <span class="text-xs font-medium text-text-muted tabular-nums">0</span>
+              {% endif %}
+              <span class="text-text-muted" aria-hidden="true">›</span>
+            </span>
           </a>
         </li>
       {% endif %}
       <li>
         <a href="{% url 'terminal:containers' %}?date={{ selected_date|date:'Y-m-d' }}&amp;status=unavailable"
-           class="flex items-center justify-between gap-3 px-4 sm:px-5 py-3 min-h-[48px] text-inherit no-underline hover:bg-ctsa-surface">
-          <span class="text-sm font-medium text-text">Indisponibles</span>
-          {% if stats.unavailable %}
-            {% include 'components/badge.html' with variant='unavailable' label=stats.unavailable %}
-          {% else %}
-            {% include 'components/badge.html' with variant='neutral' label='0' %}
-          {% endif %}
+           class="flex items-center justify-between gap-3 px-5 py-3.5 min-h-[48px] text-inherit no-underline hover:bg-ctsa-surface transition-colors">
+          <span class="text-sm {% if stats.unavailable %}font-semibold text-text{% else %}font-normal text-text-muted{% endif %}">Indisponibles</span>
+          <span class="inline-flex items-center gap-2.5">
+            {% if stats.unavailable %}
+              {% include 'components/badge.html' with variant='unavailable' label=stats.unavailable %}
+            {% else %}
+              <span class="text-xs font-medium text-text-muted tabular-nums">0</span>
+            {% endif %}
+            <span class="text-text-muted" aria-hidden="true">›</span>
+          </span>
         </a>
       </li>
     </ul>
@@ -154,30 +181,30 @@
 
   <!-- 3. Graphiques -->
   <div class="grid grid-cols-1 lg:grid-cols-2 gap-5 items-start">
-    <details class="bg-surface rounded-xl border border-border shadow-xs overflow-hidden" open>
-      <summary class="px-4 sm:px-5 py-3.5 border-b border-border flex items-center justify-between gap-2 cursor-pointer list-none">
-        <span class="text-base font-heading font-bold text-text">Sept derniers jours</span>
+    <details class="bg-surface rounded-xl border border-border overflow-hidden" open>
+      <summary class="px-5 py-3.5 border-b border-border flex items-center justify-between gap-2 cursor-pointer list-none">
+        <span class="text-sm font-heading font-semibold text-text">Sept derniers jours</span>
         {% if can_reports %}
-          <a href="{% url 'terminal:statistics' %}" class="text-xs sm:text-sm font-semibold text-primary hover:underline">Statistiques</a>
+          <a href="{% url 'terminal:statistics' %}" class="text-xs font-medium text-primary hover:underline no-underline">Statistiques →</a>
         {% endif %}
       </summary>
-      <div class="px-4 sm:px-5 pt-5 pb-4">
-        <ol class="list-none m-0 p-0 grid grid-cols-7 gap-2 items-end h-32">
+      <div class="px-5 pt-5 pb-4">
+        <ol class="list-none m-0 p-0 grid grid-cols-7 gap-2 items-end h-32 border-b border-border pb-2">
           {% for d in week %}
             <li class="h-full flex flex-col justify-end items-center gap-1 min-w-0">
-              <span class="text-xs font-bold tabular-nums text-text">{{ d.total }}</span>
+              <span class="text-xs font-semibold tabular-nums {% if d.total %}text-text{% else %}text-text-muted{% endif %}">{{ d.total }}</span>
               <a href="{% url 'terminal:dashboard' %}?date={{ d.date|date:'Y-m-d' }}"
-                 class="relative w-full max-w-9 rounded-t-md bg-border hover:bg-border-ui flex items-end"
+                 class="relative w-full max-w-8 rounded-t bg-ctsa-bgalt hover:bg-primary-tint flex items-end"
                  style="height: {{ d.height }}%; min-height: 3px;"
                  aria-label="{{ d.date|date:'d/m/Y' }} : {{ d.total }} programmé{{ d.total|pluralize }}, {{ d.verified }} vérifié{{ d.verified|pluralize }}">
-                <span class="block w-full rounded-t-md bg-primary" style="height: {% if d.total %}{% widthratio d.verified d.total 100 %}{% else %}0{% endif %}%"></span>
+                <span class="block w-full rounded-t bg-primary" style="height: {% if d.total %}{% widthratio d.verified d.total 100 %}{% else %}0{% endif %}%"></span>
               </a>
             </li>
           {% endfor %}
         </ol>
         <ol class="list-none m-0 p-0 grid grid-cols-7 gap-2 mt-2">
           {% for d in week %}
-            <li class="text-center text-xs leading-tight text-text-muted {% if d.date == selected_date %}font-bold text-text{% endif %}">
+            <li class="text-center text-xs leading-tight {% if d.date == selected_date %}font-semibold text-primary{% else %}text-text-muted{% endif %}">
               {{ d.date|date:"D"|slice:":3" }}<br>{{ d.date|date:"d/m" }}
             </li>
           {% endfor %}
@@ -185,22 +212,22 @@
       </div>
     </details>
 
-    <details class="bg-surface rounded-xl border border-border shadow-xs overflow-hidden" open>
-      <summary class="px-4 sm:px-5 py-3.5 border-b border-border flex items-center justify-between gap-2 cursor-pointer list-none">
-        <span class="text-base font-heading font-bold text-text">Par ligne maritime</span>
+    <details class="bg-surface rounded-xl border border-border overflow-hidden" open>
+      <summary class="px-5 py-3.5 border-b border-border flex items-center justify-between gap-2 cursor-pointer list-none">
+        <span class="text-sm font-heading font-semibold text-text">Par ligne maritime</span>
         <span class="text-xs text-text-muted">Confirmés · Attente · Indisp.</span>
       </summary>
       {% if by_line %}
         <ul class="list-none m-0 p-0 divide-y divide-border">
           {% for row in by_line %}
-            <li class="px-4 sm:px-5 py-3 flex items-center gap-3">
+            <li class="px-5 py-3 flex items-center gap-3">
               <div class="w-28 sm:w-40 shrink-0 min-w-0">
-                <div class="text-sm font-semibold text-text truncate">{{ row.name }}</div>
+                <div class="text-sm font-medium text-text truncate">{{ row.name }}</div>
                 <div class="text-xs text-text-muted tabular-nums">{{ row.total }} conteneur{{ row.total|pluralize }}</div>
               </div>
-              <div class="flex-1 h-2.5 rounded-full bg-ctsa-bgalt overflow-hidden flex" role="img"
+              <div class="flex-1 h-2 rounded-full bg-ctsa-bgalt overflow-hidden flex" role="img"
                    aria-label="{{ row.name }} : {{ row.confirmed }} confirmé{{ row.confirmed|pluralize }}, {{ row.pending }} en attente, {{ row.unavailable }} indisponible{{ row.unavailable|pluralize }}">
-                <span class="bg-status-confirmed-fg h-full" style="width: {{ row.confirmed_pct }}%"></span>
+                <span class="bg-success h-full" style="width: {{ row.confirmed_pct }}%"></span>
                 <span class="bg-status-pending-fg h-full" style="width: {{ row.pending_pct }}%"></span>
                 <span class="bg-status-unavailable-fg h-full" style="width: {{ row.unavailable_pct }}%"></span>
               </div>
@@ -211,7 +238,7 @@
           {% endfor %}
         </ul>
       {% else %}
-        <p class="px-5 py-8 text-center text-sm text-text-muted m-0">
+        <p class="px-5 py-10 text-center text-sm text-text-muted m-0">
           Aucun conteneur programmé pour cette séance.
         </p>
       {% endif %}
@@ -219,36 +246,38 @@
   </div>
 
   <!-- 4. Dernières opérations -->
-  <section aria-labelledby="dash-log-title" class="bg-surface rounded-xl border border-border shadow-xs overflow-hidden">
-    <div class="px-4 sm:px-5 py-3.5 border-b border-border flex items-center justify-between gap-2">
-      <h2 id="dash-log-title" class="text-base font-heading font-bold text-text m-0">Dernières opérations</h2>
+  <section aria-labelledby="dash-log-title" class="bg-surface rounded-xl border border-border overflow-hidden">
+    <div class="px-5 py-3.5 border-b border-border flex items-center justify-between gap-2">
+      <h2 id="dash-log-title" class="text-sm font-heading font-semibold text-text m-0">Dernières opérations</h2>
       {% if can_reports %}
-        <a href="{% url 'terminal:status_logs' %}" class="text-xs sm:text-sm font-semibold text-primary hover:underline">Historique</a>
+        <a href="{% url 'terminal:status_logs' %}" class="text-xs font-medium text-primary hover:underline no-underline">Historique →</a>
       {% endif %}
     </div>
     {% if recent_logs %}
       <ul class="list-none m-0 p-0 divide-y divide-border">
         {% for log in recent_logs %}
-          <li class="px-4 sm:px-5 py-2.5">
-            <div class="flex items-center justify-between gap-2">
-              <a href="{% url 'terminal:container_detail' log.container.pk %}" class="font-mono text-sm font-bold tracking-wide text-primary hover:underline no-underline tabular-nums">
+          <li class="px-5 py-3 flex items-center justify-between gap-3">
+            <div class="min-w-0">
+              <a href="{% url 'terminal:container_detail' log.container.pk %}" class="font-mono text-sm font-semibold tracking-wide text-primary hover:underline no-underline tabular-nums">
                 {{ log.container.container_number }}
               </a>
-              <span class="text-xs text-text-muted tabular-nums">{{ log.changed_at|date:"H:i" }}</span>
+              <span class="text-xs text-text-muted ml-2">
+                {% if log.action == 'status_change' %}
+                  {% if log.old_status %}{{ log.get_old_status_display }} → {% endif %}{{ log.get_new_status_display }}
+                {% else %}
+                  {{ log.get_action_display }}
+                {% endif %}
+                {% if log.changed_by %} · {{ log.changed_by.display_name }}{% endif %}
+              </span>
             </div>
-            <div class="text-xs text-text-muted mt-0.5">
-              {% if log.action == 'status_change' %}
-                {% if log.old_status %}{{ log.get_old_status_display }} → {% endif %}{{ log.get_new_status_display }}
-              {% else %}
-                {{ log.get_action_display }}
-              {% endif %}
-              {% if log.changed_by %} · {{ log.changed_by.display_name }}{% endif %}
-            </div>
+            <span class="text-xs text-text-muted tabular-nums shrink-0">{{ log.changed_at|date:"H:i" }}</span>
           </li>
         {% endfor %}
       </ul>
     {% else %}
-      <p class="px-5 py-8 text-center text-sm text-text-muted m-0">Aucune opération pour cette séance.</p>
+      <p class="px-5 py-8 text-center text-sm text-text-muted m-0">
+        Aucune opération pour cette séance.
+      </p>
     {% endif %}
   </section>
 

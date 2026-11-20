@@ -11,6 +11,8 @@
   /* Couleurs principales et de marque (MASTER.md) */
   --color-primary: #1a6394;
   --color-primary-hover: #144d73;
+  --color-primary-tint: #edf4fa;
+  --color-primary-border: #c5ddf0;
   --color-ctsa-blue: #1a6394;
   --color-ctsa-blue-dark: #144d73;
   --color-ctsa-bluehover: #144d73;
@@ -20,8 +22,8 @@
   --color-ctsa-green: #008751;
   --color-ctsa-green-bg: #ecfdf5;
 
-  /* Surfaces, chrome sombre et neutres */
-  --color-ctsa-surface: #f8fafc;
+  /* Surfaces, chrome et neutres (Atelier Clair) */
+  --color-ctsa-surface: #f6f8fa;
   --color-surface: #ffffff;
   --color-chrome-dark: #1e293b;
   --color-chrome-darker: #0f172a;
@@ -32,7 +34,7 @@
   --color-text: #0f172a;
   --color-text-muted: #475569;
   --color-border: #e2e8f0;
-  --color-border-ui: #64748b;
+  --color-border-ui: #cbd5e1;
   --color-ctsa-bgalt: #f1f5f9;
   --color-ctsa-border: #e2e8f0;
 

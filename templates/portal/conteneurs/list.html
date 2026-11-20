@@ -5,7 +5,7 @@
 {% block page_title %}Conteneurs{% endblock %}
 
 {% block portal_content %}
-<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 space-y-4">
+<div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-5">
 
   {% can 'container.arrival_create' as can_arrival %}
   {% can 'container.prepare' as can_prepare %}
@@ -24,55 +24,36 @@
     {% endif %}
   {% endwith %}
 
-  <!-- Sélecteur de séance -->
-  <div class="flex flex-wrap items-center justify-between gap-2">
-    <div class="inline-flex rounded-lg border border-border bg-surface overflow-hidden shadow-xs">
-      <a href="{% url 'terminal:containers' %}?date={{ today|date:'Y-m-d' }}"
-         class="px-3.5 py-2 min-h-[44px] inline-flex items-center text-xs font-bold border-r border-border no-underline {% if selected_date == today %}bg-chrome-dark text-white{% else %}text-text hover:bg-ctsa-surface{% endif %}">
-        Aujourd'hui
-      </a>
-      <a href="{% url 'terminal:containers' %}?date={{ tomorrow|date:'Y-m-d' }}"
-         class="px-3.5 py-2 min-h-[44px] inline-flex items-center text-xs font-bold no-underline {% if selected_date == tomorrow %}bg-chrome-dark text-white{% else %}text-text hover:bg-ctsa-surface{% endif %}">
-        Demain
-      </a>
-    </div>
+  <!-- Feuille opérationnelle unifiée : séance + onglets + recherche + tableau -->
+  <section class="bg-surface rounded-xl border border-border overflow-hidden" aria-label="Gestion des conteneurs de la séance">
 
-    <form action="{% url 'terminal:containers' %}" method="get" class="inline-flex items-center gap-1.5">
-      <label for="quick-date-picker" class="visually-hidden">Choisir une date</label>
-      <input type="date"
-             id="quick-date-picker"
-             name="date"
-             value="{{ selected_date|date:'Y-m-d' }}"
-             data-auto-submit-date
-             class="border border-border-ui rounded-lg px-3 py-1.5 min-h-[44px] text-sm font-semibold text-text bg-surface">
-      <noscript><button type="submit" class="ui-btn ui-btn-secondary">Afficher</button></noscript>
-    </form>
-  </div>
-
-  <!-- Onglets de statut -->
-  <nav class="list-tabs bg-surface rounded-xl border border-border shadow-xs" aria-label="Filtrer par statut">
-    <a href="{% url 'terminal:containers' %}?date={{ selected_date|date:'Y-m-d' }}{% if line_filter %}&amp;line={{ line_filter }}{% endif %}" class="list-tab" {% if not status_filter and not verification_filter %}aria-current="true"{% endif %}>
-      Tous <span class="list-tab-count">{{ stats.total }}</span>
-    </a>
-    <a href="{% url 'terminal:containers' %}?date={{ selected_date|date:'Y-m-d' }}&amp;status=confirmed{% if line_filter %}&amp;line={{ line_filter }}{% endif %}" class="list-tab" {% if status_filter == 'confirmed' %}aria-current="true"{% endif %}>
-      Confirmés <span class="list-tab-count">{{ stats.confirmed }}</span>
-    </a>
-    <a href="{% url 'terminal:containers' %}?date={{ selected_date|date:'Y-m-d' }}&amp;status=pending{% if line_filter %}&amp;line={{ line_filter }}{% endif %}" class="list-tab" {% if status_filter == 'pending' %}aria-current="true"{% endif %}>
-      En attente <span class="list-tab-count">{{ stats.pending }}</span>
-    </a>
-    <a href="{% url 'terminal:containers' %}?date={{ selected_date|date:'Y-m-d' }}&amp;status=unavailable{% if line_filter %}&amp;line={{ line_filter }}{% endif %}" class="list-tab" {% if status_filter == 'unavailable' %}aria-current="true"{% endif %}>
-      Indisponibles <span class="list-tab-count">{{ stats.unavailable }}</span>
-    </a>
-  </nav>
-
-  <!-- Recherche, filtres et actions secondaires -->
-  <section aria-label="Recherche et filtres" class="bg-surface rounded-xl border border-border shadow-xs p-3.5 sm:p-4 space-y-3">
-    <div class="flex flex-wrap items-center justify-between gap-2">
+    <!-- Ligne 1 : séance & actions secondaires -->
+    <div class="px-4 py-3 border-b border-border flex flex-wrap items-center justify-between gap-2.5 bg-ctsa-surface/50">
       <div class="flex flex-wrap items-center gap-2">
-        <span class="text-xs font-semibold text-text-muted tabular-nums">
-          {{ page.paginator.count }} conteneur{{ page.paginator.count|pluralize }}
-        </span>
+        <div class="inline-flex rounded-lg border border-border bg-surface overflow-hidden">
+          <a href="{% url 'terminal:containers' %}?date={{ today|date:'Y-m-d' }}"
+             class="px-3 py-1.5 min-h-[40px] inline-flex items-center text-xs font-semibold border-r border-border no-underline {% if selected_date == today %}bg-primary-tint text-primary{% else %}text-text-muted hover:text-text hover:bg-ctsa-surface{% endif %}">
+            Aujourd'hui
+          </a>
+          <a href="{% url 'terminal:containers' %}?date={{ tomorrow|date:'Y-m-d' }}"
+             class="px-3 py-1.5 min-h-[40px] inline-flex items-center text-xs font-semibold no-underline {% if selected_date == tomorrow %}bg-primary-tint text-primary{% else %}text-text-muted hover:text-text hover:bg-ctsa-surface{% endif %}">
+            Demain
+          </a>
+        </div>
 
+        <form action="{% url 'terminal:containers' %}" method="get" class="inline-flex items-center">
+          <label for="quick-date-picker" class="visually-hidden">Choisir une date</label>
+          <input type="date"
+                 id="quick-date-picker"
+                 name="date"
+                 value="{{ selected_date|date:'Y-m-d' }}"
+                 data-auto-submit-date
+                 class="border border-border rounded-lg px-2.5 py-1.5 min-h-[40px] text-xs font-semibold text-text bg-surface">
+          <noscript><button type="submit" class="ui-btn ui-btn-secondary ui-btn-sm ml-1">Afficher</button></noscript>
+        </form>
+      </div>
+
+      <div class="flex flex-wrap items-center gap-2">
         {% if can_change_status and stats.pending %}
           <form action="{% url 'terminal:container_status_bulk' %}" method="post" class="inline">
             {% csrf_token %}
@@ -86,107 +67,124 @@
           </form>
         {% endif %}
 
-        {% if filtered %}
-          <a href="{% url 'terminal:containers' %}?date={{ selected_date|date:'Y-m-d' }}" class="text-xs font-bold text-primary hover:underline">
-            Réinitialiser
-          </a>
-        {% endif %}
-      </div>
-
-      {% if can_reports %}
-        <div class="flex items-center gap-1.5">
-          <a href="{% url 'terminal:container_export_pdf' %}?date={{ selected_date|date:'Y-m-d' }}{% if status_filter %}&amp;status={{ status_filter }}{% endif %}"
-             class="ui-btn ui-btn-secondary ui-btn-sm"
-             aria-label="Exporter la liste en PDF">
-            PDF
-          </a>
-          <a href="{% url 'terminal:container_export_csv' %}?date={{ selected_date|date:'Y-m-d' }}{% if status_filter %}&amp;status={{ status_filter }}{% endif %}"
-             class="ui-btn ui-btn-secondary ui-btn-sm"
-             aria-label="Exporter la liste en CSV">
-            CSV
-          </a>
-        </div>
-      {% endif %}
-    </div>
-
-    <search>
-      <form action="{% url 'terminal:containers' %}" method="get" class="grid grid-cols-1 sm:grid-cols-[1fr_auto_auto] gap-2">
-        <input type="hidden" name="date" value="{{ selected_date|date:'Y-m-d' }}">
-        {% if status_filter %}<input type="hidden" name="status" value="{{ status_filter }}">{% endif %}
-
-        <div>
-          <label for="filter-q" class="visually-hidden">Rechercher un numéro</label>
-          <input type="search"
-                 id="filter-q"
-                 name="q"
-                 value="{{ search_q }}"
-                 placeholder="Rechercher un conteneur (ex. CMAU4052450)"
-                 autocapitalize="characters"
-                 autocomplete="off"
-                 spellcheck="false"
-                 class="w-full min-h-[44px] border border-border-ui rounded-lg px-3 py-2 text-base font-mono uppercase tracking-wider bg-surface text-text">
-        </div>
-
-        <div>
-          <label for="filter-line" class="visually-hidden">Ligne maritime</label>
-          <select id="filter-line"
-                  name="line"
-                  data-auto-submit-select
-                  class="w-full sm:w-auto min-h-[44px] border border-border-ui rounded-lg px-3 py-2 text-sm font-semibold bg-surface text-text">
-            <option value="">Toutes les lignes</option>
-            {% for line in shipping_lines %}
-              <option value="{{ line.id }}" {% if line_filter == line.id|stringformat:"s" %}selected{% endif %}>{{ line.name }}</option>
-            {% endfor %}
-          </select>
-        </div>
-
-        <button type="submit" class="ui-btn ui-btn-secondary">
-          Filtrer
-        </button>
-      </form>
-    </search>
-  </section>
-
-  {% if containers %}
-    <!-- Mobile : cartes 2 lignes cliquables vers le détail + 1 seul sélecteur segmenté -->
-    <div class="lg:hidden space-y-3" aria-label="Liste mobile des conteneurs">
-      {% for c in containers %}
-        <article class="bg-surface rounded-xl border border-border shadow-xs p-3.5 space-y-3">
-          <div class="flex items-start gap-2.5">
-            {% if can_change_status %}
-              <input type="checkbox"
-                     name="ids"
-                     value="{{ c.pk }}"
-                     form="dashboard-bulk-status-form"
-                     data-check-group="dashboard"
-                     aria-label="Sélectionner {{ c.container_number }}"
-                     class="mt-1 w-5 h-5 rounded shrink-0">
-            {% endif %}
-            <a href="{% url 'terminal:container_detail' c.pk %}" class="min-w-0 flex-1 no-underline block">
-              <div class="flex items-center justify-between gap-2">
-                <span class="text-base font-bold font-mono tabular-nums text-text">
-                  {{ c.container_number }}
-                </span>
-                <span class="text-xs font-semibold text-primary shrink-0">Détail</span>
-              </div>
-              <p class="text-xs text-text-muted mt-0.5 mb-0 truncate tabular-nums">
-                {{ c.shipping_line.name|default:"Ligne non renseignée" }} · {{ c.updated_at|date:"H:i" }}{% if c.carried_from %} · repris du {{ c.carried_from.scheduled_date|date:"d/m/Y" }}{% endif %}
-              </p>
+        {% if can_reports %}
+          <div class="inline-flex items-center rounded-lg border border-border bg-surface overflow-hidden">
+            <a href="{% url 'terminal:container_export_pdf' %}?date={{ selected_date|date:'Y-m-d' }}{% if status_filter %}&amp;status={{ status_filter }}{% endif %}"
+               class="px-3 py-1.5 min-h-[40px] inline-flex items-center text-xs font-semibold text-text-muted hover:text-text hover:bg-ctsa-surface border-r border-border no-underline"
+               aria-label="Exporter la liste en PDF">
+              PDF
+            </a>
+            <a href="{% url 'terminal:container_export_csv' %}?date={{ selected_date|date:'Y-m-d' }}{% if status_filter %}&amp;status={{ status_filter }}{% endif %}"
+               class="px-3 py-1.5 min-h-[40px] inline-flex items-center text-xs font-semibold text-text-muted hover:text-text hover:bg-ctsa-surface no-underline"
+               aria-label="Exporter la liste en CSV">
+              CSV
             </a>
           </div>
-
-          <div class="pt-2 border-t border-border">
-            {% include 'portal/conteneurs/_status_segmented.html' with c=c %}
-          </div>
-        </article>
-      {% endfor %}
+        {% endif %}
+      </div>
     </div>
 
-    <!-- Desktop : tableau structuré sans menu « ... » ni formulaire caché -->
-    <section class="hidden lg:block bg-surface rounded-xl border border-border shadow-xs overflow-hidden" aria-label="Tableau des conteneurs">
-      <div class="overflow-x-auto">
+    <!-- Ligne 2 : onglets de statut sur une seule ligne -->
+    <nav class="list-tabs" aria-label="Filtrer par statut">
+      <a href="{% url 'terminal:containers' %}?date={{ selected_date|date:'Y-m-d' }}{% if line_filter %}&amp;line={{ line_filter }}{% endif %}" class="list-tab" {% if not status_filter and not verification_filter %}aria-current="true"{% endif %}>
+        Tous <span class="list-tab-count">{{ stats.total }}</span>
+      </a>
+      <a href="{% url 'terminal:containers' %}?date={{ selected_date|date:'Y-m-d' }}&amp;status=confirmed{% if line_filter %}&amp;line={{ line_filter }}{% endif %}" class="list-tab" {% if status_filter == 'confirmed' %}aria-current="true"{% endif %}>
+        Confirmés <span class="list-tab-count">{{ stats.confirmed }}</span>
+      </a>
+      <a href="{% url 'terminal:containers' %}?date={{ selected_date|date:'Y-m-d' }}&amp;status=pending{% if line_filter %}&amp;line={{ line_filter }}{% endif %}" class="list-tab" {% if status_filter == 'pending' %}aria-current="true"{% endif %}>
+        En attente <span class="list-tab-count">{{ stats.pending }}</span>
+      </a>
+      <a href="{% url 'terminal:containers' %}?date={{ selected_date|date:'Y-m-d' }}&amp;status=unavailable{% if line_filter %}&amp;line={{ line_filter }}{% endif %}" class="list-tab" {% if status_filter == 'unavailable' %}aria-current="true"{% endif %}>
+        Indisponibles <span class="list-tab-count">{{ stats.unavailable }}</span>
+      </a>
+    </nav>
+
+    <!-- Ligne 3 : recherche et filtre ligne maritime -->
+    <div class="px-4 py-3 border-b border-border">
+      <search>
+        <form action="{% url 'terminal:containers' %}" method="get" class="flex flex-col sm:flex-row sm:items-center gap-2">
+          <input type="hidden" name="date" value="{{ selected_date|date:'Y-m-d' }}">
+          {% if status_filter %}<input type="hidden" name="status" value="{{ status_filter }}">{% endif %}
+
+          <div class="flex-1 min-w-0">
+            <label for="filter-q" class="visually-hidden">Rechercher un numéro</label>
+            <input type="search"
+                   id="filter-q"
+                   name="q"
+                   value="{{ search_q }}"
+                   placeholder="Rechercher un conteneur (ex. CMAU4052450)"
+                   autocapitalize="characters"
+                   autocomplete="off"
+                   spellcheck="false"
+                   class="w-full min-h-[44px] border border-border rounded-lg px-3 py-2 text-base font-mono uppercase tracking-wider bg-ctsa-surface/60 focus:bg-surface text-text">
+          </div>
+
+          <div class="flex items-center gap-2">
+            <label for="filter-line" class="visually-hidden">Ligne maritime</label>
+            <select id="filter-line"
+                    name="line"
+                    data-auto-submit-select
+                    class="flex-1 sm:flex-none min-h-[44px] border border-border rounded-lg px-3 py-2 text-sm font-medium bg-surface text-text">
+              <option value="">Toutes les lignes</option>
+              {% for line in shipping_lines %}
+                <option value="{{ line.id }}" {% if line_filter == line.id|stringformat:"s" %}selected{% endif %}>{{ line.name }}</option>
+              {% endfor %}
+            </select>
+
+            <button type="submit" class="ui-btn ui-btn-secondary shrink-0">
+              Filtrer
+            </button>
+
+            {% if filtered %}
+              <a href="{% url 'terminal:containers' %}?date={{ selected_date|date:'Y-m-d' }}" class="text-xs font-semibold text-primary hover:underline px-1 shrink-0 no-underline">
+                Réinitialiser
+              </a>
+            {% endif %}
+          </div>
+        </form>
+      </search>
+    </div>
+
+    {% if containers %}
+      <!-- Mobile : liste compacte 2 lignes dans la même feuille -->
+      <div class="lg:hidden divide-y divide-border" aria-label="Liste mobile des conteneurs">
+        {% for c in containers %}
+          <article class="p-4 space-y-3">
+            <div class="flex items-start gap-2.5">
+              {% if can_change_status %}
+                <input type="checkbox"
+                       name="ids"
+                       value="{{ c.pk }}"
+                       form="dashboard-bulk-status-form"
+                       data-check-group="dashboard"
+                       aria-label="Sélectionner {{ c.container_number }}"
+                       class="mt-1 w-5 h-5 rounded shrink-0">
+              {% endif %}
+              <a href="{% url 'terminal:container_detail' c.pk %}" class="min-w-0 flex-1 no-underline block">
+                <div class="flex items-center justify-between gap-2">
+                  <span class="text-base font-semibold font-mono tabular-nums text-text">
+                    {{ c.container_number }}
+                  </span>
+                  <span class="text-xs font-medium text-primary shrink-0">Détail ›</span>
+                </div>
+                <p class="text-xs text-text-muted mt-0.5 mb-0 truncate tabular-nums">
+                  {{ c.shipping_line.name|default:"Ligne non renseignée" }} · {{ c.updated_at|date:"H:i" }}{% if c.carried_from %} · repris du {{ c.carried_from.scheduled_date|date:"d/m/Y" }}{% endif %}
+                </p>
+              </a>
+            </div>
+
+            <div>
+              {% include 'portal/conteneurs/_status_segmented.html' with c=c %}
+            </div>
+          </article>
+        {% endfor %}
+      </div>
+
+      <!-- Desktop : tableau pleine largeur intégré à la feuille -->
+      <div class="hidden lg:block overflow-x-auto" aria-label="Tableau des conteneurs">
         <table class="ctsa-table w-full">
-          <thead class="bg-ctsa-surface">
+          <thead>
             <tr>
               <th scope="col">
                 <label class="inline-flex items-center gap-2">
@@ -216,7 +214,7 @@
                              class="mt-1 w-4 h-4 rounded">
                     {% endif %}
                     <div>
-                      <a href="{% url 'terminal:container_detail' c.pk %}" class="text-base font-bold font-mono tabular-nums text-primary hover:underline no-underline">
+                      <a href="{% url 'terminal:container_detail' c.pk %}" class="text-sm font-semibold font-mono tabular-nums text-primary hover:underline no-underline">
                         {{ c.container_number }}
                       </a>
                       <div class="text-xs font-sans font-normal text-text-muted mt-0.5 tabular-nums">
@@ -225,7 +223,7 @@
                     </div>
                   </div>
                 </th>
-                <td class="font-semibold text-text">
+                <td class="font-medium text-text">
                   {{ c.shipping_line.name|default:"Non renseignée" }}
                 </td>
                 <td>
@@ -241,17 +239,25 @@
           </tbody>
         </table>
       </div>
-    </section>
+    {% else %}
+      <div class="px-6 py-12 text-center space-y-2">
+        <p class="text-sm font-semibold text-text m-0">Aucun conteneur pour cette séance</p>
+        <p class="text-sm text-text-muted m-0">Aucun conteneur ne correspond aux critères sélectionnés.</p>
+        {% with date_iso=selected_date|date:"Y-m-d" %}
+          {% if can_prepare %}
+            <div class="pt-3">
+              <a href="{{ prepare_url }}?date={{ date_iso }}" class="ui-btn ui-btn-secondary ui-btn-sm">
+                Préparer une liste
+              </a>
+            </div>
+          {% endif %}
+        {% endwith %}
+      </div>
+    {% endif %}
+  </section>
 
+  {% if containers %}
     {% include 'components/pagination.html' %}
-  {% else %}
-    {% with date_iso=selected_date|date:"Y-m-d" %}
-      {% if can_prepare %}
-        {% include 'components/empty_state.html' with title="Aucun conteneur pour cette séance" description="Aucun conteneur ne correspond aux critères sélectionnés." cta_url=prepare_url|add:"?date="|add:date_iso cta_label="Préparer une liste" %}
-      {% else %}
-        {% include 'components/empty_state.html' with title="Aucun conteneur pour cette séance" description="Aucun conteneur ne correspond aux critères sélectionnés." %}
-      {% endif %}
-    {% endwith %}
   {% endif %}
 
   {% if can_change_status %}
