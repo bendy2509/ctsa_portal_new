@@ -111,7 +111,7 @@ def container_list_view(request):
         .order_by('-changed_at')[:10]
     )
 
-    return render(request, 'portal/containers.html', {
+    return render(request, 'portal/conteneurs/list.html', {
         'verification_filter': verification_filter,
         'show_verification': show_verification,
         'filtered': bool(status_filter or line_filter or search_q or verification_filter),
@@ -278,7 +278,7 @@ def container_detail_view(request, pk):
         .filter(container=container)
         .order_by('-changed_at')
     )
-    return render(request, 'portal/container_detail.html', {
+    return render(request, 'portal/conteneurs/detail.html', {
         'container': container,
         'logs': logs,
         'shipping_lines': ShippingLine.objects.filter(is_active=True),
@@ -370,7 +370,7 @@ def container_edit_view(request, pk):
             messages.success(request, f"Conteneur {container.container_number} enregistré.")
             return redirect('terminal:container_detail', pk=container.pk)
 
-    return render(request, 'portal/container_edit.html', {
+    return render(request, 'portal/conteneurs/edit.html', {
         'container': container,
         'shipping_lines': shipping_lines,
         'status_choices': Container.Status.choices,

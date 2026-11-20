@@ -116,7 +116,7 @@ def arrival_create_view(request):
             )
             return redirect('terminal:container_detail', pk=container.pk)
 
-    return render(request, 'portal/arrival_create.html', {
+    return render(request, 'portal/conteneurs/arrival_create.html', {
         'shipping_lines': shipping_lines,
         'errors': errors,
         'duplicate_container': duplicate_container,

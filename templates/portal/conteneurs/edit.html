@@ -1,0 +1,142 @@
+{% extends 'portal/base_portal.html' %}
+
+{% block title %}Modifier {{ container.container_number }} — Cap Terminal S.A.{% endblock %}
+{% block page_title %}Modifier {{ container.container_number }}{% endblock %}
+{% block portal_body_extra %}portal-has-form-actions{% endblock %}
+
+{% block portal_content %}
+<div class="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-5 space-y-5">
+
+  {% url 'terminal:container_detail' container.pk as detail_url %}
+  {% with date_fr=container.scheduled_date|date:"d/m/Y" %}
+    {% include 'components/page_header.html' with back_url=detail_url back_label="Retour à la fiche" title="Modifier "|add:container.container_number subtitle="Séance du "|add:date_fr %}
+  {% endwith %}
+
+  <form method="post" action="{% url 'terminal:container_edit' container.pk %}" class="space-y-5">
+    {% csrf_token %}
+
+    <section aria-labelledby="section-identity" class="bg-surface rounded-xl border border-border shadow-xs p-4 sm:p-6 space-y-4">
+      <div class="pb-3 border-b border-border">
+        <h2 id="section-identity" class="text-base font-heading font-bold text-text m-0">
+          Identification &amp; séance
+        </h2>
+        <p class="text-xs text-text-muted mt-1 mb-0">
+          Corrigez le numéro de conteneur, la date de passage ou la ligne maritime.
+        </p>
+      </div>
+
+      <div class="space-y-4">
+        <div class="space-y-1.5">
+          <label for="id_container_number" class="block text-sm font-semibold text-text">
+            Numéro du conteneur <span class="text-danger" aria-hidden="true">*</span>
+          </label>
+          <input type="text"
+                 id="id_container_number"
+                 name="container_number"
+                 value="{{ form_values.container_number }}"
+                 required
+                 maxlength="20"
+                 autocapitalize="characters"
+                 autocomplete="off"
+                 spellcheck="false"
+                 placeholder="ex. CMAU4052450"
+                 class="w-full min-h-[44px] rounded-lg border {% if errors.container_number %}border-danger{% else %}border-border-ui{% endif %} px-3.5 py-2 text-base font-mono uppercase tracking-wider text-text bg-surface">
+          <p class="text-xs text-text-muted m-0">Format requis : 4 lettres suivies de 7 chiffres.</p>
+          {% if errors.container_number %}
+            <p class="text-xs font-semibold text-danger m-0" role="alert">{{ errors.container_number }}</p>
+          {% endif %}
+        </div>
+
+        <div class="space-y-1.5">
+          <label for="id_scheduled_date" class="block text-sm font-semibold text-text">
+            Date programmée <span class="text-danger" aria-hidden="true">*</span>
+          </label>
+          <input type="date"
+                 id="id_scheduled_date"
+                 name="scheduled_date"
+                 value="{{ form_values.scheduled_date }}"
+                 required
+                 class="w-full min-h-[44px] rounded-lg border {% if errors.scheduled_date %}border-danger{% else %}border-border-ui{% endif %} px-3.5 py-2 text-base font-semibold text-text bg-surface">
+          {% if errors.scheduled_date %}
+            <p class="text-xs font-semibold text-danger m-0" role="alert">{{ errors.scheduled_date }}</p>
+          {% endif %}
+        </div>
+
+        <div class="space-y-1.5">
+          <label for="id_shipping_line" class="block text-sm font-semibold text-text">
+            Ligne maritime
+          </label>
+          <select id="id_shipping_line"
+                  name="shipping_line"
+                  class="w-full min-h-[44px] rounded-lg border border-border-ui px-3.5 py-2 text-base text-text bg-surface">
+            <option value="">Non renseignée</option>
+            {% for line in shipping_lines %}
+              <option value="{{ line.id }}" {% if form_values.shipping_line == line.id|stringformat:"s" %}selected{% endif %}>
+                {{ line.name }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+    </section>
+
+    <section aria-labelledby="section-status" class="bg-surface rounded-xl border border-border shadow-xs p-4 sm:p-6 space-y-4">
+      <div class="pb-3 border-b border-border">
+        <h2 id="section-status" class="text-base font-heading font-bold text-text m-0">
+          Statut sur la rampe
+        </h2>
+      </div>
+
+      <div class="space-y-4">
+        <div class="space-y-1.5">
+          <label for="id_status" class="block text-sm font-semibold text-text">
+            Statut <span class="text-danger" aria-hidden="true">*</span>
+          </label>
+          <select id="id_status"
+                  name="status"
+                  data-status-select="edit-unavail-fields"
+                  class="w-full min-h-[44px] rounded-lg border {% if errors.status %}border-danger{% else %}border-border-ui{% endif %} px-3.5 py-2 text-base text-text bg-surface">
+            {% for value, label in status_choices %}
+              <option value="{{ value }}" {% if form_values.status == value %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+          {% if errors.status %}
+            <p class="text-xs font-semibold text-danger m-0" role="alert">{{ errors.status }}</p>
+          {% endif %}
+        </div>
+
+        <div id="edit-unavail-fields" class="space-y-4">
+          <div class="space-y-1.5">
+            <label for="id_unavailability_reason" class="block text-sm font-semibold text-text">
+              Motif d'indisponibilité
+            </label>
+            <select id="id_unavailability_reason"
+                    name="unavailability_reason"
+                    class="w-full min-h-[44px] rounded-lg border border-border-ui px-3.5 py-2 text-base text-text bg-surface">
+              <option value="">— Choisissez un motif (si indisponible) —</option>
+              {% for m in unavailable_motifs %}
+                <option value="{{ m.pk }}" {% if container.unavailability_reason_id == m.pk %}selected{% endif %}>{{ m.label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="space-y-1.5">
+            <label for="id_unavailability_note" class="block text-sm font-semibold text-text">
+              Précision d'indisponibilité
+            </label>
+            <textarea id="id_unavailability_note"
+                      name="unavailability_note"
+                      rows="3"
+                      maxlength="200"
+                      placeholder="Précisez la raison si le conteneur est indisponible"
+                      class="w-full rounded-lg border border-border-ui px-3.5 py-2 text-base text-text bg-surface">{{ form_values.unavailability_note }}</textarea>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    {% include 'components/form_actions.html' with cancel_url=detail_url cancel_label="Annuler" submit_label="Enregistrer" %}
+  </form>
+
+</div>
+{% endblock %}
