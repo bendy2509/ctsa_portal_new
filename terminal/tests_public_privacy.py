@@ -85,4 +85,4 @@ class PublicPortalPrivacyTests(TestCase):
         # 4. Cache service worker incrémenté
         sw_resp = self.client.get(reverse('terminal:pwa_sw'))
         self.assertEqual(sw_resp.status_code, 200)
-        self.assertContains(sw_resp, 'ctsa-rampe-v2')
+        self.assertContains(sw_resp, 'ctsa-rampe-v3')

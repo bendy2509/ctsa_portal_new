@@ -596,7 +596,7 @@ class ShippingLinesAndStatisticsTests(TestCase):
         self.assertEqual(sw_resp.status_code, 200)
         self.assertIn('application/javascript', sw_resp['Content-Type'])
         sw_body = sw_resp.content.decode('utf-8')
-        self.assertIn('ctsa-rampe-v2', sw_body)
+        self.assertIn('ctsa-rampe-v3', sw_body)
         self.assertIn('Koneksyon an pa disponib', sw_body)
 
     def test_verified_container_search_shows_already_verified(self):
