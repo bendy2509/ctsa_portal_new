@@ -118,7 +118,7 @@ def dashboard_view(request):
         .order_by('-changed_at')[:8]
     )
 
-    return render(request, 'portal/dashboard.html', {
+    return render(request, 'portal/dashboard/index.html', {
         'today': today,
         'tomorrow': today + datetime.timedelta(days=1),
         'selected_date': selected_date,
