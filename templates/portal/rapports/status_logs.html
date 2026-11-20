@@ -5,61 +5,61 @@
 {% block page_title %}Historique{% endblock %}
 
 {% block portal_content %}
-<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 space-y-5">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-5">
 
   {% include 'components/page_header.html' with title="Historique des statuts" subtitle="Suivi chronologique des inscriptions et des modifications." count=page.paginator.count %}
 
-  <!-- Recherche -->
-  <section aria-label="Rechercher dans l'historique" class="bg-surface rounded-xl border border-border shadow-xs p-3.5 sm:p-4">
-    <search>
-      <form action="{% url 'terminal:status_logs' %}" method="get" class="flex flex-col sm:flex-row sm:items-center gap-2">
-        <label for="log-q" class="visually-hidden">Rechercher dans l'historique</label>
-        <input type="search"
-               id="log-q"
-               name="q"
-               value="{{ q }}"
-               placeholder="Conteneur, opérateur, motif..."
-               class="flex-1 min-h-[44px] border border-border-ui rounded-lg px-3 py-1.5 text-base bg-surface text-text">
-        <div class="flex items-center gap-2">
-          <button type="submit" class="ui-btn ui-btn-secondary flex-1 sm:flex-initial">Rechercher</button>
-          {% if q %}
-            <a href="{% url 'terminal:status_logs' %}" class="text-xs font-bold text-primary hover:underline px-2">Réinitialiser</a>
-          {% endif %}
-        </div>
-      </form>
-    </search>
-  </section>
-
-  {% if logs %}
-    <!-- Mobile : cartes 2 lignes -->
-    <div class="lg:hidden space-y-3" aria-label="Liste mobile de l'historique">
-      {% for log in logs %}
-        <a href="{% url 'terminal:container_detail' log.container.pk %}"
-           class="block bg-surface rounded-xl border border-border shadow-xs p-3.5 no-underline hover:border-primary space-y-1.5">
-          <div class="flex items-center justify-between gap-2">
-            <span class="font-mono text-sm font-bold text-text tabular-nums">{{ log.container.container_number }}</span>
-            {% if log.action == 'verified' %}
-              {% include 'components/badge.html' with variant='verified' label='Vérifié' %}
-            {% elif log.action == 'not_verified' %}
-              {% include 'components/badge.html' with variant='not_verified' label='Non vérifié' %}
-            {% elif log.action != 'status_change' %}
-              {% include 'components/badge.html' with variant='neutral' label=log.get_action_display %}
-            {% else %}
-              {% include 'components/badge.html' with variant=log.new_status label=log.get_new_status_display %}
+  <!-- Feuille opérationnelle unifiée : recherche + tableau -->
+  <section aria-label="Historique des opérations" class="bg-surface rounded-xl border border-border overflow-hidden">
+    <div class="p-4 border-b border-border bg-ctsa-surface/50">
+      <search>
+        <form action="{% url 'terminal:status_logs' %}" method="get" class="flex flex-col sm:flex-row sm:items-center gap-2">
+          <label for="log-q" class="visually-hidden">Rechercher dans l'historique</label>
+          <input type="search"
+                 id="log-q"
+                 name="q"
+                 value="{{ q }}"
+                 placeholder="Conteneur, opérateur, motif..."
+                 class="flex-1 min-h-[40px] border border-border rounded-lg px-3 py-1.5 text-sm bg-surface text-text">
+          <div class="flex items-center gap-2">
+            <button type="submit" class="ui-btn ui-btn-secondary ui-btn-sm flex-1 sm:flex-initial">Rechercher</button>
+            {% if q %}
+              <a href="{% url 'terminal:status_logs' %}" class="text-xs font-semibold text-primary hover:underline px-2 no-underline">Réinitialiser</a>
             {% endif %}
           </div>
-          <p class="text-xs text-text-muted m-0 tabular-nums truncate">
-            {{ log.changed_at|date:"d/m/Y H:i" }} · {% if log.changed_by %}{{ log.changed_by.display_name }}{% else %}Système{% endif %}{% if log.reason_text %} · {{ log.reason_text }}{% endif %}
-          </p>
-        </a>
-      {% endfor %}
+        </form>
+      </search>
     </div>
 
-    <!-- Desktop : tableau -->
-    <section class="hidden lg:block bg-surface rounded-xl border border-border shadow-xs overflow-hidden" aria-label="Tableau de l'historique">
-      <div class="overflow-x-auto">
+    {% if logs %}
+      <!-- Mobile : liste compacte -->
+      <div class="lg:hidden divide-y divide-border" aria-label="Liste mobile de l'historique">
+        {% for log in logs %}
+          <a href="{% url 'terminal:container_detail' log.container.pk %}"
+             class="block p-4 no-underline hover:bg-ctsa-surface space-y-1.5">
+            <div class="flex items-center justify-between gap-2">
+              <span class="font-mono text-sm font-semibold text-text tabular-nums">{{ log.container.container_number }}</span>
+              {% if log.action == 'verified' %}
+                {% include 'components/badge.html' with variant='verified' label='Vérifié' %}
+              {% elif log.action == 'not_verified' %}
+                {% include 'components/badge.html' with variant='not_verified' label='Non vérifié' %}
+              {% elif log.action != 'status_change' %}
+                {% include 'components/badge.html' with variant='neutral' label=log.get_action_display %}
+              {% else %}
+                {% include 'components/badge.html' with variant=log.new_status label=log.get_new_status_display %}
+              {% endif %}
+            </div>
+            <p class="text-xs text-text-muted m-0 tabular-nums truncate">
+              {{ log.changed_at|date:"d/m/Y H:i" }} · {% if log.changed_by %}{{ log.changed_by.display_name }}{% else %}Système{% endif %}{% if log.reason_text %} · {{ log.reason_text }}{% endif %}
+            </p>
+          </a>
+        {% endfor %}
+      </div>
+
+      <!-- Desktop : tableau intégré -->
+      <div class="hidden lg:block overflow-x-auto" aria-label="Tableau de l'historique">
         <table class="ctsa-table w-full">
-          <thead class="bg-ctsa-surface">
+          <thead>
             <tr>
               <th scope="col">Conteneur</th>
               <th scope="col">Séance</th>
@@ -73,7 +73,7 @@
             {% for log in logs %}
               <tr>
                 <th scope="row">
-                  <a href="{% url 'terminal:container_detail' log.container.pk %}" class="font-mono text-sm font-bold text-primary hover:underline no-underline tabular-nums">
+                  <a href="{% url 'terminal:container_detail' log.container.pk %}" class="font-mono text-sm font-semibold text-primary hover:underline no-underline tabular-nums">
                     {{ log.container.container_number }}
                   </a>
                 </th>
@@ -102,24 +102,29 @@
           </tbody>
         </table>
       </div>
-    </section>
+    {% else %}
+      <div class="px-6 py-12 text-center space-y-1.5">
+        <p class="text-sm font-semibold text-text m-0">Aucune opération trouvée</p>
+        <p class="text-sm text-text-muted m-0">Aucune modification de statut ne correspond à cette recherche.</p>
+      </div>
+    {% endif %}
+  </section>
 
+  {% if logs %}
     {% include 'components/pagination.html' %}
-  {% else %}
-    {% include 'components/empty_state.html' with title="Aucune opération trouvée" description="Aucune modification de statut ne correspond à cette recherche." %}
   {% endif %}
 
   {% if archived_containers %}
-    <section class="bg-surface rounded-xl border border-border shadow-xs overflow-hidden">
-      <div class="px-4 sm:px-5 py-3.5 border-b border-border">
-        <h2 class="text-base font-heading font-bold text-text m-0">Conteneurs archivés</h2>
+    <section class="bg-surface rounded-xl border border-border overflow-hidden">
+      <div class="px-5 py-3.5 border-b border-border bg-ctsa-surface/60">
+        <h2 class="text-sm font-heading font-semibold text-text m-0">Conteneurs archivés</h2>
       </div>
       <div class="divide-y divide-border">
         {% can 'container.restore' as can_restore %}
         {% for ac in archived_containers %}
-          <div class="p-3.5 sm:px-5 flex flex-wrap items-center justify-between gap-3">
+          <div class="p-4 sm:px-5 flex flex-wrap items-center justify-between gap-3">
             <div>
-              <div class="font-mono text-sm font-bold text-text">{{ ac.container_number }}</div>
+              <div class="font-mono text-sm font-semibold text-text">{{ ac.container_number }}</div>
               <div class="text-xs text-text-muted">
                 Archivé le {{ ac.archived_at|date:"d/m/Y H:i" }} par {{ ac.archived_by.display_name|default:"Système" }}
                 {% if ac.archive_reason %} · {{ ac.archive_reason }}{% endif %}

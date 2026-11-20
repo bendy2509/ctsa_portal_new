@@ -5,7 +5,7 @@
 {% block page_title %}Inspection{% endblock %}
 
 {% block portal_content %}
-<div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-5">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-5">
 
   {% can 'container.verify' as can_verify %}
   {% include 'components/page_header.html' with title="Inspection" subtitle="Marquez chaque conteneur confirmé comme vérifié ou non vérifié." count=stats.confirmed %}

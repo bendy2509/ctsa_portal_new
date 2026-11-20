@@ -5,7 +5,7 @@
 {% block portal_body_extra %}portal-has-form-actions{% endblock %}
 
 {% block portal_content %}
-<div class="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-5 space-y-5">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
 
   {% url 'terminal:containers' as containers_url %}
   {% include 'components/page_header.html' with back_url=containers_url back_label="Retour aux conteneurs" title="Enregistrer une arrivée sans liste" subtitle="Conteneur arrivé à Cap Terminal, hors liste de vérification" %}
@@ -25,75 +25,98 @@
     </div>
   {% endif %}
 
-  <form method="post" action="{% url 'terminal:arrival_create' %}" class="space-y-5">
-    {% csrf_token %}
+  <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+    <!-- Formulaire principal (8/12) -->
+    <form method="post" action="{% url 'terminal:arrival_create' %}" class="lg:col-span-8 space-y-4">
+      {% csrf_token %}
 
-    <section class="bg-surface rounded-xl border border-border shadow-xs p-4 sm:p-6 space-y-5">
-      <div class="pb-3 border-b border-border">
-        <h2 class="text-base font-heading font-bold text-text m-0">Informations d'arrivée</h2>
-        <p class="text-xs text-text-muted mt-0.5 mb-0">Le conteneur sera créé à l'état <strong>Enregistré</strong> (hors liste, jamais confirmé automatiquement).</p>
-      </div>
-
-      <div class="space-y-1.5">
-        <label for="id_arrival_number" class="block text-sm font-semibold text-text">
-          Numéro de conteneur <span aria-hidden="true" class="text-danger">*</span>
-        </label>
-        <input type="text"
-               id="id_arrival_number"
-               name="container_number"
-               value="{{ raw_number }}"
-               required
-               maxlength="20"
-               autocapitalize="characters"
-               autocomplete="off"
-               spellcheck="false"
-               placeholder="Ex. CMAU4052450"
-               class="w-full min-h-[44px] rounded-lg border {% if errors.container_number %}border-danger{% else %}border-border-ui{% endif %} px-3.5 py-2 font-mono text-base tracking-wider uppercase text-text bg-surface">
-        <p class="text-xs text-text-muted m-0">Format ISO 6346 : 3 lettres + U, J ou Z + 7 chiffres.</p>
-        {% if errors.container_number %}
-          <p class="text-xs font-semibold text-danger m-0" role="alert">{{ errors.container_number }}</p>
-        {% endif %}
-      </div>
-
-      <div class="space-y-1.5">
-        <label for="id_arrival_line" class="block text-sm font-semibold text-text">
-          Ligne maritime <span class="text-xs font-normal text-text-muted">(optionnelle)</span>
-        </label>
-        <select id="id_arrival_line" name="shipping_line" class="w-full min-h-[44px] rounded-lg border border-border-ui px-3.5 py-2 text-base text-text bg-surface">
-          <option value="">Non renseignée</option>
-          {% for line in shipping_lines %}
-            <option value="{{ line.pk }}" {% if raw_line == line.pk|stringformat:"s" %}selected{% endif %}>
-              {{ line.name }}
-            </option>
-          {% endfor %}
-        </select>
-        {% if errors.shipping_line %}
-          <p class="text-xs font-semibold text-danger m-0" role="alert">{{ errors.shipping_line }}</p>
-        {% endif %}
-      </div>
-
-      <div class="rounded-lg bg-ctsa-surface border border-border px-3.5 py-3 text-xs text-text-muted flex items-center justify-between gap-2">
-        <span>Date et heure d'arrivée (automatiques)</span>
-        <strong class="font-mono text-text tabular-nums">{{ now_preview|date:"d/m/Y H:i" }}</strong>
-      </div>
-
-      {% if iso_warning %}
-        <div class="rounded-xl border border-status-pending-bd bg-status-pending-bg p-4 space-y-2.5" role="alert">
-          <div class="text-sm font-bold text-status-pending-fg">
-            Clé de contrôle ISO 6346 invalide
-          </div>
-          <p class="text-xs text-status-pending-fg m-0">
-            Le chiffre de contrôle du numéro saisi ne correspond pas au standard ISO 6346. Vérifiez votre saisie ou confirmez pour enregistrer malgré tout.
-          </p>
-          <label class="inline-flex items-center gap-2 text-xs font-bold text-text cursor-pointer">
-            <input type="checkbox" name="confirm_iso" value="1" required class="w-4 h-4 rounded border-border-ui">
-            <span>Je confirme ce numéro malgré l'avertissement ISO 6346</span>
-          </label>
+      <section class="bg-surface rounded-xl border border-border overflow-hidden">
+        <div class="px-5 py-4 border-b border-border bg-ctsa-surface/60">
+          <h2 class="text-sm font-heading font-semibold text-text m-0">Informations d'arrivée</h2>
+          <p class="text-xs text-text-muted mt-0.5 mb-0">Le conteneur sera créé à l'état <strong>Enregistré</strong> (hors liste, jamais confirmé automatiquement).</p>
         </div>
-      {% endif %}
-    </section>
 
-    {% include 'components/form_actions.html' with cancel_url=containers_url cancel_label="Annuler" submit_label="Enregistrer l'arrivée" %}
-  </form>
+        <div class="p-5 sm:p-6 space-y-5">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div class="space-y-1.5">
+              <label for="id_arrival_number" class="block text-xs font-bold uppercase tracking-wider text-text-muted">
+                Numéro de conteneur <span aria-hidden="true" class="text-danger">*</span>
+              </label>
+              <input type="text"
+                     id="id_arrival_number"
+                     name="container_number"
+                     value="{{ raw_number }}"
+                     required
+                     maxlength="20"
+                     autocapitalize="characters"
+                     autocomplete="off"
+                     spellcheck="false"
+                     placeholder="Ex. CMAU4052450"
+                     class="w-full min-h-[44px] rounded-lg border {% if errors.container_number %}border-danger{% else %}border-border-ui{% endif %} px-3.5 py-2 font-mono text-base tracking-wider uppercase text-text bg-surface">
+              <p class="text-xs text-text-muted m-0">Format ISO 6346 : 3 lettres + U, J ou Z + 7 chiffres.</p>
+              {% if errors.container_number %}
+                <p class="text-xs font-semibold text-danger m-0" role="alert">{{ errors.container_number }}</p>
+              {% endif %}
+            </div>
+
+            <div class="space-y-1.5">
+              <label for="id_arrival_line" class="block text-xs font-bold uppercase tracking-wider text-text-muted">
+                Ligne maritime <span class="font-normal text-text-muted">(optionnelle)</span>
+              </label>
+              <select id="id_arrival_line" name="shipping_line" class="w-full min-h-[44px] rounded-lg border border-border-ui px-3.5 py-2 text-sm font-medium text-text bg-surface">
+                <option value="">Non renseignée</option>
+                {% for line in shipping_lines %}
+                  <option value="{{ line.pk }}" {% if raw_line == line.pk|stringformat:"s" %}selected{% endif %}>
+                    {{ line.name }}
+                  </option>
+                {% endfor %}
+              </select>
+              {% if errors.shipping_line %}
+                <p class="text-xs font-semibold text-danger m-0" role="alert">{{ errors.shipping_line }}</p>
+              {% endif %}
+            </div>
+          </div>
+
+          <div class="rounded-lg bg-ctsa-surface border border-border px-4 py-3 text-xs text-text-muted flex items-center justify-between gap-2">
+            <span>Date et heure d'arrivée (automatiques)</span>
+            <strong class="font-mono text-text tabular-nums">{{ now_preview|date:"d/m/Y H:i" }}</strong>
+          </div>
+
+          {% if iso_warning %}
+            <div class="rounded-xl border border-status-pending-bd bg-status-pending-bg p-4 space-y-2.5" role="alert">
+              <div class="text-sm font-bold text-status-pending-fg">
+                Clé de contrôle ISO 6346 invalide
+              </div>
+              <p class="text-xs text-status-pending-fg m-0">
+                Le chiffre de contrôle du numéro saisi ne correspond pas au standard ISO 6346. Vérifiez votre saisie ou confirmez pour enregistrer malgré tout.
+              </p>
+              <label class="inline-flex items-center gap-2 text-xs font-bold text-text cursor-pointer">
+                <input type="checkbox" name="confirm_iso" value="1" required class="w-4 h-4 rounded border-border-ui">
+                <span>Je confirme ce numéro malgré l'avertissement ISO 6346</span>
+              </label>
+            </div>
+          {% endif %}
+        </div>
+
+        <div class="border-t border-border bg-ctsa-surface/60 px-5 py-3.5 flex items-center justify-end gap-3">
+          <a href="{{ containers_url }}" class="ui-btn ui-btn-secondary">Annuler</a>
+          <button type="submit" data-submit-guard class="ui-btn ui-btn-primary">Enregistrer l'arrivée</button>
+        </div>
+      </section>
+    </form>
+
+    <!-- Panneau latéral de consignes (4/12) -->
+    <aside class="lg:col-span-4 space-y-4">
+      <section class="bg-surface rounded-xl border border-border p-5 space-y-2.5">
+        <h3 class="text-xs font-heading font-bold uppercase tracking-wider text-text-muted m-0">Cycle de vie d'une arrivée</h3>
+        <ol class="text-xs text-text-muted space-y-2 pl-4 m-0">
+          <li>Le conteneur est enregistré à l'état <strong class="text-text">Enregistré</strong> (hors séance).</li>
+          <li>Il peut ensuite être rattaché à une séance depuis <strong class="text-text">Préparer une liste</strong> (onglet « Chercher un conteneur enregistré »).</li>
+          <li>Une alerte statistique signale tout conteneur resté hors liste au-delà du seuil configuré.</li>
+        </ol>
+      </section>
+    </aside>
+  </div>
+
 </div>
 {% endblock %}

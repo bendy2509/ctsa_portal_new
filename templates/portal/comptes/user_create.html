@@ -5,7 +5,7 @@
 {% block portal_body_extra %}portal-has-form-actions{% endblock %}
 
 {% block portal_content %}
-<div class="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-5 space-y-5">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
 
   {% url 'accounts:user_list' as users_url %}
   {% include 'components/page_header.html' with back_url=users_url back_label="Retour aux utilisateurs" title="Nouvel utilisateur" subtitle="Créez un compte du personnel ou client." %}

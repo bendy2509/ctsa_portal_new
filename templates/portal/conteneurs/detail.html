@@ -5,7 +5,7 @@
 {% block page_title %}{{ container.container_number }}{% endblock %}
 
 {% block portal_content %}
-<div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-5 space-y-5">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
 
   {% can 'container.change_status' as can_change_status %}
   {% can 'container.archive' container as can_archive %}
@@ -21,130 +21,140 @@
     {% endif %}
   {% endwith %}
 
-  <!-- Informations du conteneur -->
-  <section aria-labelledby="container-info-heading" class="bg-surface rounded-xl border border-border shadow-xs p-4 sm:p-6 space-y-5">
-    <div class="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-border">
-      <h2 id="container-info-heading" class="text-base font-heading font-bold text-text m-0">
-        Informations du conteneur
-      </h2>
-      <div class="flex flex-wrap items-center gap-2">
-        {% include 'components/badge.html' with variant=container.status label=container.get_status_display %}
-        {% if container.verification_result %}
-          {% include 'components/badge.html' with variant=container.verification_result label=container.get_verification_result_display %}
-        {% else %}
-          {% include 'components/badge.html' with variant='not_inspected' label='Non inspecté' %}
+  <!-- Grille 12 colonnes : Dossier & Statut (7 col.) | Historique des statuts (5 col.) -->
+  <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+
+    <!-- Informations du conteneur (7/12) -->
+    <section aria-labelledby="container-info-heading" class="lg:col-span-7 bg-surface rounded-xl border border-border overflow-hidden">
+      <div class="px-5 py-3.5 border-b border-border bg-ctsa-surface/60 flex flex-wrap items-center justify-between gap-2">
+        <h2 id="container-info-heading" class="text-sm font-heading font-semibold text-text m-0">
+          Informations du conteneur
+        </h2>
+        <div class="flex flex-wrap items-center gap-2">
+          {% include 'components/badge.html' with variant=container.status label=container.get_status_display %}
+          {% if container.verification_result %}
+            {% include 'components/badge.html' with variant=container.verification_result label=container.get_verification_result_display %}
+          {% else %}
+            {% include 'components/badge.html' with variant='not_inspected' label='Non inspecté' %}
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="p-5 space-y-5">
+        <dl class="grid grid-cols-1 sm:grid-cols-2 gap-4 m-0">
+          <div>
+            <dt class="text-[11px] font-bold uppercase tracking-wider text-text-muted">Numéro</dt>
+            <dd class="mt-1 text-base font-mono font-bold text-text m-0 tabular-nums">{{ container.container_number }}</dd>
+          </div>
+          <div>
+            <dt class="text-[11px] font-bold uppercase tracking-wider text-text-muted">Séance programmée</dt>
+            <dd class="mt-1 text-sm font-semibold text-text m-0 tabular-nums">{{ container.scheduled_date|date:"d/m/Y"|default:"Hors liste" }}</dd>
+          </div>
+          <div>
+            <dt class="text-[11px] font-bold uppercase tracking-wider text-text-muted">Ligne maritime</dt>
+            <dd class="mt-1 text-sm font-semibold text-text m-0">{{ container.shipping_line.name|default:"Non renseignée" }}</dd>
+          </div>
+          <div>
+            <dt class="text-[11px] font-bold uppercase tracking-wider text-text-muted">Dernière mise à jour</dt>
+            <dd class="mt-1 text-sm text-text-muted m-0 tabular-nums">
+              {{ container.updated_at|date:"d/m/Y H:i" }}{% if container.updated_by %} · {{ container.updated_by.display_name }}{% endif %}
+            </dd>
+          </div>
+          {% if container.carried_from %}
+            <div class="sm:col-span-2">
+              <dt class="text-[11px] font-bold uppercase tracking-wider text-text-muted">Origine</dt>
+              <dd class="mt-1 text-sm text-text m-0">Repris de la séance du {{ container.carried_from.scheduled_date|date:"d/m/Y" }}</dd>
+            </div>
+          {% endif %}
+          {% if container.status == 'unavailable' and container.full_reason_display %}
+            <div class="sm:col-span-2 rounded-lg bg-status-unavailable-bg border border-status-unavailable-bd px-3.5 py-2.5">
+              <dt class="text-[11px] font-bold uppercase tracking-wider text-status-unavailable-fg">Motif d'indisponibilité</dt>
+              <dd class="mt-1 text-sm font-semibold text-status-unavailable-fg m-0">{{ container.full_reason_display }}</dd>
+            </div>
+          {% endif %}
+          {% if container.verification_note %}
+            <div class="sm:col-span-2 rounded-lg bg-ctsa-surface border border-border px-3.5 py-2.5">
+              <dt class="text-[11px] font-bold uppercase tracking-wider text-text-muted">Note d'inspection</dt>
+              <dd class="mt-1 text-sm text-text m-0">{{ container.verification_note }}</dd>
+            </div>
+          {% endif %}
+        </dl>
+
+        {% if can_change_status and not container.archived_at %}
+          <div class="pt-4 border-t border-border space-y-2">
+            <p class="text-[11px] font-bold uppercase tracking-wider text-text-muted m-0">Statut sur la rampe</p>
+            {% include 'portal/conteneurs/_status_segmented.html' with c=container %}
+          </div>
+        {% endif %}
+
+        {% if container.archived_at and can_restore %}
+          <div class="pt-4 border-t border-border flex flex-wrap items-center justify-between gap-2">
+            <p class="text-xs text-text-muted m-0">Ce conteneur est archivé.</p>
+            <form action="{% url 'terminal:container_restore' container.pk %}" method="post">
+              {% csrf_token %}
+              <button type="submit" class="ui-btn ui-btn-secondary ui-btn-sm">Restaurer</button>
+            </form>
+          </div>
+        {% elif can_archive and not container.is_verified and not container.archived_at %}
+          <div class="pt-4 border-t border-border flex flex-wrap items-center justify-between gap-2">
+            <p class="text-xs text-text-muted m-0">Retirer ce conteneur de la séance active.</p>
+            <button type="button"
+                    class="ui-btn ui-btn-danger ui-btn-sm"
+                    data-confirm-modal
+                    data-confirm-action="{% url 'terminal:container_delete' container.pk %}"
+                    data-confirm-title="Supprimer {{ container.container_number }} ?"
+                    data-confirm-message="Ce conteneur sera retiré de la séance du {{ container.scheduled_date|date:'d/m/Y' }}."
+                    data-confirm-label="Supprimer">
+              Supprimer
+            </button>
+          </div>
         {% endif %}
       </div>
-    </div>
+    </section>
 
-    <dl class="grid grid-cols-1 sm:grid-cols-2 gap-4 m-0">
-      <div>
-        <dt class="text-xs font-bold uppercase tracking-wider text-text-muted">Numéro</dt>
-        <dd class="mt-1 text-base font-mono font-bold text-text m-0 tabular-nums">{{ container.container_number }}</dd>
+    <!-- Historique des statuts (5/12) -->
+    <section aria-labelledby="container-history-heading" class="lg:col-span-5 bg-surface rounded-xl border border-border overflow-hidden">
+      <div class="px-5 py-3.5 border-b border-border bg-ctsa-surface/60">
+        <h2 id="container-history-heading" class="text-sm font-heading font-semibold text-text m-0">
+          Historique des statuts
+        </h2>
       </div>
-      <div>
-        <dt class="text-xs font-bold uppercase tracking-wider text-text-muted">Séance programmée</dt>
-        <dd class="mt-1 text-sm font-semibold text-text m-0 tabular-nums">{{ container.scheduled_date|date:"d/m/Y"|default:"Hors liste" }}</dd>
-      </div>
-      <div>
-        <dt class="text-xs font-bold uppercase tracking-wider text-text-muted">Ligne maritime</dt>
-        <dd class="mt-1 text-sm font-semibold text-text m-0">{{ container.shipping_line.name|default:"Non renseignée" }}</dd>
-      </div>
-      <div>
-        <dt class="text-xs font-bold uppercase tracking-wider text-text-muted">Dernière mise à jour</dt>
-        <dd class="mt-1 text-sm text-text-muted m-0 tabular-nums">
-          {{ container.updated_at|date:"d/m/Y H:i" }}{% if container.updated_by %} · {{ container.updated_by.display_name }}{% endif %}
-        </dd>
-      </div>
-      {% if container.carried_from %}
-        <div class="sm:col-span-2">
-          <dt class="text-xs font-bold uppercase tracking-wider text-text-muted">Origine</dt>
-          <dd class="mt-1 text-sm text-text m-0">Repris de la séance du {{ container.carried_from.scheduled_date|date:"d/m/Y" }}</dd>
-        </div>
-      {% endif %}
-      {% if container.status == 'unavailable' and container.full_reason_display %}
-        <div class="sm:col-span-2 rounded-lg bg-status-unavailable-bg border border-status-unavailable-bd px-3.5 py-2.5">
-          <dt class="text-xs font-bold uppercase tracking-wider text-status-unavailable-fg">Motif d'indisponibilité</dt>
-          <dd class="mt-1 text-sm font-semibold text-status-unavailable-fg m-0">{{ container.full_reason_display }}</dd>
-        </div>
-      {% endif %}
-      {% if container.verification_note %}
-        <div class="sm:col-span-2 rounded-lg bg-ctsa-surface border border-border px-3.5 py-2.5">
-          <dt class="text-xs font-bold uppercase tracking-wider text-text-muted">Note d'inspection</dt>
-          <dd class="mt-1 text-sm text-text m-0">{{ container.verification_note }}</dd>
-        </div>
-      {% endif %}
-    </dl>
 
-    {% if can_change_status and not container.archived_at %}
-      <div class="pt-4 border-t border-border space-y-4">
-        <div>
-          <p class="text-xs font-bold uppercase tracking-wider text-text-muted mb-2">Statut sur la rampe</p>
-          {% include 'portal/conteneurs/_status_segmented.html' with c=container %}
-        </div>
-      </div>
-    {% endif %}
-
-    {% if container.archived_at and can_restore %}
-      <div class="pt-4 border-t border-border flex flex-wrap items-center justify-between gap-2">
-        <p class="text-xs text-text-muted m-0">Ce conteneur est archivé.</p>
-        <form action="{% url 'terminal:container_restore' container.pk %}" method="post">
-          {% csrf_token %}
-          <button type="submit" class="ui-btn ui-btn-secondary">Restaurer</button>
-        </form>
-      </div>
-    {% elif can_archive and not container.is_verified and not container.archived_at %}
-      <div class="pt-4 border-t border-border flex flex-wrap items-center justify-between gap-2">
-        <p class="text-xs text-text-muted m-0">Retirer ce conteneur de la séance active.</p>
-        <button type="button"
-                class="ui-btn ui-btn-danger"
-                data-confirm-modal
-                data-confirm-action="{% url 'terminal:container_delete' container.pk %}"
-                data-confirm-title="Supprimer {{ container.container_number }} ?"
-                data-confirm-message="Ce conteneur sera retiré de la séance du {{ container.scheduled_date|date:'d/m/Y' }}."
-                data-confirm-label="Supprimer">
-          Supprimer
-        </button>
-      </div>
-    {% endif %}
-  </section>
-
-  <!-- Historique des statuts -->
-  <section aria-labelledby="container-history-heading" class="bg-surface rounded-xl border border-border shadow-xs p-4 sm:p-6 space-y-4">
-    <h2 id="container-history-heading" class="text-base font-heading font-bold text-text m-0">
-      Historique des statuts
-    </h2>
-
-    {% if logs %}
-      <ol class="divide-y divide-border m-0 p-0 list-none">
-        {% for log in logs %}
-          <li class="py-3 first:pt-0 last:pb-0 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1.5">
-            <div class="space-y-0.5">
-              <div class="text-sm font-semibold text-text">
-                {% if log.action == 'verified' %}
-                  Vérifié
-                {% elif log.action == 'not_verified' %}
-                  Non vérifié
-                {% elif log.action != 'status_change' %}
-                  {{ log.get_action_display }}
-                {% else %}
-                  {% if log.old_status %}{{ log.get_old_status_display }} → {% endif %}{{ log.get_new_status_display }}
+      <div class="p-5">
+        {% if logs %}
+          <ol class="divide-y divide-border m-0 p-0 list-none">
+            {% for log in logs %}
+              <li class="py-3 first:pt-0 last:pb-0 flex flex-col gap-1">
+                <div class="flex items-center justify-between gap-2">
+                  <span class="text-sm font-semibold text-text">
+                    {% if log.action == 'verified' %}
+                      Vérifié
+                    {% elif log.action == 'not_verified' %}
+                      Non vérifié
+                    {% elif log.action != 'status_change' %}
+                      {{ log.get_action_display }}
+                    {% else %}
+                      {% if log.old_status %}{{ log.get_old_status_display }} → {% endif %}{{ log.get_new_status_display }}
+                    {% endif %}
+                  </span>
+                  <span class="text-xs font-mono text-text-muted tabular-nums shrink-0">{{ log.changed_at|date:"d/m/Y H:i" }}</span>
+                </div>
+                {% if log.reason_text %}
+                  <p class="text-xs text-text-muted m-0">{{ log.reason_text }}</p>
                 {% endif %}
-              </div>
-              {% if log.reason_text %}
-                <p class="text-xs text-text-muted m-0">{{ log.reason_text }}</p>
-              {% endif %}
-            </div>
-            <div class="text-xs text-text-muted tabular-nums shrink-0">
-              {{ log.changed_at|date:"d/m/Y H:i" }}{% if log.changed_by %} · {{ log.changed_by.display_name }}{% endif %}
-            </div>
-          </li>
-        {% endfor %}
-      </ol>
-    {% else %}
-      <p class="text-sm text-text-muted m-0">Aucun changement de statut enregistré pour ce conteneur.</p>
-    {% endif %}
-  </section>
+                {% if log.changed_by %}
+                  <span class="text-xs text-text-muted">Opérateur : {{ log.changed_by.display_name }}</span>
+                {% endif %}
+              </li>
+            {% endfor %}
+          </ol>
+        {% else %}
+          <p class="text-sm text-text-muted m-0">Aucun changement de statut enregistré pour ce conteneur.</p>
+        {% endif %}
+      </div>
+    </section>
+
+  </div>
 
 </div>
 {% endblock %}

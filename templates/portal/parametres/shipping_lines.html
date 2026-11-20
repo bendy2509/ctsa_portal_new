@@ -4,33 +4,33 @@
 {% block page_title %}Lignes maritimes{% endblock %}
 
 {% block portal_content %}
-<div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-5 space-y-5">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-5">
 
   {% url 'terminal:shipping_line_create' as create_line_url %}
-  {% include 'components/page_header.html' with title="Lignes maritimes" subtitle="Lignes proposées lors de la préparation des listes." count=lines|length primary_url=create_line_url primary_label="Ajouter" %}
+  {% include 'components/page_header.html' with title="Lignes maritimes" subtitle="Compagnies maritimes proposées lors de la préparation des listes et de l'enregistrement des arrivées." count=lines|length primary_url=create_line_url primary_label="Ajouter" %}
 
   {% if lines %}
-    <!-- Mobile : cartes 2 lignes cliquables -->
-    <div class="lg:hidden space-y-3" aria-label="Liste mobile des lignes maritimes">
-      {% for line in lines %}
-        <a href="{% url 'terminal:shipping_line_edit' line.pk %}"
-           class="block bg-surface rounded-xl border border-border shadow-xs p-4 no-underline hover:border-primary">
-          <div class="flex items-center justify-between gap-2">
-            <span class="text-base font-bold text-text">{{ line.name }}</span>
-            <span class="text-xs font-semibold text-primary shrink-0">Modifier</span>
-          </div>
-          <p class="text-xs text-text-muted mt-1 mb-0 tabular-nums">
-            {{ line.container_count }} conteneur{{ line.container_count|pluralize }} lié{{ line.container_count|pluralize }}
-          </p>
-        </a>
-      {% endfor %}
-    </div>
+    <section class="bg-surface rounded-xl border border-border overflow-hidden" aria-label="Liste des lignes maritimes">
+      <!-- Mobile : liste compacte -->
+      <div class="lg:hidden divide-y divide-border" aria-label="Liste mobile des lignes maritimes">
+        {% for line in lines %}
+          <a href="{% url 'terminal:shipping_line_edit' line.pk %}"
+             class="block p-4 no-underline hover:bg-ctsa-surface">
+            <div class="flex items-center justify-between gap-2">
+              <span class="text-sm font-semibold text-text">{{ line.name }}</span>
+              <span class="text-xs font-semibold text-primary shrink-0">Modifier ›</span>
+            </div>
+            <p class="text-xs text-text-muted mt-1 mb-0 tabular-nums">
+              {{ line.container_count }} conteneur{{ line.container_count|pluralize }} lié{{ line.container_count|pluralize }}
+            </p>
+          </a>
+        {% endfor %}
+      </div>
 
-    <!-- Desktop : tableau -->
-    <section class="hidden lg:block bg-surface rounded-xl border border-border shadow-xs overflow-hidden" aria-label="Tableau des lignes maritimes">
-      <div class="overflow-x-auto">
+      <!-- Desktop : tableau intégré -->
+      <div class="hidden lg:block overflow-x-auto" aria-label="Tableau des lignes maritimes">
         <table class="ctsa-table w-full">
-          <thead class="bg-ctsa-surface">
+          <thead>
             <tr>
               <th scope="col">Ligne maritime</th>
               <th scope="col">Conteneurs liés</th>
@@ -40,9 +40,11 @@
           <tbody>
             {% for line in lines %}
               <tr>
-                <th scope="row" class="font-bold text-text">{{ line.name }}</th>
+                <th scope="row">{{ line.name }}</th>
                 <td class="tabular-nums text-sm text-text-muted">
-                  {{ line.container_count }} conteneur{{ line.container_count|pluralize }}
+                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-ctsa-surface border border-border text-text tabular-nums">
+                    {{ line.container_count }} conteneur{{ line.container_count|pluralize }}
+                  </span>
                 </td>
                 <td class="text-right">
                   <a href="{% url 'terminal:shipping_line_edit' line.pk %}" class="ui-btn ui-btn-ghost ui-btn-sm">

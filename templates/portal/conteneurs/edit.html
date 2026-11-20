@@ -5,7 +5,7 @@
 {% block portal_body_extra %}portal-has-form-actions{% endblock %}
 
 {% block portal_content %}
-<div class="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-5 space-y-5">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
 
   {% url 'terminal:container_detail' container.pk as detail_url %}
   {% with date_fr=container.scheduled_date|date:"d/m/Y" %}

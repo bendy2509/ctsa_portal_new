@@ -5,69 +5,85 @@
 {% block page_title %}Paramètres du site{% endblock %}
 
 {% block portal_content %}
-<div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-5 space-y-6">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
 
-  {% include 'components/page_header.html' with title="Paramètres du site" subtitle="Configuration du portail public, des fenêtres temporelles, du carrousel et des motifs." %}
+  {% include 'components/page_header.html' with title="Paramètres du site" subtitle="Configuration du portail public, des fenêtres temporelles, du carrousel et des motifs opérationnels." %}
 
-  <!-- 4 cartes vers les sous-pages dédiées -->
-  <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+  <!-- 4 cartes Pro vers les sous-pages dédiées -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
     <a href="{% url 'terminal:site_settings_texts' %}"
-       class="block bg-surface rounded-xl border border-border shadow-xs p-5 no-underline hover:border-primary space-y-2">
-      <div class="flex items-center justify-between gap-2">
-        <h2 class="text-base font-heading font-bold text-text m-0">Textes &amp; coordonnées</h2>
-        <span class="text-xs font-semibold text-primary">Ouvrir →</span>
+       class="bg-surface rounded-xl border border-border p-5 no-underline hover:border-primary transition-colors flex flex-col justify-between gap-4">
+      <div class="space-y-2">
+        <span class="text-[11px] font-bold uppercase tracking-wider text-primary">Portail public</span>
+        <h2 class="text-base font-heading font-semibold text-text m-0">Textes &amp; coordonnées</h2>
+        <p class="text-xs text-text-muted m-0 leading-relaxed">
+          Identité, adresse, téléphone et textes publics FR / Kreyòl · {{ site_obj.contact_email }}{% if site_obj.contact_phone_primary %} · {{ site_obj.contact_phone_primary }}{% endif %}.
+        </p>
       </div>
-      <p class="text-sm text-text-muted m-0">
-        Identité, adresse, téléphone et textes publics FR / Kreyòl · {{ site_obj.contact_email }}{% if site_obj.contact_phone_primary %} · {{ site_obj.contact_phone_primary }}{% endif %}.
-      </p>
+      <div class="pt-3 border-t border-border flex items-center justify-between text-xs font-semibold text-primary">
+        <span>Configurer</span>
+        <span aria-hidden="true">→</span>
+      </div>
     </a>
 
     <a href="{% url 'terminal:site_settings_windows' %}"
-       class="block bg-surface rounded-xl border border-border shadow-xs p-5 no-underline hover:border-primary space-y-2">
-      <div class="flex items-center justify-between gap-2">
-        <h2 class="text-base font-heading font-bold text-text m-0">Fenêtres de temps</h2>
-        <span class="text-xs font-semibold text-primary">Ouvrir →</span>
+       class="bg-surface rounded-xl border border-border p-5 no-underline hover:border-primary transition-colors flex flex-col justify-between gap-4">
+      <div class="space-y-2">
+        <span class="text-[11px] font-bold uppercase tracking-wider text-primary">Règles métier</span>
+        <h2 class="text-base font-heading font-semibold text-text m-0">Fenêtres de temps</h2>
+        <p class="text-xs text-text-muted m-0 leading-relaxed tabular-nums">
+          Correction : {{ site_obj.correction_window_minutes }} min · Suppression : {{ site_obj.delete_window_hours }} h · Alerte sans liste : {{ site_obj.unscheduled_alert_days }} j.
+        </p>
       </div>
-      <p class="text-sm text-text-muted m-0 tabular-nums">
-        Correction : {{ site_obj.correction_window_minutes }} min · Suppression : {{ site_obj.delete_window_hours }} h · Alerte sans liste : {{ site_obj.unscheduled_alert_days }} j.
-      </p>
+      <div class="pt-3 border-t border-border flex items-center justify-between text-xs font-semibold text-primary">
+        <span>Ajuster les délais</span>
+        <span aria-hidden="true">→</span>
+      </div>
     </a>
 
     <a href="{% url 'terminal:site_settings_carousel' %}"
-       class="block bg-surface rounded-xl border border-border shadow-xs p-5 no-underline hover:border-primary space-y-2">
-      <div class="flex items-center justify-between gap-2">
-        <h2 class="text-base font-heading font-bold text-text m-0">Carrousel d'accueil</h2>
-        <span class="text-xs font-semibold text-primary">Ouvrir →</span>
+       class="bg-surface rounded-xl border border-border p-5 no-underline hover:border-primary transition-colors flex flex-col justify-between gap-4">
+      <div class="space-y-2">
+        <span class="text-[11px] font-bold uppercase tracking-wider text-primary">Vitrine</span>
+        <h2 class="text-base font-heading font-semibold text-text m-0">Carrousel d'accueil</h2>
+        <p class="text-xs text-text-muted m-0 leading-relaxed tabular-nums">
+          {{ active_slides_count }} diapositive{{ active_slides_count|pluralize }} active{{ active_slides_count|pluralize }} sur {{ slides|length }} (limite : {{ site_obj.hero_carousel_limit }}).
+        </p>
       </div>
-      <p class="text-sm text-text-muted m-0 tabular-nums">
-        {{ active_slides_count }} diapositive{{ active_slides_count|pluralize }} active{{ active_slides_count|pluralize }} sur {{ slides|length }} (limite : {{ site_obj.hero_carousel_limit }}).
-      </p>
+      <div class="pt-3 border-t border-border flex items-center justify-between text-xs font-semibold text-primary">
+        <span>Gérer les visuels</span>
+        <span aria-hidden="true">→</span>
+      </div>
     </a>
 
     {% can 'motif.manage' as can_motifs %}
     {% if can_motifs %}
       <a href="{% url 'terminal:site_settings_motifs' %}"
-         class="block bg-surface rounded-xl border border-border shadow-xs p-5 no-underline hover:border-primary space-y-2">
-        <div class="flex items-center justify-between gap-2">
-          <h2 class="text-base font-heading font-bold text-text m-0">Motifs prédéfinis</h2>
-          <span class="text-xs font-semibold text-primary">Ouvrir →</span>
+         class="bg-surface rounded-xl border border-border p-5 no-underline hover:border-primary transition-colors flex flex-col justify-between gap-4">
+        <div class="space-y-2">
+          <span class="text-[11px] font-bold uppercase tracking-wider text-primary">Inspection &amp; rampe</span>
+          <h2 class="text-base font-heading font-semibold text-text m-0">Motifs prédéfinis</h2>
+          <p class="text-xs text-text-muted m-0 leading-relaxed tabular-nums">
+            {{ motifs_unavailable|length }} motif{{ motifs_unavailable|length|pluralize }} d'indisponibilité · {{ motifs_not_verified|length }} motif{{ motifs_not_verified|length|pluralize }} de non-vérification.
+          </p>
         </div>
-        <p class="text-sm text-text-muted m-0 tabular-nums">
-          {{ motifs_unavailable|length }} motif{{ motifs_unavailable|length|pluralize }} d'indisponibilité · {{ motifs_not_verified|length }} motif{{ motifs_not_verified|length|pluralize }} de non-vérification.
-        </p>
+        <div class="pt-3 border-t border-border flex items-center justify-between text-xs font-semibold text-primary">
+          <span>Gérer les motifs</span>
+          <span aria-hidden="true">→</span>
+        </div>
       </a>
     {% endif %}
   </div>
 
   <!-- Journal des dernières modifications de paramètres -->
   {% if settings_logs %}
-    <section aria-labelledby="settings-audit-title" class="bg-surface rounded-xl border border-border shadow-xs overflow-hidden">
-      <div class="px-4 sm:px-5 py-3.5 border-b border-border">
-        <h2 id="settings-audit-title" class="text-base font-heading font-bold text-text m-0">Dernières modifications</h2>
+    <section aria-labelledby="settings-audit-title" class="bg-surface rounded-xl border border-border overflow-hidden">
+      <div class="px-5 py-3.5 border-b border-border bg-ctsa-surface/60">
+        <h2 id="settings-audit-title" class="text-sm font-heading font-semibold text-text m-0">Dernières modifications</h2>
       </div>
       <ul class="list-none m-0 p-0 divide-y divide-border">
         {% for entry in settings_logs %}
-          <li class="px-4 sm:px-5 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 text-sm">
+          <li class="px-5 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 text-sm">
             <div class="min-w-0">
               <strong class="font-mono text-xs text-text">{{ entry.target_label }}</strong>
               <span class="text-xs text-text-muted ml-2">{{ entry.new_value|truncatechars:80 }}</span>

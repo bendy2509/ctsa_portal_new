@@ -4,7 +4,7 @@
 {% block page_title %}Carrousel d'accueil{% endblock %}
 
 {% block portal_content %}
-<div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-5 space-y-6">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
 
   {% url 'terminal:site_settings' as settings_home_url %}
   {% include 'components/page_header.html' with back_url=settings_home_url back_label="Retour aux paramètres" title="Carrousel d'accueil" subtitle="Activation et gestion des diapositives affichées sur la page d'accueil." count=slides|length %}
