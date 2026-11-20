@@ -128,7 +128,7 @@ def register_view(request):
         return response
 
     page, page_query = _paginate(request, rows)
-    return render(request, 'portal/register.html', {
+    return render(request, 'portal/rapports/register.html', {
         'today': today,
         'start': start,
         'end': end,
@@ -268,7 +268,7 @@ def statistics_view(request):
 
     show_lines = len(lines) > 1 or (len(lines) == 1 and lines[0]['shipping_line__name'] is not None)
 
-    return render(request, 'portal/statistics.html', {
+    return render(request, 'portal/rapports/statistics.html', {
         'today': today,
         'kind': kind,
         'ref': ref,
@@ -517,7 +517,7 @@ def status_logs_view(request):
     )
 
     page, page_query = _paginate(request, logs)
-    return render(request, 'portal/status_logs.html', {
+    return render(request, 'portal/rapports/status_logs.html', {
         'logs': page.object_list,
         'page': page,
         'page_query': page_query,
