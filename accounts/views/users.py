@@ -1,97 +1,14 @@
+"""Gestion des comptes utilisateurs de l'espace d'exploitation."""
+
 from django.contrib import messages
-from django.contrib.auth import login, logout, update_session_auth_hash
-from django.contrib.auth.decorators import login_required
-from django.contrib.auth.forms import PasswordChangeForm
 from django.core.paginator import Paginator
 from django.db.models import Q
-from django.shortcuts import render, redirect, get_object_or_404
+from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
-from .forms import (
-    LoginForm,
-    ClientRegistrationForm,
-    ProfileUpdateForm,
-    StaffUserCreateForm,
-    StaffUserUpdateForm,
-)
-from .models import User
-from .permissions import Actions, peut, render_403, require_permission
-from .utils import safe_next_url
-
-# Create your views here.
-
-
-def login_view(request):
-    if request.user.is_authenticated:
-        if request.user.is_staff_member:
-            return redirect('terminal:dashboard')
-        return redirect('terminal:client_watchlist')
-
-    form = LoginForm(request.POST or None)
-    if request.method == 'POST' and form.is_valid():
-        user = form.user_cache
-        login(request, user)
-        messages.success(request, f"Bienvenue sur CTSA Portal, {user.display_name}.")
-        # Retour vers la page d'origine (ex. la fiche du conteneur recherché), si elle est interne.
-        next_url = safe_next_url(request, request.GET.get('next', ''), '')
-        if next_url:
-            return redirect(next_url)
-        if user.is_staff_member:
-            return redirect('terminal:dashboard')
-        return redirect('terminal:client_watchlist')
-
-    return render(request, 'accounts/login.html', {'form': form})
-
-
-def register_view(request):
-    if request.user.is_authenticated:
-        return redirect('terminal:client_watchlist')
-
-    form = ClientRegistrationForm(request.POST or None)
-    if request.method == 'POST' and form.is_valid():
-        user = form.save()
-        login(request, user)
-        messages.success(
-            request,
-            "Votre compte client Cap Terminal S.A. a été créé avec succès."
-        )
-        return redirect('terminal:client_watchlist')
-
-    return render(request, 'accounts/register.html', {'form': form})
-
-
-@require_POST
-def logout_view(request):
-    logout(request)
-    messages.info(request, "Vous avez été déconnecté en toute sécurité.")
-    return redirect('terminal:home')
-
-
-@login_required
-def profile_view(request):
-    profile_form = ProfileUpdateForm(instance=request.user)
-    password_form = PasswordChangeForm(user=request.user)
-
-    if request.method == 'POST':
-        action = request.POST.get('action')
-        if action == 'update_profile':
-            profile_form = ProfileUpdateForm(request.POST, instance=request.user)
-            if profile_form.is_valid():
-                profile_form.save()
-                messages.success(request, "Vos informations de profil ont été mises à jour.")
-                return redirect('accounts:profile')
-        elif action == 'change_password':
-            password_form = PasswordChangeForm(user=request.user, data=request.POST)
-            if password_form.is_valid():
-                user = password_form.save()
-                update_session_auth_hash(request, user)
-                messages.success(request, "Votre mot de passe a été modifié avec succès.")
-                return redirect('accounts:profile')
-
-    return render(request, 'accounts/profile.html', {
-        'profile_form': profile_form,
-        'password_form': password_form,
-    })
+from accounts.forms import StaffUserCreateForm, StaffUserUpdateForm
+from accounts.models import User
+from accounts.permissions import Actions, peut, render_403, require_permission
 
 
 def _log_user_audit(acting_user, target_user, category: str, old_value: str, new_value: str) -> None:
@@ -196,7 +113,6 @@ def user_edit_view(request, pk):
     old_superuser = target_user.is_superuser
     form = StaffUserUpdateForm(request.POST or None, instance=target_user, acting_user=request.user)
     if request.method == 'POST' and form.is_valid():
-        # Protection du dernier Administrateur (Superadmin) actif contre la désactivation ou rétrogradation
         is_last_superadmin = (
             old_superuser
             and not User.objects.filter(is_superuser=True, is_active=True).exclude(pk=target_user.pk).exists()
@@ -249,4 +165,3 @@ def user_delete_view(request, pk):
     target_user.delete()
     messages.success(request, f"Le compte utilisateur « {name} » a été supprimé.")
     return redirect('accounts:user_list')
-
