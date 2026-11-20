@@ -770,6 +770,75 @@
     }
   };
 
+  /* ------------------------------------------------------------------------
+     8. Recherche prédictive des conteneurs Enregistrés (page Préparer)
+     ------------------------------------------------------------------------ */
+  const initRegisteredSearch = () => {
+    const input = document.getElementById('registered-search-input');
+    const resultsBox = document.getElementById('registered-search-results');
+    const emptyMsg = document.getElementById('registered-search-empty');
+    const actionsBox = document.getElementById('registered-add-actions');
+    if (!input || !resultsBox) return;
+
+    let timer = null;
+    const runSearch = async () => {
+      const q = (input.value || '').trim();
+      if (q.length < 2) {
+        resultsBox.innerHTML = '';
+        resultsBox.classList.add('hidden');
+        emptyMsg?.classList.add('hidden');
+        actionsBox?.classList.add('hidden');
+        return;
+      }
+      const url = `${input.dataset.searchUrl}?q=${encodeURIComponent(q)}&date=${encodeURIComponent(input.dataset.targetDate)}`;
+      try {
+        const resp = await fetch(url, { headers: { Accept: 'application/json' }, credentials: 'same-origin' });
+        if (!resp.ok) return;
+        const data = await resp.json();
+        const items = data.results || [];
+        resultsBox.innerHTML = '';
+        if (!items.length) {
+          resultsBox.classList.add('hidden');
+          actionsBox?.classList.add('hidden');
+          emptyMsg?.classList.remove('hidden');
+          return;
+        }
+        emptyMsg?.classList.add('hidden');
+        items.forEach((item) => {
+          const label = document.createElement('label');
+          label.className = 'flex items-center justify-between gap-3 p-3 bg-surface hover:bg-ctsa-surface cursor-pointer min-h-[44px]';
+          const left = document.createElement('div');
+          left.className = 'flex items-center gap-3 min-w-0';
+          const cb = document.createElement('input');
+          cb.type = 'checkbox';
+          cb.name = 'ids';
+          cb.value = String(item.id);
+          cb.className = 'w-4 h-4 rounded border-border-ui';
+          const numSpan = document.createElement('span');
+          numSpan.className = 'font-mono font-bold text-sm text-text';
+          numSpan.textContent = item.number;
+          left.appendChild(cb);
+          left.appendChild(numSpan);
+          const meta = document.createElement('span');
+          meta.className = 'text-xs text-text-muted truncate';
+          meta.textContent = [item.shipping_line || 'Sans ligne', item.arrived_at].filter(Boolean).join(' · ');
+          label.appendChild(left);
+          label.appendChild(meta);
+          resultsBox.appendChild(label);
+        });
+        resultsBox.classList.remove('hidden');
+        actionsBox?.classList.remove('hidden');
+      } catch (_e) {
+        // Erreur réseau silencieuse
+      }
+    };
+
+    input.addEventListener('input', () => {
+      clearTimeout(timer);
+      timer = setTimeout(runSearch, 250);
+    });
+  };
+
   document.addEventListener('DOMContentLoaded', () => {
     initVisualViewportSync();
     initFormValidation();
@@ -779,6 +848,7 @@
     initConfirmModals();
     initNavigation();
     initSelectionAndControls();
+    initRegisteredSearch();
     initPublicRefreshAndCarousel();
   });
 })();

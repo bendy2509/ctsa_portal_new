@@ -133,7 +133,7 @@ def prepare_view(request):
     backlog_qs = unverified_backlog(selected_date)
     draft = request.session.pop('_prepare_form_draft', None) or {}
 
-    return render(request, 'portal/prepare.html', {
+    return render(request, 'portal/conteneurs/prepare.html', {
         'today': today,
         'tomorrow': tomorrow,
         'selected_date': selected_date,
