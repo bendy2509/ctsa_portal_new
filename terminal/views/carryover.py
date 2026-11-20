@@ -90,7 +90,7 @@ def carryover_view(request):
     for c in rows:
         c.session_count = session_counts.get(c.container_number, 1)
 
-    return render(request, 'portal/carryover.html', {
+    return render(request, 'portal/inspection/carryover.html', {
         'today': today,
         'target_date': target_date,
         'list_started': list_started,

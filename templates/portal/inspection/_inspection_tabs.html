@@ -1,0 +1,14 @@
+{# Onglets communs à l'Inspection : la séance du jour et le suivi des non vérifiés (droit vérifié via peut()). #}
+{% load permissions_tags %}
+{% can 'container.carryover' as can_carryover %}
+<nav class="list-tabs px-0" aria-label="Sections de l'inspection">
+  <a href="{% url 'terminal:inspection' %}" class="list-tab" {% if tab == 'session' %}aria-current="true"{% endif %}>
+    Inspection de la séance
+  </a>
+  {% if can_carryover %}
+    <a href="{% url 'terminal:carryover' %}" class="list-tab" {% if tab == 'backlog' %}aria-current="true"{% endif %}>
+      Non vérifiés
+      {% if portal_unverified_count %}<span class="list-tab-count">{{ portal_unverified_count }}</span>{% endif %}
+    </a>
+  {% endif %}
+</nav>

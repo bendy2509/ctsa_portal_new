@@ -315,7 +315,7 @@ def inspection_view(request):
         .order_by('status', 'container_number')
     )
 
-    return render(request, 'portal/inspection.html', {
+    return render(request, 'portal/inspection/session.html', {
         'today': today,
         'selected_date': selected_date,
         'previous_date': selected_date - datetime.timedelta(days=1),
