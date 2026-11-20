@@ -1,0 +1,102 @@
+{% extends 'portal/base_portal.html' %}
+
+{% block title %}Modifier {{ target_user.display_name }} — Cap Terminal S.A.{% endblock %}
+{% block page_title %}Modifier utilisateur{% endblock %}
+{% block portal_body_extra %}portal-has-form-actions{% endblock %}
+
+{% block portal_content %}
+<div class="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-5 space-y-5">
+
+  {% url 'accounts:user_list' as users_url %}
+  {% include 'components/page_header.html' with back_url=users_url back_label="Retour aux utilisateurs" title="Modifier "|add:target_user.display_name subtitle=target_user.username %}
+
+  <form action="{% url 'accounts:user_edit' target_user.pk %}" method="post" class="space-y-5">
+    {% csrf_token %}
+
+    <section aria-labelledby="section-user-identity" class="bg-surface rounded-xl border border-border shadow-xs p-4 sm:p-6 space-y-4">
+      <div class="pb-3 border-b border-border">
+        <h2 id="section-user-identity" class="text-base font-heading font-bold text-text m-0">Identité &amp; accès</h2>
+      </div>
+
+      <div class="space-y-4">
+        <div class="space-y-1.5">
+          <label for="eu-username" class="block text-sm font-semibold text-text">
+            Identifiant <span class="text-danger" aria-hidden="true">*</span>
+          </label>
+          <input type="text" id="eu-username" name="username" value="{{ form.username.value|default:'' }}" required class="w-full min-h-[44px] rounded-lg border {% if form.username.errors %}border-danger{% else %}border-border-ui{% endif %} px-3.5 py-2 text-base text-text bg-surface">
+          {% if form.username.errors %}
+            <p class="text-xs font-semibold text-danger m-0" role="alert">{{ form.username.errors.0 }}</p>
+          {% endif %}
+        </div>
+
+        <div class="space-y-1.5">
+          <label for="eu-fullname" class="block text-sm font-semibold text-text">Nom complet</label>
+          <input type="text" id="eu-fullname" name="full_name" value="{{ form.full_name.value|default:'' }}" class="w-full min-h-[44px] rounded-lg border border-border-ui px-3.5 py-2 text-base text-text bg-surface">
+        </div>
+
+        <div class="space-y-1.5">
+          <label for="eu-role" class="block text-sm font-semibold text-text">Rôle attribué</label>
+          <select id="eu-role" name="role" class="w-full min-h-[44px] rounded-lg border border-border-ui px-3.5 py-2 text-base text-text bg-surface">
+            {% for val, label in form.fields.role.choices %}
+              <option value="{{ val }}" {% if form.role.value == val %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="space-y-1.5">
+          <label for="eu-newpwd" class="block text-sm font-semibold text-text">Nouveau mot de passe</label>
+          <input type="password" id="eu-newpwd" name="new_password" minlength="8" autocomplete="new-password" class="w-full min-h-[44px] rounded-lg border border-border-ui px-3.5 py-2 text-base text-text bg-surface">
+          <p class="text-xs text-text-muted m-0">Laisser vide pour conserver le mot de passe actuel.</p>
+        </div>
+
+        <label for="eu-active" class="flex items-center gap-3 p-3.5 rounded-lg bg-ctsa-surface border border-border cursor-pointer min-h-[44px]">
+          <input type="checkbox" id="eu-active" name="is_active" {% if form.is_active.value %}checked{% endif %} class="w-4 h-4 rounded">
+          <span class="text-sm font-semibold text-text">Compte actif (autorisé à se connecter)</span>
+        </label>
+      </div>
+    </section>
+
+    <section aria-labelledby="section-user-contact" class="bg-surface rounded-xl border border-border shadow-xs p-4 sm:p-6 space-y-4">
+      <div class="pb-3 border-b border-border">
+        <h2 id="section-user-contact" class="text-base font-heading font-bold text-text m-0">Coordonnées</h2>
+      </div>
+
+      <div class="space-y-4">
+        <div class="space-y-1.5">
+          <label for="eu-company" class="block text-sm font-semibold text-text">Entreprise / Service</label>
+          <input type="text" id="eu-company" name="company_name" value="{{ form.company_name.value|default:'' }}" class="w-full min-h-[44px] rounded-lg border border-border-ui px-3.5 py-2 text-base text-text bg-surface">
+        </div>
+        <div class="space-y-1.5">
+          <label for="eu-email" class="block text-sm font-semibold text-text">Adresse courriel</label>
+          <input type="email" id="eu-email" name="email" value="{{ form.email.value|default:'' }}" class="w-full min-h-[44px] rounded-lg border border-border-ui px-3.5 py-2 text-base text-text bg-surface">
+        </div>
+        <div class="space-y-1.5">
+          <label for="eu-phone" class="block text-sm font-semibold text-text">Téléphone</label>
+          <input type="tel" id="eu-phone" name="phone" value="{{ form.phone.value|default:'' }}" class="w-full min-h-[44px] rounded-lg border border-border-ui px-3.5 py-2 text-base text-text bg-surface">
+        </div>
+      </div>
+    </section>
+
+    {% include 'components/form_actions.html' with cancel_url=users_url cancel_label="Annuler" submit_label="Enregistrer" %}
+  </form>
+
+  {% if target_user.pk != user.pk %}
+    <section aria-labelledby="section-user-danger" class="bg-surface rounded-xl border border-status-unavailable-bd shadow-xs p-4 sm:p-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+      <div>
+        <h2 id="section-user-danger" class="text-sm font-heading font-bold text-status-unavailable-fg m-0">Zone sensible</h2>
+        <p class="text-xs text-text-muted mt-0.5 mb-0">Supprimer définitivement ce compte utilisateur.</p>
+      </div>
+      <button type="button"
+              class="ui-btn ui-btn-danger"
+              data-confirm-modal
+              data-confirm-action="{% url 'accounts:user_delete' target_user.pk %}"
+              data-confirm-title="Supprimer {{ target_user.display_name }} ?"
+              data-confirm-message="Ce compte ({{ target_user.get_role_display }}) sera supprimé définitivement et ne pourra plus se connecter."
+              data-confirm-label="Supprimer le compte">
+        Supprimer le compte
+      </button>
+    </section>
+  {% endif %}
+
+</div>
+{% endblock %}

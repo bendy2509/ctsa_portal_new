@@ -1,0 +1,120 @@
+{% extends 'portal/base_portal.html' %}
+
+{% block title %}Utilisateurs — Cap Terminal S.A.{% endblock %}
+{% block page_title %}Utilisateurs{% endblock %}
+
+{% block portal_content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 space-y-5">
+
+  {% url 'accounts:user_create' as create_user_url %}
+  {% include 'components/page_header.html' with title="Utilisateurs et rôles" subtitle="Gérez les comptes du personnel et des clients." count=page.paginator.count primary_url=create_user_url primary_label="Ajouter" %}
+
+  <!-- Onglets par rôle + recherche -->
+  <section aria-label="Filtrer les utilisateurs" class="bg-surface rounded-xl border border-border shadow-xs overflow-hidden">
+    <nav class="list-tabs" aria-label="Filtrer par rôle">
+      <a href="{% url 'accounts:user_list' %}{% if q %}?q={{ q|urlencode }}{% endif %}"
+         class="list-tab" {% if not role_filter %}aria-current="true"{% endif %}>
+        Tous les rôles
+      </a>
+      {% for val, label in role_choices %}
+        <a href="{% url 'accounts:user_list' %}?role={{ val }}{% if q %}&amp;q={{ q|urlencode }}{% endif %}"
+           class="list-tab" {% if role_filter == val %}aria-current="true"{% endif %}>
+          {{ label }}
+        </a>
+      {% endfor %}
+    </nav>
+
+    <div class="p-3.5 sm:p-4 border-t border-border">
+      <search>
+        <form action="{% url 'accounts:user_list' %}" method="get" class="flex flex-col sm:flex-row sm:items-center gap-2">
+          {% if role_filter %}<input type="hidden" name="role" value="{{ role_filter }}">{% endif %}
+          <label for="user-q" class="visually-hidden">Rechercher un utilisateur</label>
+          <input type="search"
+                 id="user-q"
+                 name="q"
+                 value="{{ q }}"
+                 placeholder="Nom, identifiant, entreprise..."
+                 class="flex-1 min-h-[44px] border border-border-ui rounded-lg px-3 py-1.5 text-base bg-surface text-text">
+          <div class="flex items-center gap-2">
+            <button type="submit" class="ui-btn ui-btn-secondary flex-1 sm:flex-initial">Filtrer</button>
+            {% if role_filter or q %}
+              <a href="{% url 'accounts:user_list' %}" class="text-xs font-bold text-primary hover:underline px-2">Réinitialiser</a>
+            {% endif %}
+          </div>
+        </form>
+      </search>
+    </div>
+  </section>
+
+  {% if users %}
+    <!-- Mobile : cartes 2 lignes cliquables -->
+    <div class="lg:hidden space-y-3" aria-label="Liste mobile des utilisateurs">
+      {% for u in users %}
+        <a href="{% url 'accounts:user_edit' u.pk %}"
+           class="block bg-surface rounded-xl border border-border shadow-xs p-3.5 no-underline hover:border-primary space-y-1.5">
+          <div class="flex items-center justify-between gap-2">
+            <div class="min-w-0">
+              <span class="text-sm font-bold text-text truncate block">{{ u.display_name }}</span>
+              <span class="text-xs font-mono text-text-muted">{{ u.username }}</span>
+            </div>
+            <div class="flex items-center gap-1.5 shrink-0">
+              {% include 'components/badge.html' with variant=u.role label=u.get_role_display %}
+              {% if not u.is_active %}
+                {% include 'components/badge.html' with variant='inactive' label='Désactivé' %}
+              {% endif %}
+            </div>
+          </div>
+          <p class="text-xs text-text-muted m-0 truncate">
+            {{ u.company_name|default:"—" }}{% if u.email %} · {{ u.email }}{% endif %}
+          </p>
+        </a>
+      {% endfor %}
+    </div>
+
+    <!-- Desktop : tableau -->
+    <section class="hidden lg:block bg-surface rounded-xl border border-border shadow-xs overflow-hidden" aria-label="Tableau des utilisateurs">
+      <div class="overflow-x-auto">
+        <table class="ctsa-table w-full">
+          <thead class="bg-ctsa-surface">
+            <tr>
+              <th scope="col">Identifiant</th>
+              <th scope="col">Nom complet</th>
+              <th scope="col">Rôle</th>
+              <th scope="col">Service / Entreprise</th>
+              <th scope="col">État</th>
+              <th scope="col" class="text-right">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for u in users %}
+              <tr>
+                <th scope="row" class="font-mono text-xs">{{ u.username }}</th>
+                <td class="font-semibold text-text">{{ u.display_name }}</td>
+                <td>{% include 'components/badge.html' with variant=u.role label=u.get_role_display %}</td>
+                <td class="text-sm text-text-muted">{{ u.company_name|default:"—" }}</td>
+                <td>
+                  {% if u.is_active %}
+                    {% include 'components/badge.html' with variant='active' label='Actif' %}
+                  {% else %}
+                    {% include 'components/badge.html' with variant='inactive' label='Désactivé' %}
+                  {% endif %}
+                </td>
+                <td class="text-right">
+                  <a href="{% url 'accounts:user_edit' u.pk %}" class="ui-btn ui-btn-ghost ui-btn-sm">
+                    Modifier
+                  </a>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    {% include 'components/pagination.html' %}
+  {% else %}
+    {% include 'components/empty_state.html' with title="Aucun utilisateur trouvé" description="Aucun compte ne correspond aux critères sélectionnés." cta_url=create_user_url cta_label="Ajouter un utilisateur" %}
+  {% endif %}
+
+</div>
+{% endblock %}

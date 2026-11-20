@@ -62,7 +62,7 @@ def user_list_view(request):
     params = request.GET.copy()
     params.pop('page', None)
 
-    return render(request, 'portal/users.html', {
+    return render(request, 'portal/comptes/users.html', {
         'users': page,
         'page': page,
         'page_query': params.urlencode(),
@@ -94,7 +94,7 @@ def user_create_view(request):
         )
         return redirect('accounts:user_list')
 
-    return render(request, 'portal/user_create.html', {
+    return render(request, 'portal/comptes/user_create.html', {
         'form': form,
         'role_choices': form.fields['role'].choices,
     })
@@ -122,7 +122,7 @@ def user_edit_view(request, pk):
             or form.cleaned_data.get('role') != User.Role.ADMIN
         ):
             messages.error(request, "Impossible de désactiver ou rétrograder le dernier Administrateur actif.")
-            return render(request, 'portal/user_edit.html', {
+            return render(request, 'portal/comptes/user_edit.html', {
                 'target_user': target_user,
                 'form': form,
             })
@@ -137,7 +137,7 @@ def user_edit_view(request, pk):
         messages.success(request, f"L'utilisateur « {target_user.display_name} » a été mis à jour.")
         return redirect('accounts:user_list')
 
-    return render(request, 'portal/user_edit.html', {
+    return render(request, 'portal/comptes/user_edit.html', {
         'target_user': target_user,
         'form': form,
     })
