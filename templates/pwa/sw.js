@@ -66,19 +66,16 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(req.url);
   if (url.origin !== self.location.origin) return;
 
-  // Ressources statiques : cache + mise à jour en arrière-plan
+  // Ressources statiques : réseau prioritaire (toujours à jour) avec repli sur le cache hors ligne
   if (url.pathname.startsWith('/static/')) {
     event.respondWith(
       caches.open(CACHE_NAME).then((cache) =>
-        cache.match(req).then((cached) => {
-          const fetchPromise = fetch(req)
-            .then((res) => {
-              if (res && res.ok) cache.put(req, res.clone());
-              return res;
-            })
-            .catch(() => cached);
-          return cached || fetchPromise;
-        })
+        fetch(req)
+          .then((res) => {
+            if (res && res.ok) cache.put(req, res.clone());
+            return res;
+          })
+          .catch(() => cache.match(req))
       )
     );
     return;

@@ -116,6 +116,11 @@ def arrival_create_view(request):
             )
             return redirect('terminal:container_detail', pk=container.pk)
 
+    recent_arrivals = list(
+        Container.registered_objects.select_related('shipping_line')
+        .order_by('-arrived_at', '-pk')[:10]
+    )
+
     return render(request, 'portal/conteneurs/arrival_create.html', {
         'shipping_lines': shipping_lines,
         'errors': errors,
@@ -124,6 +129,8 @@ def arrival_create_view(request):
         'raw_number': raw_number,
         'raw_line': raw_line,
         'now_preview': timezone.localtime(timezone.now()),
+        'recent_arrivals': recent_arrivals,
+        'registered_pool_count': Container.registered_objects.count(),
     })
 
 

@@ -65,15 +65,16 @@ def dashboard_view(request):
     day_qs = Container.objects.filter(scheduled_date=selected_date)
 
     S, V = Container.Status, Container.Verification
-    stats = {
-        'total': day_qs.count(),
-        'confirmed': day_qs.filter(status=S.CONFIRMED).count(),
-        'pending': day_qs.filter(status=S.PENDING).count(),
-        'unavailable': day_qs.filter(status=S.UNAVAILABLE).count(),
-        'verified': day_qs.filter(verification_result=V.VERIFIED).count(),
-        'not_verified': day_qs.filter(verification_result=V.NOT_VERIFIED).count(),
-        'to_verify': day_qs.filter(status=S.CONFIRMED, verification_result='').count(),
-    }
+    stats = day_qs.aggregate(
+        total=Count('id'),
+        confirmed=Count('id', filter=Q(status=S.CONFIRMED)),
+        pending=Count('id', filter=Q(status=S.PENDING)),
+        unavailable=Count('id', filter=Q(status=S.UNAVAILABLE)),
+        verified=Count('id', filter=Q(verification_result=V.VERIFIED)),
+        not_verified=Count('id', filter=Q(verification_result=V.NOT_VERIFIED)),
+        to_verify=Count('id', filter=Q(status=S.CONFIRMED, verification_result='')),
+    )
+    stats['registered_pool'] = Container.registered_objects.count()
     stats['verified_rate'] = _rate(stats['verified'], stats['confirmed'])
     show_verification = selected_date <= today
 

@@ -2,7 +2,7 @@
 {% load permissions_tags %}
 
 {% block title %}Conteneurs — Cap Terminal S.A.{% endblock %}
-{% block page_title %}Conteneurs{% endblock %}
+{% block page_title %}03 · Conteneurs &amp; Confirmation{% endblock %}
 
 {% block portal_content %}
 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-5">
@@ -10,19 +10,48 @@
   {% can 'container.arrival_create' as can_arrival %}
   {% can 'container.prepare' as can_prepare %}
   {% can 'container.change_status' as can_change_status %}
+  {% can 'container.verify' as can_verify %}
   {% can 'report.view' as can_reports %}
   {% url 'terminal:arrival_create' as arrival_url %}
   {% url 'terminal:prepare' as prepare_url %}
 
-  {% with date_fr=selected_date|date:"d/m/Y" date_iso=selected_date|date:"Y-m-d" subtitle_str=selected_date|date:"l j F Y"|capfirst %}
+  {% with date_fr=selected_date|date:"d/m/Y" date_iso=selected_date|date:"Y-m-d" subtitle_str="Pour être éligible à la vérification (Inspection), le statut du conteneur dans la liste doit être Confirmé d'abord." %}
     {% if can_arrival %}
-      {% include 'components/page_header.html' with title="Conteneurs du "|add:date_fr subtitle=subtitle_str count=stats.total primary_url=arrival_url primary_label="Enregistrer une arrivée" %}
+      {% include 'components/page_header.html' with title="Étape 3 · Liste du "|add:date_fr subtitle=subtitle_str count=stats.total primary_url=arrival_url primary_label="Enregistrer une arrivée" %}
     {% elif can_prepare %}
-      {% include 'components/page_header.html' with title="Conteneurs du "|add:date_fr subtitle=subtitle_str count=stats.total primary_url=prepare_url|add:"?date="|add:date_iso primary_label="Préparer une liste" %}
+      {% include 'components/page_header.html' with title="Étape 3 · Liste du "|add:date_fr subtitle=subtitle_str count=stats.total primary_url=prepare_url|add:"?date="|add:date_iso primary_label="Préparer une liste" %}
     {% else %}
-      {% include 'components/page_header.html' with title="Conteneurs du "|add:date_fr subtitle=subtitle_str count=stats.total %}
+      {% include 'components/page_header.html' with title="Étape 3 · Liste du "|add:date_fr subtitle=subtitle_str count=stats.total %}
     {% endif %}
   {% endwith %}
+
+  <!-- Bandeau visuel du flux en 3 étapes -->
+  <div class="grid grid-cols-1 md:grid-cols-3 bg-surface rounded-xl border border-border overflow-hidden divide-y md:divide-y-0 md:divide-x divide-border">
+    <a href="{% url 'terminal:containers' %}?date={{ selected_date|date:'Y-m-d' }}&amp;status=registered"
+       class="p-3.5 {% if status_filter == 'registered' %}bg-primary-tint/50 border-t-2 border-t-primary{% else %}hover:bg-ctsa-surface{% endif %} flex items-center gap-3 no-underline">
+      <span class="inline-flex items-center justify-center w-7 h-7 rounded-md {% if status_filter == 'registered' %}bg-primary text-white{% else %}bg-ctsa-bgalt text-text-muted{% endif %} font-mono text-xs font-bold shrink-0">01</span>
+      <div class="min-w-0">
+        <div class="text-xs font-bold uppercase tracking-wider text-text">1. Arrivés &amp; Enregistrés</div>
+        <div class="text-xs text-text-muted truncate">{{ stats.registered }} hors liste → à mettre dans une liste</div>
+      </div>
+    </a>
+    <a href="{% url 'terminal:containers' %}?date={{ selected_date|date:'Y-m-d' }}&amp;status=pending"
+       class="p-3.5 {% if status_filter != 'registered' %}bg-primary-tint/50 border-t-2 border-t-primary{% else %}hover:bg-ctsa-surface{% endif %} flex items-center gap-3 no-underline">
+      <span class="inline-flex items-center justify-center w-7 h-7 rounded-md {% if status_filter != 'registered' %}bg-primary text-white{% else %}bg-ctsa-bgalt text-text-muted{% endif %} font-mono text-xs font-bold shrink-0">02</span>
+      <div class="min-w-0">
+        <div class="text-xs font-bold uppercase tracking-wider text-primary">2. Dans la liste · À confirmer</div>
+        <div class="text-xs text-text-muted truncate">{{ stats.pending }} en attente · {{ stats.confirmed }} confirmé{{ stats.confirmed|pluralize }}</div>
+      </div>
+    </a>
+    <a href="{% url 'terminal:inspection' %}?date={{ selected_date|date:'Y-m-d' }}"
+       class="p-3.5 hover:bg-ctsa-surface flex items-center gap-3 no-underline">
+      <span class="inline-flex items-center justify-center w-7 h-7 rounded-md bg-success-surface text-success border border-success-border font-mono text-xs font-bold shrink-0">03</span>
+      <div class="min-w-0">
+        <div class="text-xs font-bold uppercase tracking-wider text-text">3. Éligibles à vérifier ({{ stats.confirmed }})</div>
+        <div class="text-xs text-text-muted truncate">Seuls les Confirmés passent à l'inspection →</div>
+      </div>
+    </a>
+  </div>
 
   <!-- Feuille opérationnelle unifiée : séance + onglets + recherche + tableau -->
   <section class="bg-surface rounded-xl border border-border overflow-hidden" aria-label="Gestion des conteneurs de la séance">
@@ -51,6 +80,13 @@
                  class="border border-border rounded-lg px-2.5 py-1.5 min-h-[40px] text-xs font-semibold text-text bg-surface">
           <noscript><button type="submit" class="ui-btn ui-btn-secondary ui-btn-sm ml-1">Afficher</button></noscript>
         </form>
+
+        {% if can_prepare %}
+          <a href="{% url 'terminal:prepare' %}?date={{ selected_date|date:'Y-m-d' }}"
+             class="ui-btn ui-btn-secondary ui-btn-sm">
+            + Mettre des enregistrés en liste
+          </a>
+        {% endif %}
       </div>
 
       <div class="flex flex-wrap items-center gap-2">
@@ -62,7 +98,7 @@
             <input type="hidden" name="status" value="confirmed">
             <input type="hidden" name="next" value="{{ request.get_full_path }}">
             <button type="submit" class="ui-btn ui-btn-secondary ui-btn-sm tabular-nums">
-              Confirmer les {{ stats.pending }} en attente
+              Confirmer les {{ stats.pending }} en attente (rendre éligibles)
             </button>
           </form>
         {% endif %}
@@ -84,19 +120,22 @@
       </div>
     </div>
 
-    <!-- Ligne 2 : onglets de statut sur une seule ligne -->
+    <!-- Ligne 2 : onglets de statut sur une seule ligne (incluant Enregistrés hors liste) -->
     <nav class="list-tabs" aria-label="Filtrer par statut">
       <a href="{% url 'terminal:containers' %}?date={{ selected_date|date:'Y-m-d' }}{% if line_filter %}&amp;line={{ line_filter }}{% endif %}" class="list-tab" {% if not status_filter and not verification_filter %}aria-current="true"{% endif %}>
-        Tous <span class="list-tab-count">{{ stats.total }}</span>
-      </a>
-      <a href="{% url 'terminal:containers' %}?date={{ selected_date|date:'Y-m-d' }}&amp;status=confirmed{% if line_filter %}&amp;line={{ line_filter }}{% endif %}" class="list-tab" {% if status_filter == 'confirmed' %}aria-current="true"{% endif %}>
-        Confirmés <span class="list-tab-count">{{ stats.confirmed }}</span>
+        Tous dans la liste <span class="list-tab-count">{{ stats.total }}</span>
       </a>
       <a href="{% url 'terminal:containers' %}?date={{ selected_date|date:'Y-m-d' }}&amp;status=pending{% if line_filter %}&amp;line={{ line_filter }}{% endif %}" class="list-tab" {% if status_filter == 'pending' %}aria-current="true"{% endif %}>
-        En attente <span class="list-tab-count">{{ stats.pending }}</span>
+        En attente (à confirmer) <span class="list-tab-count">{{ stats.pending }}</span>
+      </a>
+      <a href="{% url 'terminal:containers' %}?date={{ selected_date|date:'Y-m-d' }}&amp;status=confirmed{% if line_filter %}&amp;line={{ line_filter }}{% endif %}" class="list-tab" {% if status_filter == 'confirmed' %}aria-current="true"{% endif %}>
+        Confirmés (éligibles à vérifier) <span class="list-tab-count">{{ stats.confirmed }}</span>
       </a>
       <a href="{% url 'terminal:containers' %}?date={{ selected_date|date:'Y-m-d' }}&amp;status=unavailable{% if line_filter %}&amp;line={{ line_filter }}{% endif %}" class="list-tab" {% if status_filter == 'unavailable' %}aria-current="true"{% endif %}>
         Indisponibles <span class="list-tab-count">{{ stats.unavailable }}</span>
+      </a>
+      <a href="{% url 'terminal:containers' %}?date={{ selected_date|date:'Y-m-d' }}&amp;status=registered{% if line_filter %}&amp;line={{ line_filter }}{% endif %}" class="list-tab" {% if status_filter == 'registered' %}aria-current="true"{% endif %}>
+        Enregistrés hors liste <span class="list-tab-count">{{ stats.registered }}</span>
       </a>
     </nav>
 
@@ -152,7 +191,7 @@
         {% for c in containers %}
           <article class="p-4 space-y-3">
             <div class="flex items-start gap-2.5">
-              {% if can_change_status %}
+              {% if can_change_status and c.status != 'registered' %}
                 <input type="checkbox"
                        name="ids"
                        value="{{ c.pk }}"
@@ -188,14 +227,14 @@
             <tr>
               <th scope="col">
                 <label class="inline-flex items-center gap-2">
-                  {% if can_change_status %}
+                  {% if can_change_status and status_filter != 'registered' %}
                     <input type="checkbox" data-check-all="dashboard" class="w-4 h-4 rounded">
                   {% endif %}
                   <span>Conteneur</span>
                 </label>
               </th>
               <th scope="col">Ligne maritime</th>
-              <th scope="col">Statut sur la rampe</th>
+              <th scope="col">Statut dans la liste &amp; Éligibilité</th>
               <th scope="col" class="text-right">Fiche</th>
             </tr>
           </thead>
@@ -204,7 +243,7 @@
               <tr>
                 <th scope="row">
                   <div class="flex items-start gap-2.5">
-                    {% if can_change_status %}
+                    {% if can_change_status and c.status != 'registered' %}
                       <input type="checkbox"
                              name="ids"
                              value="{{ c.pk }}"
@@ -242,15 +281,26 @@
     {% else %}
       <div class="px-6 py-12 text-center space-y-2">
         <p class="text-sm font-semibold text-text m-0">Aucun conteneur pour cette séance</p>
-        <p class="text-sm text-text-muted m-0">Aucun conteneur ne correspond aux critères sélectionnés.</p>
-        {% with date_iso=selected_date|date:"Y-m-d" %}
-          {% if can_prepare %}
-            <div class="pt-3">
-              <a href="{{ prepare_url }}?date={{ date_iso }}" class="ui-btn ui-btn-secondary ui-btn-sm">
-                Préparer une liste
-              </a>
-            </div>
+        <p class="text-sm text-text-muted m-0">
+          {% if stats.registered %}
+            {{ stats.registered }} conteneur{{ stats.registered|pluralize }} arrivé{{ stats.registered|pluralize }} (Enregistré{{ stats.registered|pluralize }}) {{ stats.registered|pluralize:"peut,peuvent" }} être mis dans cette liste.
+          {% else %}
+            Aucun conteneur ne correspond aux critères sélectionnés.
           {% endif %}
+        </p>
+        {% with date_iso=selected_date|date:"Y-m-d" %}
+          <div class="pt-3 flex flex-wrap items-center justify-center gap-2">
+            {% if can_prepare %}
+              <a href="{{ prepare_url }}?date={{ date_iso }}" class="ui-btn ui-btn-secondary ui-btn-sm">
+                Étape 2 : Préparer une liste ({% if stats.registered %}{{ stats.registered }} enregistré{{ stats.registered|pluralize }}{% else %}inscrire{% endif %})
+              </a>
+            {% endif %}
+            {% if stats.registered %}
+              <a href="{% url 'terminal:containers' %}?date={{ date_iso }}&amp;status=registered" class="ui-btn ui-btn-ghost ui-btn-sm text-primary">
+                Voir les {{ stats.registered }} enregistrés hors liste →
+              </a>
+            {% endif %}
+          </div>
         {% endwith %}
       </div>
     {% endif %}
@@ -270,7 +320,7 @@
           Sélection
         </span>
         <button type="submit" name="status" value="confirmed" class="ui-btn ui-btn-secondary ui-btn-sm">
-          Confirmer
+          Confirmer (rendre éligible)
         </button>
         <button type="submit" name="status" value="pending" class="ui-btn ui-btn-secondary ui-btn-sm">
           En attente

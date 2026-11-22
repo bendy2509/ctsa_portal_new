@@ -1,7 +1,7 @@
 {% extends 'portal/base_portal.html' %}
 
 {% block title %}Préparer une liste — Cap Terminal S.A.{% endblock %}
-{% block page_title %}Préparer{% endblock %}
+{% block page_title %}02 · Préparer une liste{% endblock %}
 {% block portal_body_extra %}portal-has-form-actions{% endblock %}
 
 {% block portal_content %}
@@ -9,13 +9,38 @@
 
   {% url 'terminal:containers' as containers_url %}
   {% with date_iso=selected_date|date:"Y-m-d" date_fr=selected_date|date:"d/m/Y" %}
-    {% include 'components/page_header.html' with back_url=containers_url|add:"?date="|add:date_iso back_label="Conteneurs du "|add:date_fr title="Préparer une liste" subtitle=selected_date|date:"l j F Y"|capfirst count=registered_count %}
+    {% include 'components/page_header.html' with back_url=containers_url|add:"?date="|add:date_iso back_label="Conteneurs du "|add:date_fr title="Étape 2 · Préparer une liste de vérification" subtitle="Sélectionnez les conteneurs enregistrés (arrivés) ou saisissez des numéros pour les mettre dans la liste (statut En attente)." count=registered_count %}
   {% endwith %}
+
+  <!-- Bandeau visuel du flux en 3 étapes -->
+  <div class="grid grid-cols-1 md:grid-cols-3 bg-surface rounded-xl border border-border overflow-hidden divide-y md:divide-y-0 md:divide-x divide-border">
+    <a href="{% url 'terminal:arrival_create' %}" class="p-3.5 hover:bg-ctsa-surface flex items-center gap-3 no-underline">
+      <span class="inline-flex items-center justify-center w-7 h-7 rounded-md bg-ctsa-bgalt text-text-muted font-mono text-xs font-bold shrink-0">01</span>
+      <div class="min-w-0">
+        <div class="text-xs font-bold uppercase tracking-wider text-text">1. Arrivés &amp; Enregistrés</div>
+        <div class="text-xs text-text-muted truncate">{{ available_registered_count }} disponible{{ available_registered_count|pluralize }} à mettre en liste</div>
+      </div>
+    </a>
+    <div class="p-3.5 bg-primary-tint/50 border-t-2 border-t-primary flex items-center gap-3">
+      <span class="inline-flex items-center justify-center w-7 h-7 rounded-md bg-primary text-white font-mono text-xs font-bold shrink-0">02</span>
+      <div class="min-w-0">
+        <div class="text-xs font-bold uppercase tracking-wider text-primary">2. Mise en liste ({{ selected_date|date:"d/m/Y" }})</div>
+        <div class="text-xs text-text-muted truncate">{{ registered_count }} inscrit{{ registered_count|pluralize }} (statut initial : En attente)</div>
+      </div>
+    </div>
+    <a href="{% url 'terminal:containers' %}?date={{ selected_date|date:'Y-m-d' }}" class="p-3.5 hover:bg-ctsa-surface flex items-center gap-3 no-underline">
+      <span class="inline-flex items-center justify-center w-7 h-7 rounded-md bg-ctsa-bgalt text-text-muted font-mono text-xs font-bold shrink-0">03</span>
+      <div class="min-w-0">
+        <div class="text-xs font-bold uppercase tracking-wider text-text">3. Confirmer dans la liste → Vérifier</div>
+        <div class="text-xs text-text-muted truncate">Confirmez le statut pour rendre éligible à vérifier →</div>
+      </div>
+    </a>
+  </div>
 
   <!-- Barre de pilotage de la séance cible -->
   <div class="bg-surface rounded-xl border border-border px-4 py-2.5 flex flex-wrap items-center justify-between gap-3">
     <div class="flex flex-wrap items-center gap-2">
-      <span class="text-xs font-semibold uppercase tracking-wider text-text-muted mr-1">Séance cible</span>
+      <span class="text-xs font-semibold uppercase tracking-wider text-text-muted mr-1">Liste cible</span>
       <div class="inline-flex rounded-lg border border-border bg-ctsa-surface overflow-hidden">
         <a href="{% url 'terminal:prepare' %}?date={{ today|date:'Y-m-d' }}"
            {% if selected_date == today %}aria-current="true"{% endif %}
@@ -43,7 +68,7 @@
 
     <a href="{% url 'terminal:containers' %}?date={{ selected_date|date:'Y-m-d' }}"
        class="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline no-underline">
-      <span>Ouvrir la liste du {{ selected_date|date:"d/m/Y" }}</span>
+      <span>Étape 3 : Confirmer les conteneurs de la liste ({{ registered_count }})</span>
       <span aria-hidden="true">→</span>
     </a>
   </div>
@@ -60,21 +85,21 @@
     </div>
   {% endif %}
 
-  <!-- Grille 12 colonnes : Console d'inscription (8 col.) | Aide & Derniers ajouts (4 col.) -->
+  <!-- Grille 12 colonnes : Console d'ajout à la liste (7 col.) | Conteneurs Enregistrés disponibles & Derniers ajouts (5 col.) -->
   <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
 
-    <!-- Console d'inscription (8/12) -->
-    <section aria-labelledby="prepare-add-title" class="lg:col-span-8 bg-surface rounded-xl border border-border overflow-hidden">
+    <!-- Console d'inscription (7/12) -->
+    <section aria-labelledby="prepare-add-title" class="lg:col-span-7 bg-surface rounded-xl border border-border overflow-hidden">
       <div class="px-5 py-4 border-b border-border bg-ctsa-surface/60">
         <h2 id="prepare-add-title" class="text-sm font-heading font-semibold text-text m-0">
-          Inscrire des conteneurs sur la séance du {{ selected_date|date:"d/m/Y" }}
+          Inscrire des conteneurs dans la liste du {{ selected_date|date:"d/m/Y" }}
         </h2>
         <p class="text-xs text-text-muted mt-0.5 mb-0">
-          Ajoutés à l'état « En attente » jusqu'à leur confirmation sur la rampe.
+          Ajoutés à l'état « En attente ». Ils devront ensuite être « Confirmés » dans la liste pour être éligibles à la vérification.
         </p>
       </div>
 
-      <!-- Barre de modes sur une ligne pleine largeur sans troncature -->
+      <!-- Barre de modes sur une ligne pleine largeur -->
       <div class="list-tabs bg-surface" role="tablist" aria-label="Mode d'enregistrement">
         <button type="button" data-tab-target="panel-single-add" aria-selected="{% if active_tab == 'bulk' %}false{% else %}true{% endif %}" class="tab-btn list-tab border-t-0 border-x-0 bg-transparent cursor-pointer">
           Un conteneur
@@ -83,7 +108,7 @@
           Coller une liste
         </button>
         <button type="button" data-tab-target="panel-search-registered" aria-selected="false" class="tab-btn list-tab border-t-0 border-x-0 bg-transparent cursor-pointer">
-          Chercher un conteneur enregistré
+          Chercher un conteneur enregistré ({{ available_registered_count }})
         </button>
       </div>
 
@@ -251,36 +276,80 @@
       </div>
     </section>
 
-    <!-- Panneau latéral (4/12) : Derniers ajouts & Règles ISO -->
-    <aside class="lg:col-span-4 space-y-5">
-      <section aria-label="Derniers ajouts de la séance" class="bg-surface rounded-xl border border-border overflow-hidden">
-        <div class="px-4 py-3 border-b border-border bg-ctsa-surface/60 flex items-center justify-between gap-2">
-          <h2 class="text-xs font-heading font-bold uppercase tracking-wider text-text-muted m-0">
-            Derniers ajouts ({{ selected_date|date:"d/m" }})
-          </h2>
-          <a href="{% url 'terminal:containers' %}?date={{ selected_date|date:'Y-m-d' }}" class="text-xs font-semibold text-primary hover:underline no-underline">Voir tout →</a>
+    <!-- Panneau latéral (5/12) : Sélection directe des conteneurs Enregistrés disponibles + Derniers ajouts -->
+    <aside class="lg:col-span-5 space-y-5">
+      <!-- Sélection 1-clic des conteneurs arrivés et enregistrés -->
+      <section aria-label="Conteneurs enregistrés prêts à mettre en liste" class="bg-surface rounded-xl border border-border overflow-hidden">
+        <div class="px-5 py-3.5 border-b border-border bg-ctsa-surface/60 flex items-center justify-between gap-2">
+          <div>
+            <h2 class="text-xs font-heading font-bold uppercase tracking-wider text-text m-0">
+              1. Conteneurs enregistrés disponibles ({{ available_registered_count }})
+            </h2>
+            <p class="text-xs text-text-muted mt-0.5 mb-0">Arrivés au terminal — cochez pour les mettre dans la liste</p>
+          </div>
+          <a href="{% url 'terminal:arrival_create' %}" class="text-xs font-semibold text-primary hover:underline no-underline">+ Arrivée</a>
         </div>
-        {% if recent %}
-          <ul class="divide-y divide-border m-0 p-0 list-none">
-            {% for item in recent %}
-              <li class="px-4 py-2.5 flex items-center justify-between gap-2 text-sm">
-                <a href="{% url 'terminal:container_detail' item.pk %}" class="font-mono font-semibold text-primary hover:underline no-underline">{{ item.container_number }}</a>
-                <span class="text-xs text-text-muted truncate">{{ item.shipping_line.name|default:"Non renseignée" }}</span>
-              </li>
-            {% endfor %}
-          </ul>
+
+        {% if available_registered %}
+          <form action="{% url 'terminal:registered_add_to_list' %}" method="post">
+            {% csrf_token %}
+            <input type="hidden" name="scheduled_date" value="{{ selected_date|date:'Y-m-d' }}">
+            <input type="hidden" name="next" value="{{ request.get_full_path }}">
+            <ul class="divide-y divide-border m-0 p-0 list-none max-h-72 overflow-y-auto">
+              {% for rc in available_registered %}
+                <li class="px-5 py-2.5 flex items-center justify-between gap-2 hover:bg-ctsa-surface">
+                  <label class="flex items-center gap-2.5 cursor-pointer min-w-0 flex-1">
+                    <input type="checkbox" name="ids" value="{{ rc.pk }}" class="w-4 h-4 rounded shrink-0">
+                    <span class="font-mono text-sm font-bold text-text tabular-nums">{{ rc.container_number }}</span>
+                    <span class="text-xs text-text-muted truncate">{{ rc.shipping_line.name|default:"—" }}</span>
+                  </label>
+                  {% if rc.arrived_at %}
+                    <span class="text-[11px] font-mono text-text-muted tabular-nums shrink-0">{{ rc.arrived_at|date:"d/m H:i" }}</span>
+                  {% endif %}
+                </li>
+              {% endfor %}
+            </ul>
+            <div class="px-5 py-3 border-t border-border bg-ctsa-surface/60">
+              <button type="submit" class="ui-btn ui-btn-secondary ui-btn-sm w-full">
+                + Mettre la sélection dans la liste du {{ selected_date|date:"d/m/Y" }}
+              </button>
+            </div>
+          </form>
         {% else %}
-          <p class="px-4 py-6 text-center text-xs text-text-muted m-0">
-            Aucun conteneur inscrit sur cette séance pour le moment.
+          <p class="px-5 py-6 text-center text-xs text-text-muted m-0">
+            Aucun conteneur à l'état « Enregistré » en attente de mise en liste.
           </p>
         {% endif %}
       </section>
 
-      <section class="bg-surface rounded-xl border border-border p-4 space-y-2">
-        <h3 class="text-xs font-heading font-bold uppercase tracking-wider text-text-muted m-0">Standard ISO 6346</h3>
-        <p class="text-xs text-text-muted m-0 leading-relaxed">
-          Chaque numéro normalisé comporte <strong class="text-text">4 lettres</strong> (code propriétaire + catégorie <code class="font-mono">U/J/Z</code>) suivies de <strong class="text-text">7 chiffres</strong> dont le chiffre de contrôle.
-        </p>
+      <!-- Derniers ajouts à la liste de cette séance -->
+      <section aria-label="Derniers ajouts de la séance" class="bg-surface rounded-xl border border-border overflow-hidden">
+        <div class="px-5 py-3.5 border-b border-border bg-ctsa-surface/60 flex items-center justify-between gap-2">
+          <div>
+            <h2 class="text-xs font-heading font-bold uppercase tracking-wider text-text m-0">
+              2. Dans la liste du {{ selected_date|date:"d/m/Y" }} ({{ registered_count }})
+            </h2>
+            <p class="text-xs text-text-muted mt-0.5 mb-0">À confirmer à l'étape 3 pour rendre éligibles à vérifier</p>
+          </div>
+          <a href="{% url 'terminal:containers' %}?date={{ selected_date|date:'Y-m-d' }}" class="text-xs font-semibold text-primary hover:underline no-underline">Confirmer →</a>
+        </div>
+        {% if recent %}
+          <ul class="divide-y divide-border m-0 p-0 list-none">
+            {% for item in recent %}
+              <li class="px-5 py-2.5 flex items-center justify-between gap-2 text-sm">
+                <div class="min-w-0">
+                  <a href="{% url 'terminal:container_detail' item.pk %}" class="font-mono font-semibold text-primary hover:underline no-underline">{{ item.container_number }}</a>
+                  <span class="text-xs text-text-muted ml-1.5 truncate">{{ item.shipping_line.name|default:"—" }}</span>
+                </div>
+                {% include 'components/badge.html' with variant=item.status label=item.get_status_display %}
+              </li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <p class="px-5 py-6 text-center text-xs text-text-muted m-0">
+            Aucun conteneur inscrit sur cette liste pour le moment.
+          </p>
+        {% endif %}
       </section>
     </aside>
 

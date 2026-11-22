@@ -1,27 +1,27 @@
-{# Composant page_header : titre, lien retour (>= 44px), compteur éventuel et UN SEUL bouton primaire. #}
-<header class="flex flex-col gap-2">
+{# Composant page_header : bandeau de commande avec filet latéral primaire, titre, compteur et UN SEUL bouton primaire. #}
+<header class="bg-surface rounded-xl border border-border border-l-4 border-l-primary px-5 py-4 flex flex-col gap-2">
   {% if back_url %}
     <div>
       <a href="{{ back_url }}"
-         class="inline-flex items-center gap-1.5 text-sm font-medium text-text-muted hover:text-primary no-underline min-h-[44px]">
+         class="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-text-muted hover:text-primary no-underline min-h-[36px]">
         <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
         <span>{{ back_label|default:"Retour" }}</span>
       </a>
     </div>
   {% endif %}
 
-  <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
     <div class="min-w-0">
       <div class="flex flex-wrap items-center gap-2.5">
-        <h1 class="text-xl sm:text-2xl font-heading font-semibold tracking-tight text-text m-0">{{ title }}</h1>
+        <h1 class="text-xl sm:text-2xl font-heading font-bold tracking-tight text-text m-0">{{ title }}</h1>
         {% if count is not None %}
-          <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-surface border border-border text-text-muted tabular-nums">
+          <span class="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-mono font-bold bg-primary-tint border border-primary-border text-primary tabular-nums">
             {{ count }}
           </span>
         {% endif %}
       </div>
       {% if subtitle %}
-        <p class="text-sm text-text-muted mt-1 mb-0">{{ subtitle }}</p>
+        <p class="text-xs sm:text-sm text-text-muted mt-1 mb-0">{{ subtitle }}</p>
       {% endif %}
     </div>
 

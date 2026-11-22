@@ -1,40 +1,65 @@
-{# Sélecteur segmenté 1-clic du statut d'un conteneur `c` (Confirmé / En attente / Indisponible), sans badge dupliqué. #}
+{# Sélecteur segmenté 1-clic du statut d'un conteneur c (Enregistré -> Mettre en liste ; sinon Confirmé / En attente / Indisponible). #}
 {% load permissions_tags %}
 {% can 'container.change_status' as can_change_status %}
-{% if can_change_status and not c.is_verified and not c.verification_result %}
+{% can 'container.prepare' as can_prepare %}
+
+{% if c.status == 'registered' %}
+  <div class="flex flex-wrap items-center gap-2">
+    {% include 'components/badge.html' with variant='registered' label='Enregistré (hors liste)' %}
+    {% if can_prepare and not c.archived_at %}
+      <form action="{% url 'terminal:registered_add_to_list' %}" method="post" class="inline-flex items-center gap-1.5">
+        {% csrf_token %}
+        <input type="hidden" name="ids" value="{{ c.pk }}">
+        <input type="hidden" name="scheduled_date" value="{{ selected_date|default:today|date:'Y-m-d' }}">
+        <input type="hidden" name="next" value="{{ request.get_full_path }}">
+        <button type="submit" class="ui-btn ui-btn-primary ui-btn-sm">
+          + Mettre en liste{% if selected_date %} ({{ selected_date|date:"d/m/Y" }}){% endif %}
+        </button>
+      </form>
+    {% endif %}
+  </div>
+{% elif can_change_status and not c.is_verified and not c.verification_result %}
   <div class="space-y-1.5">
-    <div class="status-segmented" role="group" aria-label="Changer le statut de {{ c.container_number }}">
-      <form action="{% url 'terminal:container_update_status' c.pk %}" method="post">
-        {% csrf_token %}
-        <input type="hidden" name="status" value="confirmed">
-        <input type="hidden" name="next" value="{{ request.get_full_path }}">
-        <button type="submit"
-                {% if c.status == 'confirmed' %}disabled{% endif %}
-                class="status-seg-btn {% if c.status == 'confirmed' %}is-confirmed{% endif %}">
-          {% if c.status == 'confirmed' %}Confirmé{% else %}Confirmer{% endif %}
-        </button>
-      </form>
+    <div class="flex flex-wrap items-center gap-2">
+      <div class="status-segmented" role="group" aria-label="Changer le statut de {{ c.container_number }}">
+        <form action="{% url 'terminal:container_update_status' c.pk %}" method="post">
+          {% csrf_token %}
+          <input type="hidden" name="status" value="confirmed">
+          <input type="hidden" name="next" value="{{ request.get_full_path }}">
+          <button type="submit"
+                  {% if c.status == 'confirmed' %}disabled{% endif %}
+                  class="status-seg-btn {% if c.status == 'confirmed' %}is-confirmed{% endif %}">
+            {% if c.status == 'confirmed' %}Confirmé{% else %}Confirmer{% endif %}
+          </button>
+        </form>
 
-      <form action="{% url 'terminal:container_update_status' c.pk %}" method="post">
-        {% csrf_token %}
-        <input type="hidden" name="status" value="pending">
-        <input type="hidden" name="next" value="{{ request.get_full_path }}">
-        <button type="submit"
-                {% if c.status == 'pending' %}disabled{% endif %}
-                class="status-seg-btn {% if c.status == 'pending' %}is-pending{% endif %}">
-          En attente
-        </button>
-      </form>
+        <form action="{% url 'terminal:container_update_status' c.pk %}" method="post">
+          {% csrf_token %}
+          <input type="hidden" name="status" value="pending">
+          <input type="hidden" name="next" value="{{ request.get_full_path }}">
+          <button type="submit"
+                  {% if c.status == 'pending' %}disabled{% endif %}
+                  class="status-seg-btn {% if c.status == 'pending' %}is-pending{% endif %}">
+            En attente
+          </button>
+        </form>
 
-      <button type="button"
-              data-toggle-unavailable="{{ c.pk }}"
-              data-unavailable-action="{% url 'terminal:container_update_status' c.pk %}"
-              data-unavailable-number="{{ c.container_number }}"
-              data-unavailable-note="{{ c.unavailability_note }}"
-              data-unavailable-next="{{ request.get_full_path }}"
-              class="status-seg-btn {% if c.status == 'unavailable' %}is-unavailable{% endif %}">
-        Indisponible
-      </button>
+        <button type="button"
+                data-toggle-unavailable="{{ c.pk }}"
+                data-unavailable-action="{% url 'terminal:container_update_status' c.pk %}"
+                data-unavailable-number="{{ c.container_number }}"
+                data-unavailable-note="{{ c.unavailability_note }}"
+                data-unavailable-next="{{ request.get_full_path }}"
+                class="status-seg-btn {% if c.status == 'unavailable' %}is-unavailable{% endif %}">
+          Indisponible
+        </button>
+      </div>
+
+      {% if c.status == 'confirmed' %}
+        <span class="text-[11px] font-semibold text-success">✓ Éligible à vérifier</span>
+      {% elif c.status == 'pending' %}
+        <span class="text-[11px] text-text-muted">À confirmer pour vérifier</span>
+      {% endif %}
     </div>
 
     {% if c.status == 'unavailable' and c.full_reason_display %}

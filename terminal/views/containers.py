@@ -82,16 +82,22 @@ def container_list_view(request):
         not_verified=Count('id', filter=Q(verification_result=Container.Verification.NOT_VERIFIED)),
         to_verify=Count('id', filter=Q(status=Container.Status.CONFIRMED, verification_result='')),
     )
+    stats['registered'] = Container.registered_objects.count()
     # La vérification ne se marque que pour une séance commencée (aujourd'hui ou passée).
     show_verification = selected_date <= today
 
-    containers = base_qs
-    if verification_filter == 'to_verify':
-        containers = containers.filter(status=Container.Status.CONFIRMED, verification_result='')
-    elif verification_filter in Container.Verification.values:
-        containers = containers.filter(verification_result=verification_filter)
-    if status_filter in dict(Container.Status.choices):
-        containers = containers.filter(status=status_filter)
+    if status_filter == Container.Status.REGISTERED:
+        containers = Container.registered_objects.select_related(
+            'shipping_line', 'prefix_ref', 'created_by', 'updated_by',
+        ).order_by('-arrived_at', 'container_number')
+    else:
+        containers = base_qs
+        if verification_filter == 'to_verify':
+            containers = containers.filter(status=Container.Status.CONFIRMED, verification_result='')
+        elif verification_filter in Container.Verification.values:
+            containers = containers.filter(verification_result=verification_filter)
+        if status_filter in dict(Container.Status.choices):
+            containers = containers.filter(status=status_filter)
     if line_filter.isdigit():
         containers = containers.filter(shipping_line_id=int(line_filter))
     if search_q:
@@ -282,6 +288,8 @@ def container_detail_view(request, pk):
         'container': container,
         'logs': logs,
         'shipping_lines': ShippingLine.objects.filter(is_active=True),
+        'today': timezone.localdate(),
+        'default_schedule_date': default_work_date(request.user),
     })
 
 

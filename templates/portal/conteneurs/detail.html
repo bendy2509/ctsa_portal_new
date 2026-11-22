@@ -8,18 +8,75 @@
 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
 
   {% can 'container.change_status' as can_change_status %}
+  {% can 'container.prepare' as can_prepare %}
+  {% can 'container.verify' as can_verify %}
   {% can 'container.archive' container as can_archive %}
   {% can 'container.restore' container as can_restore %}
   {% url 'terminal:containers' as containers_url %}
   {% url 'terminal:container_edit' container.pk as edit_url %}
 
   {% with date_iso=container.scheduled_date|date:"Y-m-d" %}
-    {% if can_change_status and not container.is_verified and not container.archived_at %}
+    {% if can_change_status and container.status != 'registered' and not container.is_verified and not container.archived_at %}
       {% include 'components/page_header.html' with back_url=containers_url|add:"?date="|add:date_iso back_label="Retour aux conteneurs" title=container.container_number subtitle=container.shipping_line.name|default:"Ligne maritime non renseignée" primary_url=edit_url primary_label="Modifier" %}
     {% else %}
-      {% include 'components/page_header.html' with back_url=containers_url|add:"?date="|add:date_iso back_label="Retour aux conteneurs" title=container.container_number subtitle=container.shipping_line.name|default:"Ligne maritime non renseignée" %}
+      {% include 'components/page_header.html' with back_url=containers_url back_label="Retour aux conteneurs" title=container.container_number subtitle=container.shipping_line.name|default:"Ligne maritime non renseignée" %}
     {% endif %}
   {% endwith %}
+
+  <!-- Parcours opérationnel du conteneur en 3 étapes : Arrivée (Enregistré) -> Mise en liste (En attente) -> Confirmé = Éligible à vérifier -->
+  <section aria-label="Parcours de vérification du conteneur" class="bg-surface rounded-xl border border-border overflow-hidden">
+    <div class="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-border">
+      <div class="p-4 flex items-start gap-3 {% if container.status == 'registered' %}bg-primary-tint/40{% endif %}">
+        <span class="inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold shrink-0 {% if container.status == 'registered' %}bg-primary text-white{% else %}bg-success-surface text-success border border-success-border{% endif %}">1</span>
+        <div class="min-w-0">
+          <div class="text-xs font-bold uppercase tracking-wider text-text">1. Arrivée &amp; Enregistrement</div>
+          <p class="text-xs text-text-muted mt-0.5 mb-0">
+            {% if container.status == 'registered' %}
+              Enregistré hors liste{% if container.arrived_at %} le {{ container.arrived_at|date:"d/m/Y à H:i" }}{% endif %}. Prêt à être mis dans une liste.
+            {% else %}
+              Enregistré dans le système.
+            {% endif %}
+          </p>
+        </div>
+      </div>
+
+      <div class="p-4 flex items-start gap-3 {% if container.status == 'pending' or container.status == 'unavailable' %}bg-status-pending-bg/40{% endif %}">
+        <span class="inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold shrink-0 {% if container.status == 'registered' %}bg-ctsa-bgalt text-text-muted{% elif container.status == 'pending' or container.status == 'unavailable' %}bg-status-pending-fg text-white{% else %}bg-success-surface text-success border border-success-border{% endif %}">2</span>
+        <div class="min-w-0">
+          <div class="text-xs font-bold uppercase tracking-wider text-text">2. Mise en liste &amp; Confirmation</div>
+          <p class="text-xs text-text-muted mt-0.5 mb-0">
+            {% if container.status == 'registered' %}
+              Pas encore affecté à une liste de vérification.
+            {% elif container.status == 'pending' %}
+              Inscrit sur la liste du <strong>{{ container.scheduled_date|date:"d/m/Y" }}</strong> (En attente). Doit être <strong>Confirmé</strong> pour devenir éligible à vérifier.
+            {% elif container.status == 'unavailable' %}
+              Inscrit sur la liste du <strong>{{ container.scheduled_date|date:"d/m/Y" }}</strong> (Indisponible — non éligible à vérifier).
+            {% else %}
+              Confirmé sur la liste du <strong>{{ container.scheduled_date|date:"d/m/Y" }}</strong>.
+            {% endif %}
+          </p>
+        </div>
+      </div>
+
+      <div class="p-4 flex items-start gap-3 {% if container.status == 'confirmed' %}bg-success-surface/40{% endif %}">
+        <span class="inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold shrink-0 {% if container.is_verified %}bg-success text-white{% elif container.status == 'confirmed' %}bg-primary text-white{% else %}bg-ctsa-bgalt text-text-muted{% endif %}">3</span>
+        <div class="min-w-0">
+          <div class="text-xs font-bold uppercase tracking-wider text-text">3. Éligible à la vérification</div>
+          <p class="text-xs text-text-muted mt-0.5 mb-0">
+            {% if container.verification_result == 'verified' %}
+              Vérifié{% if container.verified_at %} le {{ container.verified_at|date:"d/m/Y à H:i" }}{% endif %}.
+            {% elif container.verification_result == 'not_verified' %}
+              Non vérifié (avec motif).
+            {% elif container.status == 'confirmed' %}
+              <strong class="text-success">Éligible à l'inspection</strong> sur la séance du {{ container.scheduled_date|date:"d/m/Y" }}.
+            {% else %}
+              Verrouillé tant que le statut dans la liste n'est pas <strong>Confirmé</strong>.
+            {% endif %}
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
 
   <!-- Grille 12 colonnes : Dossier & Statut (7 col.) | Historique des statuts (5 col.) -->
   <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
@@ -48,7 +105,7 @@
           </div>
           <div>
             <dt class="text-[11px] font-bold uppercase tracking-wider text-text-muted">Séance programmée</dt>
-            <dd class="mt-1 text-sm font-semibold text-text m-0 tabular-nums">{{ container.scheduled_date|date:"d/m/Y"|default:"Hors liste" }}</dd>
+            <dd class="mt-1 text-sm font-semibold text-text m-0 tabular-nums">{{ container.scheduled_date|date:"d/m/Y"|default:"Hors liste (Enregistré)" }}</dd>
           </div>
           <div>
             <dt class="text-[11px] font-bold uppercase tracking-wider text-text-muted">Ligne maritime</dt>
@@ -80,9 +137,44 @@
           {% endif %}
         </dl>
 
-        {% if can_change_status and not container.archived_at %}
-          <div class="pt-4 border-t border-border space-y-2">
-            <p class="text-[11px] font-bold uppercase tracking-wider text-text-muted m-0">Statut sur la rampe</p>
+        {% if container.status == 'registered' and not container.archived_at %}
+          <!-- Étape 2 : Mettre ce conteneur enregistré dans une liste de vérification -->
+          {% if can_prepare %}
+            <div class="pt-4 border-t border-border space-y-2.5">
+              <p class="text-[11px] font-bold uppercase tracking-wider text-text-muted m-0">
+                Étape suivante : Mettre dans une liste de vérification
+              </p>
+              <p class="text-xs text-text-muted m-0">
+                Ce conteneur est arrivé et enregistré. Ajoutez-le à une séance : il passera à l'état <strong>En attente</strong>, puis devra être <strong>Confirmé</strong> pour être vérifié.
+              </p>
+              <form action="{% url 'terminal:registered_add_to_list' %}" method="post" class="flex flex-wrap items-center gap-2 pt-1">
+                {% csrf_token %}
+                <input type="hidden" name="ids" value="{{ container.pk }}">
+                <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                <label for="detail-schedule-date" class="text-xs font-semibold text-text">Séance :</label>
+                <input type="date"
+                       id="detail-schedule-date"
+                       name="scheduled_date"
+                       min="{{ today|date:'Y-m-d' }}"
+                       value="{{ default_schedule_date|default:today|date:'Y-m-d' }}"
+                       class="border border-border rounded-lg px-3 py-1.5 min-h-[40px] text-xs font-semibold text-text bg-surface">
+                <button type="submit" class="ui-btn ui-btn-primary ui-btn-sm">
+                  + Mettre dans la liste (En attente)
+                </button>
+              </form>
+            </div>
+          {% endif %}
+        {% elif can_change_status and not container.archived_at %}
+          <div class="pt-4 border-t border-border space-y-2.5">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <p class="text-[11px] font-bold uppercase tracking-wider text-text-muted m-0">Statut dans la liste (doit être Confirmé pour vérifier)</p>
+              {% if container.status == 'confirmed' and can_verify %}
+                <a href="{% url 'terminal:inspection' %}?date={{ container.scheduled_date|date:'Y-m-d' }}&amp;q={{ container.container_number }}"
+                   class="text-xs font-semibold text-primary hover:underline no-underline">
+                  Ouvrir dans l'inspection →
+                </a>
+              {% endif %}
+            </div>
             {% include 'portal/conteneurs/_status_segmented.html' with c=container %}
           </div>
         {% endif %}

@@ -12,8 +12,8 @@
   <meta name="apple-mobile-web-app-title" content="CTSA RAMPE">
   <link rel="icon" type="image/png" href="{% static 'img/cap-terminal-logo.png' %}">
   <link rel="apple-touch-icon" href="{% static 'img/icon-192.png' %}">
-  <link rel="stylesheet" href="{% static 'css/ctsa.css' %}">
-  <link rel="stylesheet" href="{% static 'css/output.css' %}">
+  <link rel="stylesheet" href="{% static 'css/ctsa.css' %}?v=ledger5">
+  <link rel="stylesheet" href="{% static 'css/output.css' %}?v=ledger5">
 </head>
 <body class="min-h-screen flex flex-col bg-ctsa-surface text-text portal-body {% block portal_body_extra %}{% endblock %}">
   <a href="#portal-main-content" class="skip-link">Aller au contenu principal</a>
@@ -25,11 +25,11 @@
     <div id="portal-nav-backdrop" class="portal-backdrop" hidden></div>
     <aside id="portal-nav" class="portal-sidebar" aria-label="Navigation de l'exploitation">
       <div class="portal-brand">
-        <a href="{% url 'terminal:dashboard' %}" class="flex items-center gap-3 text-text no-underline min-w-0">
+        <a href="{% url 'terminal:dashboard' %}" class="flex items-center gap-3 text-white no-underline min-w-0">
           <span class="portal-brand-mark" aria-hidden="true">CTSA</span>
           <span class="portal-brand-text">
-            <strong>Exploitation RAMPE</strong>
-            <span>Cap Terminal S.A.</span>
+            <strong>PORTAIL RAMPE</strong>
+            <span>Console d'exploitation</span>
           </span>
         </a>
         <button type="button" id="portal-nav-close" class="portal-sidebar-close min-h-[44px] min-w-[44px]" aria-label="Fermer le menu">
@@ -39,35 +39,32 @@
 
       <nav class="portal-nav" aria-label="Menu principal d'exploitation">
         <div class="portal-nav-group">
-          <div class="portal-nav-title">Opérations</div>
+          <div class="portal-nav-title">Pilotage</div>
 
           {% can 'portal.dashboard' as can_dash %}
           {% if can_dash %}
             <a href="{% url 'terminal:dashboard' %}"
                {% if current == 'dashboard' %}aria-current="page"{% endif %}
                class="portal-nav-link">
-              <svg class="portal-icon" viewBox="0 0 24 24" aria-hidden="true"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>
+              <span class="portal-step-pill" aria-hidden="true">00</span>
               <span>Tableau de bord</span>
             </a>
           {% endif %}
+        </div>
 
-          {% can 'container.list' as can_list %}
-          {% if can_list %}
-            <a href="{% url 'terminal:containers' %}"
-               {% if current == 'containers' or current == 'container_detail' or current == 'container_edit' %}aria-current="page"{% endif %}
-               class="portal-nav-link">
-              <svg class="portal-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 6h13"/><path d="M8 12h13"/><path d="M8 18h13"/><path d="M3 6h.01"/><path d="M3 12h.01"/><path d="M3 18h.01"/></svg>
-              <span>Conteneurs du jour</span>
-            </a>
-          {% endif %}
+        <div class="portal-nav-group">
+          <div class="portal-nav-title">Flux Conteneurs (1 → 3)</div>
 
           {% can 'container.arrival_create' as can_arrival %}
           {% if can_arrival %}
             <a href="{% url 'terminal:arrival_create' %}"
                {% if current == 'arrival_create' %}aria-current="page"{% endif %}
                class="portal-nav-link">
-              <svg class="portal-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M16 16h6"/><path d="M19 13v6"/><path d="M21 10V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l2-1.14"/><path d="m7.5 4.27 9 5.15"/><polyline points="3.29 7 12 12 20.71 7"/><line x1="12" x2="12" y1="22" y2="12"/></svg>
-              <span>Enregistrer une arrivée</span>
+              <span class="portal-step-pill" aria-hidden="true">01</span>
+              <span class="flex flex-col leading-tight">
+                <span>Enregistrer une arrivée</span>
+                <small class="text-[10px] font-normal opacity-75">Arrivé → état Enregistré</small>
+              </span>
             </a>
           {% endif %}
 
@@ -76,8 +73,24 @@
             <a href="{% url 'terminal:prepare' %}"
                {% if current == 'prepare' %}aria-current="page"{% endif %}
                class="portal-nav-link">
-              <svg class="portal-icon" viewBox="0 0 24 24" aria-hidden="true"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M8 12h8"/><path d="M12 8v8"/></svg>
-              <span>Préparer une liste</span>
+              <span class="portal-step-pill" aria-hidden="true">02</span>
+              <span class="flex flex-col leading-tight">
+                <span>Préparer une liste</span>
+                <small class="text-[10px] font-normal opacity-75">Enregistré → mis en liste</small>
+              </span>
+            </a>
+          {% endif %}
+
+          {% can 'container.list' as can_list %}
+          {% if can_list %}
+            <a href="{% url 'terminal:containers' %}"
+               {% if current == 'containers' or current == 'container_detail' or current == 'container_edit' %}aria-current="page"{% endif %}
+               class="portal-nav-link">
+              <span class="portal-step-pill" aria-hidden="true">03</span>
+              <span class="flex flex-col leading-tight">
+                <span>Conteneurs du jour</span>
+                <small class="text-[10px] font-normal opacity-75">Confirmer dans la liste</small>
+              </span>
             </a>
           {% endif %}
 
@@ -86,8 +99,11 @@
             <a href="{% url 'terminal:inspection' %}"
                {% if current == 'inspection' or current == 'carryover' %}aria-current="page"{% endif %}
                class="portal-nav-link">
-              <svg class="portal-icon" viewBox="0 0 24 24" aria-hidden="true"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="m9 14 2 2 4-4"/></svg>
-              <span>Inspection</span>
+              <span class="portal-step-pill" aria-hidden="true">04</span>
+              <span class="flex flex-col leading-tight">
+                <span>Inspection</span>
+                <small class="text-[10px] font-normal opacity-75">Vérifier les Confirmés</small>
+              </span>
               {% if portal_unverified_count %}
                 <span class="portal-nav-count">{{ portal_unverified_count }}</span>
               {% endif %}
@@ -243,6 +259,6 @@
   </div>
   {% endwith %}
 
-  <script src="{% static 'js/ctsa.js' %}"></script>
+  <script src="{% static 'js/ctsa.js' %}?v=ledger5"></script>
 </body>
 </html>

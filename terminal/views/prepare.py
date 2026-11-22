@@ -133,11 +133,22 @@ def prepare_view(request):
     backlog_qs = unverified_backlog(selected_date)
     draft = request.session.pop('_prepare_form_draft', None) or {}
 
+    already_scheduled_numbers = session_qs.values_list('normalized_number', flat=True)
+    available_registered_qs = (
+        Container.registered_objects.select_related('shipping_line')
+        .exclude(normalized_number__in=already_scheduled_numbers)
+        .order_by('-arrived_at', 'normalized_number')
+    )
+    available_registered = list(available_registered_qs[:30])
+    available_registered_count = len(available_registered)
+
     return render(request, 'portal/conteneurs/prepare.html', {
         'today': today,
         'tomorrow': tomorrow,
         'selected_date': selected_date,
         'registered_count': registered_count,
+        'available_registered': available_registered,
+        'available_registered_count': available_registered_count,
         # Les derniers inscrits, pour voir le résultat de ce qu'on vient d'ajouter.
         'recent': list(session_qs.order_by('-created_at', '-pk')[:8]),
         'backlog': _backlog_breakdown(backlog_qs),
