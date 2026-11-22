@@ -14,25 +14,25 @@
 
   <!-- Bandeau visuel du flux en 3 étapes -->
   <div class="grid grid-cols-1 md:grid-cols-3 bg-surface rounded-xl border border-border overflow-hidden divide-y md:divide-y-0 md:divide-x divide-border">
-    <div class="p-3.5 bg-primary-tint/50 border-t-2 border-t-primary flex items-center gap-3">
+    <div class="p-3.5 bg-primary-tint/50 border-t-2 border-t-primary flex items-start gap-3">
       <span class="inline-flex items-center justify-center w-7 h-7 rounded-md bg-primary text-white font-mono text-xs font-bold shrink-0">01</span>
       <div class="min-w-0">
         <div class="text-xs font-bold uppercase tracking-wider text-primary">1. Arrivé &amp; Enregistré</div>
-        <div class="text-xs text-text-muted truncate">{{ registered_pool_count }} conteneur{{ registered_pool_count|pluralize }} enregistré{{ registered_pool_count|pluralize }} hors liste</div>
+        <div class="text-xs text-text-muted leading-snug">{{ registered_pool_count }} conteneur{{ registered_pool_count|pluralize }} enregistré{{ registered_pool_count|pluralize }} hors liste</div>
       </div>
     </div>
-    <a href="{% url 'terminal:prepare' %}" class="p-3.5 hover:bg-ctsa-surface flex items-center gap-3 no-underline">
+    <a href="{% url 'terminal:prepare' %}" class="p-3.5 hover:bg-ctsa-surface flex items-start gap-3 no-underline">
       <span class="inline-flex items-center justify-center w-7 h-7 rounded-md bg-ctsa-bgalt text-text-muted font-mono text-xs font-bold shrink-0">02</span>
       <div class="min-w-0">
         <div class="text-xs font-bold uppercase tracking-wider text-text">2. Mettre dans une liste</div>
-        <div class="text-xs text-text-muted truncate">Passe à l'état « En attente » sur la séance →</div>
+        <div class="text-xs text-text-muted leading-snug">Passe à l'état « En attente » sur la séance →</div>
       </div>
     </a>
-    <a href="{% url 'terminal:containers' %}" class="p-3.5 hover:bg-ctsa-surface flex items-center gap-3 no-underline">
+    <a href="{% url 'terminal:containers' %}" class="p-3.5 hover:bg-ctsa-surface flex items-start gap-3 no-underline">
       <span class="inline-flex items-center justify-center w-7 h-7 rounded-md bg-ctsa-bgalt text-text-muted font-mono text-xs font-bold shrink-0">03</span>
       <div class="min-w-0">
         <div class="text-xs font-bold uppercase tracking-wider text-text">3. Confirmer → Vérifier</div>
-        <div class="text-xs text-text-muted truncate">Doit être « Confirmé » pour être éligible à vérifier →</div>
+        <div class="text-xs text-text-muted leading-snug">Statut « Confirmé » requis pour vérifier →</div>
       </div>
     </a>
   </div>

@@ -38,7 +38,7 @@ class ArrivalCreationTests(TestCase):
             {'container_number': ' msku-907.032 3 ', 'shipping_line': ''},
         )
         c = Container.registered_objects.get(normalized_number='MSKU9070323')
-        self.assertRedirects(resp, reverse('terminal:container_detail', args=[c.pk]))
+        self.assertRedirects(resp, reverse('terminal:arrival_create'))
         self.assertEqual(c.status, Container.Status.REGISTERED)
         self.assertEqual(c.origin, Container.Origin.ARRIVE_SANS_LISTE)
         self.assertIsNone(c.scheduled_date)
@@ -70,4 +70,4 @@ class ArrivalCreationTests(TestCase):
             {'container_number': 'MSKU9070329', 'shipping_line': '', 'confirm_iso': '1'},
         )
         c = Container.registered_objects.get(normalized_number='MSKU9070329')
-        self.assertRedirects(ok_resp, reverse('terminal:container_detail', args=[c.pk]))
+        self.assertRedirects(ok_resp, reverse('terminal:arrival_create'))

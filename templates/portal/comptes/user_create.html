@@ -19,7 +19,7 @@
         <h2 id="section-account" class="text-base font-heading font-bold text-text m-0">Identifiants &amp; rôle</h2>
       </div>
 
-      <div class="space-y-4">
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div class="space-y-1.5">
           <label for="u-username" class="block text-sm font-semibold text-text">
             Identifiant de connexion <span class="text-danger" aria-hidden="true">*</span>
@@ -90,7 +90,7 @@
         <h2 id="section-contact" class="text-base font-heading font-bold text-text m-0">Coordonnées (facultatif)</h2>
       </div>
 
-      <div class="space-y-4">
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div class="space-y-1.5">
           <label for="u-company" class="block text-sm font-semibold text-text">Service ou entreprise</label>
           <input type="text" id="u-company" name="company_name" value="{{ form.company_name.value|default:'' }}" placeholder="Ex. Exploitation RAMPE" class="w-full min-h-[44px] rounded-lg border border-border-ui px-3.5 py-2 text-base text-text bg-surface">

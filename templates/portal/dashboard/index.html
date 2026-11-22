@@ -66,35 +66,35 @@
 
     <div class="grid grid-cols-2 lg:grid-cols-4 divide-y lg:divide-y-0 divide-x divide-border">
       <a href="{% url 'terminal:prepare' %}?date={{ selected_date|date:'Y-m-d' }}"
-         class="p-3.5 hover:bg-ctsa-surface flex items-center gap-3 no-underline">
-        <span class="inline-flex items-center justify-center w-7 h-7 rounded-md bg-primary-tint border border-primary-border text-primary font-mono text-xs font-bold shrink-0">01</span>
+         class="p-3.5 hover:bg-ctsa-surface flex items-start gap-2.5 no-underline">
+        <span class="inline-flex items-center justify-center w-6 h-6 rounded-md bg-primary-tint border border-primary-border text-primary font-mono text-xs font-bold shrink-0">01</span>
         <div class="min-w-0">
-          <div class="text-[11px] font-bold uppercase tracking-wider text-text">1. Arrivés · Enregistrés</div>
-          <div class="text-xs text-text-muted truncate"><strong class="text-text tabular-nums">{{ stats.registered_pool }}</strong> à mettre en liste →</div>
+          <div class="text-[11px] font-bold uppercase tracking-wider text-text">1. Enregistrés</div>
+          <div class="text-xs text-text-muted leading-snug"><strong class="text-text tabular-nums">{{ stats.registered_pool }}</strong> à mettre en liste</div>
         </div>
       </a>
       <a href="{% url 'terminal:containers' %}?date={{ selected_date|date:'Y-m-d' }}&amp;status=pending"
-         class="p-3.5 hover:bg-ctsa-surface flex items-center gap-3 no-underline">
-        <span class="inline-flex items-center justify-center w-7 h-7 rounded-md bg-status-pending-bg border border-status-pending-bd text-status-pending-fg font-mono text-xs font-bold shrink-0">02</span>
+         class="p-3.5 hover:bg-ctsa-surface flex items-start gap-2.5 no-underline">
+        <span class="inline-flex items-center justify-center w-6 h-6 rounded-md bg-status-pending-bg border border-status-pending-bd text-status-pending-fg font-mono text-xs font-bold shrink-0">02</span>
         <div class="min-w-0">
-          <div class="text-[11px] font-bold uppercase tracking-wider text-text">2. En liste · En attente</div>
-          <div class="text-xs text-text-muted truncate"><strong class="text-text tabular-nums">{{ stats.pending }}</strong> à confirmer sur rampe →</div>
+          <div class="text-[11px] font-bold uppercase tracking-wider text-text">2. En attente</div>
+          <div class="text-xs text-text-muted leading-snug"><strong class="text-text tabular-nums">{{ stats.pending }}</strong> à confirmer</div>
         </div>
       </a>
       <a href="{% url 'terminal:containers' %}?date={{ selected_date|date:'Y-m-d' }}&amp;status=confirmed"
-         class="p-3.5 hover:bg-ctsa-surface flex items-center gap-3 no-underline">
-        <span class="inline-flex items-center justify-center w-7 h-7 rounded-md bg-success-surface border border-success-border text-success font-mono text-xs font-bold shrink-0">03</span>
+         class="p-3.5 hover:bg-ctsa-surface flex items-start gap-2.5 no-underline">
+        <span class="inline-flex items-center justify-center w-6 h-6 rounded-md bg-success-surface border border-success-border text-success font-mono text-xs font-bold shrink-0">03</span>
         <div class="min-w-0">
-          <div class="text-[11px] font-bold uppercase tracking-wider text-text">3. Confirmés · Éligibles</div>
-          <div class="text-xs text-text-muted truncate"><strong class="text-success tabular-nums">{{ stats.confirmed }}</strong> prêts pour inspection →</div>
+          <div class="text-[11px] font-bold uppercase tracking-wider text-text">3. Confirmés</div>
+          <div class="text-xs text-text-muted leading-snug"><strong class="text-success tabular-nums">{{ stats.confirmed }}</strong> éligible{{ stats.confirmed|pluralize }}</div>
         </div>
       </a>
       <a href="{% url 'terminal:inspection' %}?date={{ selected_date|date:'Y-m-d' }}"
-         class="p-3.5 hover:bg-ctsa-surface flex items-center gap-3 no-underline">
-        <span class="inline-flex items-center justify-center w-7 h-7 rounded-md bg-primary text-white font-mono text-xs font-bold shrink-0">04</span>
+         class="p-3.5 hover:bg-ctsa-surface flex items-start gap-2.5 no-underline">
+        <span class="inline-flex items-center justify-center w-6 h-6 rounded-md bg-primary text-white font-mono text-xs font-bold shrink-0">04</span>
         <div class="min-w-0">
           <div class="text-[11px] font-bold uppercase tracking-wider text-text">4. Inspection</div>
-          <div class="text-xs text-text-muted truncate"><strong class="text-primary tabular-nums">{{ stats.verified }}</strong> vérifié{{ stats.verified|pluralize }} · <strong class="tabular-nums">{{ stats.to_verify }}</strong> reste{{ stats.to_verify|pluralize }} →</div>
+          <div class="text-xs text-text-muted leading-snug"><strong class="text-primary tabular-nums">{{ stats.verified }}</strong> vérif. · <strong class="tabular-nums">{{ stats.to_verify }}</strong> reste{{ stats.to_verify|pluralize }}</div>
         </div>
       </a>
     </div>

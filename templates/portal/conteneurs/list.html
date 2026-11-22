@@ -28,27 +28,27 @@
   <!-- Bandeau visuel du flux en 3 étapes -->
   <div class="grid grid-cols-1 md:grid-cols-3 bg-surface rounded-xl border border-border overflow-hidden divide-y md:divide-y-0 md:divide-x divide-border">
     <a href="{% url 'terminal:containers' %}?date={{ selected_date|date:'Y-m-d' }}&amp;status=registered"
-       class="p-3.5 {% if status_filter == 'registered' %}bg-primary-tint/50 border-t-2 border-t-primary{% else %}hover:bg-ctsa-surface{% endif %} flex items-center gap-3 no-underline">
+       class="p-3.5 {% if status_filter == 'registered' %}bg-primary-tint/50 border-t-2 border-t-primary{% else %}hover:bg-ctsa-surface{% endif %} flex items-start gap-3 no-underline">
       <span class="inline-flex items-center justify-center w-7 h-7 rounded-md {% if status_filter == 'registered' %}bg-primary text-white{% else %}bg-ctsa-bgalt text-text-muted{% endif %} font-mono text-xs font-bold shrink-0">01</span>
       <div class="min-w-0">
         <div class="text-xs font-bold uppercase tracking-wider text-text">1. Arrivés &amp; Enregistrés</div>
-        <div class="text-xs text-text-muted truncate">{{ stats.registered }} hors liste → à mettre dans une liste</div>
+        <div class="text-xs text-text-muted leading-snug">{{ stats.registered }} hors liste → à mettre en liste</div>
       </div>
     </a>
     <a href="{% url 'terminal:containers' %}?date={{ selected_date|date:'Y-m-d' }}&amp;status=pending"
-       class="p-3.5 {% if status_filter != 'registered' %}bg-primary-tint/50 border-t-2 border-t-primary{% else %}hover:bg-ctsa-surface{% endif %} flex items-center gap-3 no-underline">
+       class="p-3.5 {% if status_filter != 'registered' %}bg-primary-tint/50 border-t-2 border-t-primary{% else %}hover:bg-ctsa-surface{% endif %} flex items-start gap-3 no-underline">
       <span class="inline-flex items-center justify-center w-7 h-7 rounded-md {% if status_filter != 'registered' %}bg-primary text-white{% else %}bg-ctsa-bgalt text-text-muted{% endif %} font-mono text-xs font-bold shrink-0">02</span>
       <div class="min-w-0">
         <div class="text-xs font-bold uppercase tracking-wider text-primary">2. Dans la liste · À confirmer</div>
-        <div class="text-xs text-text-muted truncate">{{ stats.pending }} en attente · {{ stats.confirmed }} confirmé{{ stats.confirmed|pluralize }}</div>
+        <div class="text-xs text-text-muted leading-snug">{{ stats.pending }} en attente · {{ stats.confirmed }} confirmé{{ stats.confirmed|pluralize }}</div>
       </div>
     </a>
     <a href="{% url 'terminal:inspection' %}?date={{ selected_date|date:'Y-m-d' }}"
-       class="p-3.5 hover:bg-ctsa-surface flex items-center gap-3 no-underline">
+       class="p-3.5 hover:bg-ctsa-surface flex items-start gap-3 no-underline">
       <span class="inline-flex items-center justify-center w-7 h-7 rounded-md bg-success-surface text-success border border-success-border font-mono text-xs font-bold shrink-0">03</span>
       <div class="min-w-0">
         <div class="text-xs font-bold uppercase tracking-wider text-text">3. Éligibles à vérifier ({{ stats.confirmed }})</div>
-        <div class="text-xs text-text-muted truncate">Seuls les Confirmés passent à l'inspection →</div>
+        <div class="text-xs text-text-muted leading-snug">Seuls les Confirmés passent à l'inspection →</div>
       </div>
     </a>
   </div>

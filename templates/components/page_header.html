@@ -1,5 +1,5 @@
-{# Composant page_header : bandeau de commande avec filet latéral primaire, titre, compteur et UN SEUL bouton primaire. #}
-<header class="bg-surface rounded-xl border border-border border-l-4 border-l-primary px-5 py-4 flex flex-col gap-2">
+{# Composant page_header : en-tête épuré directement sur le canevas, compteur aligné et UN SEUL bouton primaire. #}
+<header class="flex flex-col gap-1.5 pb-4 border-b border-border">
   {% if back_url %}
     <div>
       <a href="{{ back_url }}"
@@ -12,14 +12,14 @@
 
   <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
     <div class="min-w-0">
-      <div class="flex flex-wrap items-center gap-2.5">
-        <h1 class="text-xl sm:text-2xl font-heading font-bold tracking-tight text-text m-0">{{ title }}</h1>
+      <h1 class="text-xl sm:text-2xl font-heading font-bold tracking-tight text-text m-0 flex flex-wrap items-center gap-2.5">
+        <span>{{ title }}</span>
         {% if count is not None %}
           <span class="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-mono font-bold bg-primary-tint border border-primary-border text-primary tabular-nums">
             {{ count }}
           </span>
         {% endif %}
-      </div>
+      </h1>
       {% if subtitle %}
         <p class="text-xs sm:text-sm text-text-muted mt-1 mb-0">{{ subtitle }}</p>
       {% endif %}

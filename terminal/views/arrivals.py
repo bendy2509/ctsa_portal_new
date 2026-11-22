@@ -112,9 +112,9 @@ def arrival_create_view(request):
             container.save(acting_user=request.user)
             messages.success(
                 request,
-                f"Arrivée du conteneur {container.container_number} enregistrée (hors liste).",
+                f"Arrivée du conteneur {container.container_number} enregistrée (hors liste). Vous pouvez saisir le suivant.",
             )
-            return redirect('terminal:container_detail', pk=container.pk)
+            return redirect('terminal:arrival_create')
 
     recent_arrivals = list(
         Container.registered_objects.select_related('shipping_line')

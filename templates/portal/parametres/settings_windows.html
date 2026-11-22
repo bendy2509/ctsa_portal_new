@@ -12,7 +12,7 @@
 
   <form method="post" action="{% url 'terminal:site_settings_windows' %}" class="space-y-5">
     {% csrf_token %}
-    <section class="bg-surface rounded-xl border border-border shadow-xs p-4 sm:p-6 space-y-4">
+    <section class="bg-surface rounded-xl border border-border shadow-xs p-4 sm:p-6 grid grid-cols-1 sm:grid-cols-3 gap-4">
       {% for field in form %}
         <div class="space-y-1.5">
           <label for="{{ field.id_for_label }}" class="block text-sm font-semibold text-text">{{ field.label }}</label>

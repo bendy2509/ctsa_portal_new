@@ -14,25 +14,25 @@
 
   <!-- Bandeau visuel du flux en 3 étapes -->
   <div class="grid grid-cols-1 md:grid-cols-3 bg-surface rounded-xl border border-border overflow-hidden divide-y md:divide-y-0 md:divide-x divide-border">
-    <a href="{% url 'terminal:arrival_create' %}" class="p-3.5 hover:bg-ctsa-surface flex items-center gap-3 no-underline">
+    <a href="{% url 'terminal:arrival_create' %}" class="p-3.5 hover:bg-ctsa-surface flex items-start gap-3 no-underline">
       <span class="inline-flex items-center justify-center w-7 h-7 rounded-md bg-ctsa-bgalt text-text-muted font-mono text-xs font-bold shrink-0">01</span>
       <div class="min-w-0">
         <div class="text-xs font-bold uppercase tracking-wider text-text">1. Arrivés &amp; Enregistrés</div>
-        <div class="text-xs text-text-muted truncate">{{ available_registered_count }} disponible{{ available_registered_count|pluralize }} à mettre en liste</div>
+        <div class="text-xs text-text-muted leading-snug">{{ available_registered_count }} disponible{{ available_registered_count|pluralize }} à mettre en liste</div>
       </div>
     </a>
-    <div class="p-3.5 bg-primary-tint/50 border-t-2 border-t-primary flex items-center gap-3">
+    <div class="p-3.5 bg-primary-tint/50 border-t-2 border-t-primary flex items-start gap-3">
       <span class="inline-flex items-center justify-center w-7 h-7 rounded-md bg-primary text-white font-mono text-xs font-bold shrink-0">02</span>
       <div class="min-w-0">
         <div class="text-xs font-bold uppercase tracking-wider text-primary">2. Mise en liste ({{ selected_date|date:"d/m/Y" }})</div>
-        <div class="text-xs text-text-muted truncate">{{ registered_count }} inscrit{{ registered_count|pluralize }} (statut initial : En attente)</div>
+        <div class="text-xs text-text-muted leading-snug">{{ registered_count }} inscrit{{ registered_count|pluralize }} (statut initial : En attente)</div>
       </div>
     </div>
-    <a href="{% url 'terminal:containers' %}?date={{ selected_date|date:'Y-m-d' }}" class="p-3.5 hover:bg-ctsa-surface flex items-center gap-3 no-underline">
+    <a href="{% url 'terminal:containers' %}?date={{ selected_date|date:'Y-m-d' }}" class="p-3.5 hover:bg-ctsa-surface flex items-start gap-3 no-underline">
       <span class="inline-flex items-center justify-center w-7 h-7 rounded-md bg-ctsa-bgalt text-text-muted font-mono text-xs font-bold shrink-0">03</span>
       <div class="min-w-0">
-        <div class="text-xs font-bold uppercase tracking-wider text-text">3. Confirmer dans la liste → Vérifier</div>
-        <div class="text-xs text-text-muted truncate">Confirmez le statut pour rendre éligible à vérifier →</div>
+        <div class="text-xs font-bold uppercase tracking-wider text-text">3. Confirmer → Vérifier</div>
+        <div class="text-xs text-text-muted leading-snug">Statut « Confirmé » requis pour vérifier →</div>
       </div>
     </a>
   </div>
@@ -108,7 +108,7 @@
           Coller une liste
         </button>
         <button type="button" data-tab-target="panel-search-registered" aria-selected="false" class="tab-btn list-tab border-t-0 border-x-0 bg-transparent cursor-pointer">
-          Chercher un conteneur enregistré ({{ available_registered_count }})
+          Enregistrés ({{ available_registered_count }})
         </button>
       </div>
 
@@ -130,7 +130,6 @@
                      name="container_number"
                      value="{{ single_number_value }}"
                      required
-                     autofocus
                      pattern="\s*[A-Za-z]{4}(?:[\s-]*[0-9]){7}\s*"
                      autocomplete="off"
                      autocapitalize="characters"

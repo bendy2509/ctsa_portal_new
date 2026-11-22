@@ -22,7 +22,7 @@
         <h2 id="section-line" class="text-base font-heading font-bold text-text m-0">Informations</h2>
       </div>
 
-      <div class="space-y-1.5">
+      <div class="max-w-lg space-y-1.5">
         <label for="line-name" class="block text-sm font-semibold text-text">
           Nom de la ligne maritime <span class="text-danger" aria-hidden="true">*</span>
         </label>
@@ -31,7 +31,6 @@
                name="name"
                value="{{ name }}"
                required
-               autofocus
                placeholder="Ex. Accordia, Antillean, CMA CGM"
                class="w-full min-h-[44px] rounded-lg border {% if error %}border-danger{% else %}border-border-ui{% endif %} px-3.5 py-2 text-base text-text bg-surface">
         {% if error %}

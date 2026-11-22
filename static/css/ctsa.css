@@ -2020,11 +2020,8 @@ a.kpi-card:hover {
   font-size: 0.8125rem;
 }
 
-/* Barre d'actions sticky en bas des pages de formulaire */
+/* Barre d'actions en bas des pages de formulaire (flux normal, sans recouvrement des champs) */
 .ui-form-actions {
-  position: sticky;
-  inset-block-end: 0;
-  z-index: 10;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -2032,8 +2029,7 @@ a.kpi-card:hover {
   gap: var(--ui-space-3);
   margin-inline: 0;
   padding: 0.85rem 1.25rem;
-  padding-bottom: calc(0.85rem + env(safe-area-inset-bottom, 0px));
-  background: var(--color-ctsa-surface);
+  background: var(--color-surface);
   border-radius: var(--radius-card);
   border: 1px solid var(--color-border);
 }
