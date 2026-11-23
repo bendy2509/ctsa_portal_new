@@ -1,225 +1,392 @@
 {% extends 'portal/base_portal.html' %}
-{% load permissions_tags %}
+{% load l10n permissions_tags %}
 
 {% block title %}Tableau de bord — Cap Terminal S.A.{% endblock %}
-{% block page_title %}Tableau de bord{% endblock %}
+{% block page_title %}Exploitation &amp; Suivi RAMPE{% endblock %}
 
 {% block portal_content %}
-<div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-10 py-6 sm:py-8 space-y-8">
+<div class="bg-ctsa-surface min-h-full">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-7 space-y-5">
 
-  {% can 'container.arrival_create' as can_arrival %}
-  {% can 'container.prepare' as can_prepare %}
-  {% can 'container.carryover' as can_carryover %}
   {% can 'report.view' as can_reports %}
-  {% url 'terminal:arrival_create' as arrival_url %}
-  {% url 'terminal:prepare' as prepare_url %}
+  {% can 'container.carryover' as can_carryover %}
 
-  <!-- Bloc 1 : En-tête + Séance + UN seul bouton primaire -->
-  <header class="flex flex-col gap-4 pb-4 page-header-rule">
-    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-      <div class="flex flex-wrap items-baseline gap-4">
-        <h1 class="text-xl font-heading font-semibold text-text m-0">Tableau de bord</h1>
-        <form action="{% url 'terminal:dashboard' %}" method="get" class="inline-flex items-center gap-2">
-          <a href="{% url 'terminal:dashboard' %}?date={{ previous_date|date:'Y-m-d' }}"
-             class="text-xs font-semibold text-text-muted hover:text-primary no-underline py-2 px-1"
-             aria-label="Jour précédent">
-            Précédent
-          </a>
-          <label for="dash-date" class="visually-hidden">Date de la séance</label>
-          <input type="date"
-                 id="dash-date"
-                 name="date"
-                 value="{{ selected_date|date:'Y-m-d' }}"
-                 data-auto-submit-date
-                 class="font-mono text-xs font-medium text-text bg-surface border border-border-ui rounded px-2.5 py-1.5 min-h-[44px]">
-          <a href="{% url 'terminal:dashboard' %}?date={{ next_date|date:'Y-m-d' }}"
-             class="text-xs font-semibold text-text-muted hover:text-primary no-underline py-2 px-1"
-             aria-label="Jour suivant">
-            Suivant
-          </a>
-          {% if selected_date != today %}
-            <a href="{% url 'terminal:dashboard' %}" class="text-xs font-semibold text-primary hover:underline no-underline px-1">
-              Aujourd’hui
-            </a>
+  <!-- 1. Barre d’en-tête -->
+  <header class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 pb-4 page-header-rule">
+    <h1 class="text-xl font-heading font-semibold text-text tracking-tight m-0">Exploitation &amp; Suivi RAMPE</h1>
+
+    <div class="flex flex-wrap items-center gap-2.5">
+      <!-- Sélecteur de date (< JJ/MM/AAAA > + icône plage de dates) -->
+      <div class="inline-flex items-center bg-surface border border-border-ui rounded min-h-[44px] px-1">
+        <a href="{% url 'terminal:dashboard' %}?date={{ previous_date|date:'Y-m-d' }}&amp;period={% if period == 'custom' %}day{% else %}{{ period }}{% endif %}"
+           class="inline-flex items-center justify-center w-9 h-9 text-text-muted hover:text-primary no-underline rounded transition-colors"
+           aria-label="Jour précédent">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15 18l-6-6 6-6"/>
+          </svg>
+        </a>
+        <span class="font-mono text-xs font-medium text-text px-2 tabular-nums">
+          {% if period == 'custom' %}
+            {{ period_start|date:"d/m" }} – {{ period_end|date:"d/m/Y" }}
+          {% else %}
+            {{ selected_date|date:"d/m/Y" }}
           {% endif %}
-        </form>
+        </span>
+        <a href="{% url 'terminal:dashboard' %}?date={{ next_date|date:'Y-m-d' }}&amp;period={% if period == 'custom' %}day{% else %}{{ period }}{% endif %}"
+           class="inline-flex items-center justify-center w-9 h-9 text-text-muted hover:text-primary no-underline rounded transition-colors"
+           aria-label="Jour suivant">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 18l6-6-6-6"/>
+          </svg>
+        </a>
+
+        <span class="text-border select-none px-0.5" aria-hidden="true">|</span>
+
+        <!-- Icône calendrier ouvrant la sélection de plage -->
+        <details class="relative">
+          <summary class="list-none cursor-pointer inline-flex items-center justify-center w-9 h-9 rounded transition-colors {% if period == 'custom' %}text-primary bg-primary-tint{% else %}text-text-muted hover:text-primary{% endif %}"
+                   aria-label="Choisir une plage de dates"
+                   title="Choisir une plage de dates">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+              <rect x="3" y="4" width="18" height="18" rx="2"/>
+              <path stroke-linecap="round" d="M16 2v4M8 2v4M3 10h18"/>
+            </svg>
+          </summary>
+          <div class="absolute left-0 sm:left-auto sm:right-0 mt-2 w-64 bg-surface border border-border-ui rounded p-4 z-30 shadow-float">
+            <form action="{% url 'terminal:dashboard' %}" method="get" class="space-y-3">
+              <div class="space-y-1">
+                <label for="dash-du" class="block text-xs font-semibold text-text-muted">Du</label>
+                <input type="date"
+                       id="dash-du"
+                       name="du"
+                       value="{{ period_start|date:'Y-m-d' }}"
+                       class="w-full font-mono text-xs text-text bg-surface border border-border-ui rounded px-2.5 py-2 min-h-[44px]">
+              </div>
+              <div class="space-y-1">
+                <label for="dash-au" class="block text-xs font-semibold text-text-muted">Au</label>
+                <input type="date"
+                       id="dash-au"
+                       name="au"
+                       value="{{ period_end|date:'Y-m-d' }}"
+                       class="w-full font-mono text-xs text-text bg-surface border border-border-ui rounded px-2.5 py-2 min-h-[44px]">
+              </div>
+              <button type="submit" class="ui-btn ui-btn-primary w-full min-h-[44px] text-xs">
+                Appliquer
+              </button>
+            </form>
+          </div>
+        </details>
       </div>
 
-      {% if can_arrival %}
-        <a href="{{ arrival_url }}" class="ui-btn ui-btn-primary shrink-0">Nouvelle arrivée</a>
-      {% elif can_prepare %}
-        <a href="{{ prepare_url }}?date={{ selected_date|date:'Y-m-d' }}" class="ui-btn ui-btn-primary shrink-0">Préparer une liste</a>
+      <!-- Sélecteur de période segmenté : Aujourd’hui, 7 jours, 30 jours -->
+      <div role="group"
+           aria-label="Période d’analyse"
+           class="inline-flex items-center bg-surface border border-border-ui rounded p-0.5 min-h-[44px]">
+        <a href="{% url 'terminal:dashboard' %}?period=day"
+           class="px-3 py-2 text-xs font-semibold rounded no-underline transition-colors {% if period == 'day' %}bg-chrome-dark text-white{% else %}text-text-muted hover:text-text{% endif %}"
+           {% if period == 'day' %}aria-current="true"{% endif %}>
+          Aujourd’hui
+        </a>
+        <a href="{% url 'terminal:dashboard' %}?date={{ selected_date|date:'Y-m-d' }}&amp;period=7d"
+           class="px-3 py-2 text-xs font-semibold rounded no-underline transition-colors {% if period == '7d' %}bg-chrome-dark text-white{% else %}text-text-muted hover:text-text{% endif %}"
+           {% if period == '7d' %}aria-current="true"{% endif %}>
+          7 jours
+        </a>
+        <a href="{% url 'terminal:dashboard' %}?date={{ selected_date|date:'Y-m-d' }}&amp;period=30d"
+           class="px-3 py-2 text-xs font-semibold rounded no-underline transition-colors {% if period == '30d' %}bg-chrome-dark text-white{% else %}text-text-muted hover:text-text{% endif %}"
+           {% if period == '30d' %}aria-current="true"{% endif %}>
+          30 jours
+        </a>
+      </div>
+
+      {% if can_reports %}
+        <a href="{% url 'terminal:container_export_csv' %}?date={{ selected_date|date:'Y-m-d' }}"
+           class="ui-btn ui-btn-secondary min-h-[44px] text-xs bg-surface">
+          Exporter CSV
+        </a>
       {% endif %}
     </div>
   </header>
 
-  <!-- Bloc 2 : 4 chiffres clés silencieux (IBM Plex Mono 32 px, sans sous-texte ni graphique) -->
-  <section aria-label="Indicateurs de la séance" class="kpi-strip">
-    <a href="{% url 'terminal:containers' %}?date={{ selected_date|date:'Y-m-d' }}" class="kpi-cell">
-      <span class="kpi-label">Programmés</span>
-      <span class="kpi-value">{{ stats.total }}</span>
+  <!-- 2. Rangée 1 — 4 cartes KPI -->
+  <section aria-label="Indicateurs clés" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+    <!-- KPI 1 : Conteneurs Total -->
+    <a href="{% url 'terminal:containers' %}?date={{ selected_date|date:'Y-m-d' }}"
+       class="bg-surface border border-border hover:border-border-ui rounded p-4 sm:p-5 flex flex-col gap-3 no-underline text-inherit transition-colors">
+      <span class="text-xs font-semibold text-text-muted">Conteneurs Total</span>
+      <div class="flex items-baseline justify-between gap-2">
+        <span class="font-mono text-3xl font-medium text-text tabular-nums leading-none">{{ stats.total }}</span>
+        <span class="font-mono text-xs font-medium text-text-muted tabular-nums">{{ stats.total_delta }}</span>
+      </div>
+      <div class="h-1 w-full bg-ctsa-bgalt rounded overflow-hidden mt-0.5" aria-hidden="true">
+        <div class="h-full bg-primary rounded" style="width: {{ stats.total_pct }}%;"></div>
+      </div>
     </a>
 
-    <a href="{% url 'terminal:containers' %}?date={{ selected_date|date:'Y-m-d' }}&amp;status=confirmed" class="kpi-cell">
-      <span class="kpi-label">Confirmés</span>
-      <span class="kpi-value">{{ stats.confirmed }}</span>
+    <!-- KPI 2 : Inspectés -->
+    <a href="{% url 'terminal:inspection' %}?date={{ selected_date|date:'Y-m-d' }}&amp;etat=verified"
+       class="bg-surface border border-border hover:border-border-ui rounded p-4 sm:p-5 flex flex-col gap-3 no-underline text-inherit transition-colors">
+      <span class="text-xs font-semibold text-text-muted">Inspectés</span>
+      <div class="flex items-baseline justify-between gap-2">
+        <span class="font-mono text-3xl font-medium text-text tabular-nums leading-none">{{ stats.verified }}</span>
+        <span class="font-mono text-xs font-medium text-status-confirmed-fg tabular-nums">
+          {% if stats.verified_rate is not None %}{{ stats.verified_rate }}%{% else %}{{ stats.verified_delta }}{% endif %}
+        </span>
+      </div>
+      <div class="h-1 w-full bg-ctsa-bgalt rounded overflow-hidden mt-0.5" aria-hidden="true">
+        <div class="h-full bg-status-confirmed-fg rounded" style="width: {{ stats.verified_pct }}%;"></div>
+      </div>
     </a>
 
-    <a href="{% url 'terminal:inspection' %}?date={{ selected_date|date:'Y-m-d' }}&amp;etat=verified" class="kpi-cell">
-      <span class="kpi-label">Vérifiés</span>
-      <span class="kpi-value">{{ stats.verified }}</span>
+    <!-- KPI 3 : En Attente RAMPE -->
+    <a href="{% url 'terminal:containers' %}?date={{ selected_date|date:'Y-m-d' }}&amp;status=pending"
+       class="bg-surface border border-border hover:border-border-ui rounded p-4 sm:p-5 flex flex-col gap-3 no-underline text-inherit transition-colors">
+      <span class="text-xs font-semibold text-text-muted">En Attente RAMPE</span>
+      <div class="flex items-baseline justify-between gap-2">
+        <span class="font-mono text-3xl font-medium text-text tabular-nums leading-none">{{ stats.awaiting_rampe }}</span>
+        <span class="font-mono text-xs font-medium text-status-pending-fg tabular-nums">{{ stats.awaiting_delta }}</span>
+      </div>
+      <div class="h-1 w-full bg-ctsa-bgalt rounded overflow-hidden mt-0.5" aria-hidden="true">
+        <div class="h-full bg-status-pending-fg rounded" style="width: {{ stats.awaiting_pct }}%;"></div>
+      </div>
     </a>
 
-    <a href="{% url 'terminal:inspection' %}?date={{ selected_date|date:'Y-m-d' }}&amp;etat=to_verify" class="kpi-cell">
-      <span class="kpi-label">À inspecter</span>
-      <span class="kpi-value">{{ stats.to_verify }}</span>
+    <!-- KPI 4 : Anomalies -->
+    <a href="{% url 'terminal:containers' %}?date={{ selected_date|date:'Y-m-d' }}&amp;status=unavailable"
+       class="bg-surface border border-border hover:border-border-ui rounded p-4 sm:p-5 flex flex-col gap-3 no-underline text-inherit transition-colors">
+      <span class="text-xs font-semibold text-text-muted">Anomalies</span>
+      <div class="flex items-baseline justify-between gap-2">
+        <span class="font-mono text-3xl font-medium text-text tabular-nums leading-none">{{ stats.anomalies }}</span>
+        <span class="font-mono text-xs font-medium text-status-unavailable-fg tabular-nums">{{ stats.anomalies_delta }}</span>
+      </div>
+      <div class="h-1 w-full bg-ctsa-bgalt rounded overflow-hidden mt-0.5" aria-hidden="true">
+        <div class="h-full bg-status-unavailable-fg rounded" style="width: {{ stats.anomalies_pct }}%;"></div>
+      </div>
     </a>
   </section>
 
-  <!-- Bloc 3 : Liste « À traiter » -->
-  <section aria-labelledby="dash-todo-title" class="space-y-3">
-    <div class="flex items-center justify-between gap-2">
-      <h2 id="dash-todo-title" class="text-lg font-heading font-semibold text-text m-0">À traiter</h2>
-      <a href="{% url 'terminal:containers' %}?date={{ selected_date|date:'Y-m-d' }}" class="text-xs font-semibold text-primary hover:underline no-underline">
-        Conteneurs du jour
-      </a>
-    </div>
-
-    <ul class="list-none m-0 p-0 border-t border-border divide-y divide-border">
-      <li>
-        <a href="{% url 'terminal:prepare' %}?date={{ selected_date|date:'Y-m-d' }}"
-           class="flex items-center justify-between gap-4 py-3.5 min-h-[56px] text-inherit no-underline hover:bg-ctsa-surface transition-colors">
-          <span class="text-sm font-normal text-text">Conteneurs enregistrés à mettre en liste</span>
-          <span class="inline-flex items-center gap-6 shrink-0">
-            <span class="font-mono text-lg font-medium text-text tabular-nums">{{ stats.registered_pool }}</span>
-            <span class="text-xs font-semibold text-primary">Préparer</span>
+  <!-- 3. Rangée 2 — Visualisations principales (~2/3 gauche, ~1/3 droite) -->
+  <section aria-label="Visualisations principales" class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+    <!-- Gauche (~2/3) : Cadence Opérationnelle & Flux RAMPE -->
+    <article class="lg:col-span-2 bg-surface border border-border rounded p-4 sm:p-5 flex flex-col gap-4">
+      <div class="flex flex-wrap items-center justify-between gap-2">
+        <h2 class="text-base font-heading font-semibold text-text m-0">Cadence Opérationnelle &amp; Flux RAMPE</h2>
+        <div class="flex flex-wrap items-center gap-4 text-xs text-text-muted">
+          <span class="inline-flex items-center gap-1.5">
+            <span class="w-2.5 h-2.5 rounded-sm inline-block" style="background-color: #0284c7;" aria-hidden="true"></span>
+            Programmés
           </span>
-        </a>
-      </li>
-
-      <li>
-        <a href="{% url 'terminal:containers' %}?date={{ selected_date|date:'Y-m-d' }}&amp;status=pending"
-           class="flex items-center justify-between gap-4 py-3.5 min-h-[56px] text-inherit no-underline hover:bg-ctsa-surface transition-colors">
-          <span class="text-sm font-normal text-text">En attente de confirmation</span>
-          <span class="inline-flex items-center gap-6 shrink-0">
-            <span class="font-mono text-lg font-medium text-text tabular-nums">{{ stats.pending }}</span>
-            <span class="text-xs font-semibold text-primary">Confirmer</span>
+          <span class="inline-flex items-center gap-1.5">
+            <span class="w-2.5 h-2.5 rounded-sm inline-block bg-chrome-dark" aria-hidden="true"></span>
+            Inspectés
           </span>
-        </a>
-      </li>
-
-      {% if show_verification %}
-        <li>
-          <a href="{% url 'terminal:inspection' %}?date={{ selected_date|date:'Y-m-d' }}&amp;etat=to_verify"
-             class="flex items-center justify-between gap-4 py-3.5 min-h-[56px] text-inherit no-underline hover:bg-ctsa-surface transition-colors">
-            <span class="text-sm font-normal text-text">Confirmés restant à inspecter</span>
-            <span class="inline-flex items-center gap-6 shrink-0">
-              <span class="font-mono text-lg font-medium text-text tabular-nums">{{ stats.to_verify }}</span>
-              <span class="text-xs font-semibold text-primary">Inspecter</span>
-            </span>
-          </a>
-        </li>
-
-        {% if stats.not_verified %}
-          <li>
-            <a href="{% url 'terminal:inspection' %}?date={{ selected_date|date:'Y-m-d' }}&amp;etat=not_verified"
-               class="flex items-center justify-between gap-4 py-3.5 min-h-[56px] text-inherit no-underline hover:bg-ctsa-surface transition-colors">
-              <span class="text-sm font-normal text-text">Non vérifiés sur la séance</span>
-              <span class="inline-flex items-center gap-6 shrink-0">
-                <span class="font-mono text-lg font-medium text-status-pending-fg tabular-nums">{{ stats.not_verified }}</span>
-                <span class="text-xs font-semibold text-primary">Ouvrir</span>
-              </span>
-            </a>
-          </li>
-        {% endif %}
-      {% endif %}
-
-      {% if can_carryover %}
-        <li>
-          <a href="{% url 'terminal:carryover' %}"
-             class="flex items-center justify-between gap-4 py-3.5 min-h-[56px] text-inherit no-underline hover:bg-ctsa-surface transition-colors">
-            <span class="text-sm font-normal text-text">Reliquat non vérifié des séances passées</span>
-            <span class="inline-flex items-center gap-6 shrink-0">
-              <span class="font-mono text-lg font-medium {% if backlog.total %}text-status-pending-fg{% else %}text-text{% endif %} tabular-nums">{{ backlog.total }}</span>
-              <span class="text-xs font-semibold text-primary">Traiter</span>
-            </span>
-          </a>
-        </li>
-      {% endif %}
-
-      {% if stats.unavailable %}
-        <li>
-          <a href="{% url 'terminal:containers' %}?date={{ selected_date|date:'Y-m-d' }}&amp;status=unavailable"
-             class="flex items-center justify-between gap-4 py-3.5 min-h-[56px] text-inherit no-underline hover:bg-ctsa-surface transition-colors">
-            <span class="text-sm font-normal text-text">Indisponibles sur la séance</span>
-            <span class="inline-flex items-center gap-6 shrink-0">
-              <span class="font-mono text-lg font-medium text-status-unavailable-fg tabular-nums">{{ stats.unavailable }}</span>
-              <span class="text-xs font-semibold text-primary">Ouvrir</span>
-            </span>
-          </a>
-        </li>
-      {% endif %}
-    </ul>
-  </section>
-
-  <!-- Fonctions secondaires déplacées derrière « Voir plus » (replié par défaut) -->
-  <details class="border-t border-border pt-4">
-    <summary class="text-sm font-semibold text-primary cursor-pointer list-none py-2">
-      Voir plus
-    </summary>
-
-    <div class="pt-4 grid grid-cols-1 lg:grid-cols-2 gap-8">
-      <section aria-label="Répartition par ligne maritime" class="space-y-3">
-        <h3 class="text-sm font-semibold text-text m-0">Par ligne maritime</h3>
-        {% if by_line %}
-          <ul class="list-none m-0 p-0 border-t border-border divide-y divide-border">
-            {% for row in by_line %}
-              <li class="py-2.5 flex items-center justify-between gap-3 text-sm">
-                <span class="text-text truncate">{{ row.name }}</span>
-                <span class="font-mono text-xs text-text-muted tabular-nums shrink-0">
-                  {{ row.confirmed }} conf. · {{ row.pending }} att. · {{ row.unavailable }} indisp. ({{ row.total }})
-                </span>
-              </li>
-            {% endfor %}
-          </ul>
-        {% else %}
-          <p class="text-xs text-text-muted m-0">Aucun conteneur programmé pour cette séance.</p>
-        {% endif %}
-      </section>
-
-      <section aria-label="Dernières opérations" class="space-y-3">
-        <div class="flex items-center justify-between gap-2">
-          <h3 class="text-sm font-semibold text-text m-0">Dernières opérations</h3>
-          {% if can_reports %}
-            <a href="{% url 'terminal:status_logs' %}" class="text-xs font-semibold text-primary hover:underline no-underline">Historique</a>
-          {% endif %}
+          <span class="inline-flex items-center gap-1.5">
+            <span class="w-3.5 h-0.5 inline-block bg-text-muted" aria-hidden="true"></span>
+            Taux
+          </span>
         </div>
-        {% if recent_logs %}
-          <ul class="list-none m-0 p-0 border-t border-border divide-y divide-border">
-            {% for log in recent_logs %}
-              <li class="py-2.5 flex items-center justify-between gap-3 text-sm">
-                <div class="min-w-0">
-                  <a href="{% url 'terminal:container_detail' log.container.pk %}" class="font-mono text-xs font-medium text-primary hover:underline no-underline">
-                    {{ log.container.container_number }}
-                  </a>
-                  <span class="text-xs text-text-muted ml-2">
-                    {% if log.action == 'status_change' %}
-                      {{ log.get_new_status_display }}
-                    {% else %}
-                      {{ log.get_action_display }}
-                    {% endif %}
-                  </span>
-                </div>
-                <span class="font-mono text-xs text-text-muted tabular-nums shrink-0">{{ log.changed_at|date:"H:i" }}</span>
+      </div>
+
+      {% if cadence_chart.has_data %}
+        {% localize off %}
+        <div class="w-full">
+          <svg viewBox="0 0 640 220"
+               class="w-full h-auto block"
+               role="img"
+               aria-label="Graphique combiné des conteneurs programmés, inspectés et taux d’inspection">
+            <!-- Grille horizontale légère & axes Y doubles -->
+            {% for tick in cadence_chart.y_ticks %}
+              <line x1="42"
+                    y1="{{ tick.y }}"
+                    x2="594"
+                    y2="{{ tick.y }}"
+                    stroke="{% if tick.val == 0 %}#cbd5e1{% else %}#e2e8f0{% endif %}"
+                    stroke-width="1"
+                    {% if tick.val != 0 %}stroke-dasharray="3 3"{% endif %}/>
+              <text x="34" y="{{ tick.y|add:4 }}" text-anchor="end" class="font-mono" font-size="11" fill="#475569">{{ tick.val }}</text>
+            {% endfor %}
+            <text x="602" y="20" text-anchor="start" class="font-mono" font-size="11" fill="#475569">100%</text>
+            <text x="602" y="103" text-anchor="start" class="font-mono" font-size="11" fill="#475569">50%</text>
+            <text x="602" y="186" text-anchor="start" class="font-mono" font-size="11" fill="#475569">0%</text>
+
+            <!-- Barres groupées -->
+            {% for b in cadence_chart.bars %}
+              <rect x="{{ b.x_total }}" y="{{ b.y_total }}" width="{{ b.bar_w }}" height="{{ b.h_total }}" rx="2" fill="#0284c7">
+                <title>{{ b.label }} : {{ b.total }} programmé(s)</title>
+              </rect>
+              <rect x="{{ b.x_verif }}" y="{{ b.y_verif }}" width="{{ b.bar_w }}" height="{{ b.h_verif }}" rx="2" fill="#0f172a">
+                <title>{{ b.label }} : {{ b.verified }} inspecté(s)</title>
+              </rect>
+              <text x="{{ b.cx }}" y="206" text-anchor="middle" class="font-mono" font-size="11" fill="#475569">{{ b.label }}</text>
+            {% endfor %}
+
+            <!-- Courbe de tendance superposée -->
+            <polyline fill="none"
+                      stroke="#334155"
+                      stroke-width="2"
+                      stroke-linejoin="round"
+                      stroke-linecap="round"
+                      points="{{ cadence_chart.trend_polyline }}"/>
+            {% for b in cadence_chart.bars %}
+              <circle cx="{{ b.cx }}" cy="{{ b.y_trend }}" r="3" fill="#ffffff" stroke="#334155" stroke-width="2">
+                <title>{{ b.label }} : {{ b.rate }}%</title>
+              </circle>
+            {% endfor %}
+          </svg>
+        </div>
+        {% endlocalize %}
+      {% else %}
+        <div class="py-12 text-center text-sm text-text-muted my-auto">
+          Aucune donnée de cadence sur cette période.
+        </div>
+      {% endif %}
+    </article>
+
+    <!-- Droite (~1/3) : Lignes Maritimes (Donut) -->
+    <article class="bg-surface border border-border rounded p-4 sm:p-5 flex flex-col justify-between gap-4">
+      <h2 class="text-base font-heading font-semibold text-text m-0">Lignes Maritimes</h2>
+
+      {% if donut_segments %}
+        {% localize off %}
+        <div class="flex flex-col items-center gap-4 my-auto">
+          <svg viewBox="0 0 120 120"
+               class="w-44 h-44 block"
+               role="img"
+               aria-label="Répartition des conteneurs par ligne maritime">
+            <circle cx="60" cy="60" r="42" fill="none" stroke="#f1f5f9" stroke-width="14"/>
+            {% for seg in donut_segments %}
+              <circle cx="60"
+                      cy="60"
+                      r="42"
+                      fill="none"
+                      stroke="{{ seg.color }}"
+                      stroke-width="14"
+                      stroke-dasharray="{{ seg.dash }}"
+                      stroke-dashoffset="{{ seg.offset }}"
+                      transform="rotate(-90 60 60)">
+                <title>{{ seg.name }} : {{ seg.total }} ({{ seg.pct }}%)</title>
+              </circle>
+            {% endfor %}
+            <text x="60" y="61" text-anchor="middle" class="font-mono" font-size="21" font-weight="500" fill="#0f172a">{{ stats.total }}</text>
+            <text x="60" y="74" text-anchor="middle" class="font-sans" font-size="8.5" fill="#475569">conteneurs</text>
+          </svg>
+
+          <ul class="list-none m-0 p-0 flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-xs text-text">
+            {% for seg in donut_segments %}
+              <li class="inline-flex items-center gap-1.5">
+                <span class="w-2.5 h-2.5 rounded-sm inline-block shrink-0" style="background-color: {{ seg.color }};" aria-hidden="true"></span>
+                <span class="font-medium">{{ seg.name }}</span>
+                <span class="font-mono text-text-muted tabular-nums">{{ seg.total }}</span>
               </li>
             {% endfor %}
           </ul>
-        {% else %}
-          <p class="text-xs text-text-muted m-0">Aucune opération pour cette séance.</p>
-        {% endif %}
-      </section>
-    </div>
-  </details>
+        </div>
+        {% endlocalize %}
+      {% else %}
+        <div class="py-12 text-center text-sm text-text-muted my-auto">
+          Aucune ligne maritime enregistrée sur cette période.
+        </div>
+      {% endif %}
+    </article>
+  </section>
 
+  <!-- 4. Rangée 3 — Détails opérationnels (50 / 50) -->
+  <section aria-label="Détails opérationnels" class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+    <!-- Gauche : Motifs d’Indisponibilité -->
+    <article class="bg-surface border border-border rounded p-4 sm:p-5 flex flex-col gap-4">
+      <div class="flex items-center justify-between gap-2">
+        <h2 class="text-base font-heading font-semibold text-text m-0">Motifs d’Indisponibilité</h2>
+        {% if can_carryover and backlog.total %}
+          <a href="{% url 'terminal:carryover' %}" class="text-xs font-semibold text-primary hover:underline no-underline">
+            Non vérifiés ({{ backlog.total }})
+          </a>
+        {% endif %}
+      </div>
+
+      {% if unavailable_motifs_stats %}
+        <ul class="list-none m-0 p-0 space-y-3 my-auto">
+          {% for item in unavailable_motifs_stats %}
+            <li class="flex items-center gap-3">
+              <span class="w-32 sm:w-40 text-xs font-medium text-text truncate shrink-0" title="{{ item.label }}">{{ item.label }}</span>
+              <div class="flex-1 h-3 bg-ctsa-bgalt rounded-sm overflow-hidden" aria-hidden="true">
+                <div class="h-full bg-primary rounded-sm" style="width: {{ item.pct }}%;"></div>
+              </div>
+              <span class="w-7 text-right font-mono text-xs font-medium text-text tabular-nums shrink-0">{{ item.total }}</span>
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p class="text-sm text-text-muted m-0 py-8 text-center my-auto">
+          Aucun motif d’indisponibilité sur cette période.
+        </p>
+      {% endif %}
+    </article>
+
+    <!-- Droite : File d’Attente Prioritaire -->
+    <article class="bg-surface border border-border rounded p-4 sm:p-5 flex flex-col gap-4">
+      <div class="flex items-center justify-between gap-2">
+        <h2 class="text-base font-heading font-semibold text-text m-0">File d’Attente Prioritaire</h2>
+        <a href="{% url 'terminal:containers' %}?date={{ selected_date|date:'Y-m-d' }}"
+           class="text-xs font-semibold text-primary hover:underline no-underline">
+          Tout voir
+        </a>
+      </div>
+
+      {% if priority_queue %}
+        <!-- Desktop & tablette : tableau épuré sans scroll horizontal -->
+        <div class="hidden sm:block">
+          <table class="w-full border-collapse text-left text-sm">
+            <thead>
+              <tr class="border-b border-border text-xs font-semibold text-text-muted">
+                <th scope="col" class="py-2 pr-3 font-semibold">Conteneur</th>
+                <th scope="col" class="py-2 px-3 font-semibold">Transporteur</th>
+                <th scope="col" class="py-2 px-3 font-semibold">Statut</th>
+                <th scope="col" class="py-2 pl-3 font-semibold text-right">Jours</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-border">
+              {% for row in priority_queue %}
+                <tr class="hover:bg-ctsa-surface transition-colors">
+                  <td class="py-2.5 pr-3 font-mono text-xs font-medium whitespace-nowrap">
+                    <a href="{% url 'terminal:container_detail' row.pk %}" class="text-primary hover:underline no-underline">
+                      {{ row.container_number }}
+                    </a>
+                  </td>
+                  <td class="py-2.5 px-3 text-sm text-text truncate max-w-[180px]">{{ row.carrier }}</td>
+                  <td class="py-2.5 px-3 text-xs font-semibold whitespace-nowrap {{ row.status_class }}">{{ row.status_text }}</td>
+                  <td class="py-2.5 pl-3 font-mono text-xs text-text tabular-nums text-right whitespace-nowrap">{{ row.days }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Mobile (360–414 px) : cartes compactes sans scroll horizontal -->
+        <ul class="sm:hidden list-none m-0 p-0 divide-y divide-border">
+          {% for row in priority_queue %}
+            <li class="py-3 flex flex-col gap-1">
+              <div class="flex items-center justify-between gap-2">
+                <a href="{% url 'terminal:container_detail' row.pk %}"
+                   class="font-mono text-sm font-medium text-primary hover:underline no-underline">
+                  {{ row.container_number }}
+                </a>
+                <span class="text-xs font-semibold {{ row.status_class }}">{{ row.status_text }}</span>
+              </div>
+              <div class="flex items-center justify-between gap-2 text-xs text-text-muted">
+                <span class="truncate">{{ row.carrier }}</span>
+                <span class="font-mono tabular-nums shrink-0">{{ row.days }} j</span>
+              </div>
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p class="text-sm text-text-muted m-0 py-8 text-center my-auto">
+          Aucun conteneur en attente prioritaire.
+        </p>
+      {% endif %}
+    </article>
+  </section>
+
+</div>
 </div>
 {% endblock %}
