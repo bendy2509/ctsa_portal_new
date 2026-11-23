@@ -1,0 +1,31 @@
+{# Navigation unifiée du pôle Conteneurs : Liste du jour, Arrivées et Préparation (droits vérifiés via peut()). #}
+{% load permissions_tags %}
+{% can 'container.list' as can_list %}
+{% can 'container.arrival_create' as can_arrival %}
+{% can 'container.prepare' as can_prepare %}
+
+<nav class="flex flex-wrap items-center gap-2 border-b border-border pb-3" aria-label="Sections des conteneurs">
+  {% if can_list %}
+    <a href="{% url 'terminal:containers' %}{% if selected_date %}?date={{ selected_date|date:'Y-m-d' }}{% endif %}"
+       {% if tab == 'list' %}aria-current="page"{% endif %}
+       class="ui-btn ui-btn-sm {% if tab == 'list' %}ui-btn-primary{% else %}ui-btn-secondary{% endif %}">
+      Liste du jour
+    </a>
+  {% endif %}
+
+  {% if can_arrival %}
+    <a href="{% url 'terminal:arrival_create' %}"
+       {% if tab == 'arrival' %}aria-current="page"{% endif %}
+       class="ui-btn ui-btn-sm {% if tab == 'arrival' %}ui-btn-primary{% else %}ui-btn-secondary{% endif %}">
+      Nouvelle arrivée
+    </a>
+  {% endif %}
+
+  {% if can_prepare %}
+    <a href="{% url 'terminal:prepare' %}{% if selected_date %}?date={{ selected_date|date:'Y-m-d' }}{% endif %}"
+       {% if tab == 'prepare' %}aria-current="page"{% endif %}
+       class="ui-btn ui-btn-sm {% if tab == 'prepare' %}ui-btn-primary{% else %}ui-btn-secondary{% endif %}">
+      Préparer une liste
+    </a>
+  {% endif %}
+</nav>

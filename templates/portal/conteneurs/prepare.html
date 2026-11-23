@@ -11,6 +11,7 @@
   {% with date_iso=selected_date|date:"Y-m-d" date_fr=selected_date|date:"d/m/Y" %}
     {% include 'components/page_header.html' with back_url=containers_url|add:"?date="|add:date_iso back_label="Conteneurs du "|add:date_fr title="Préparer une liste" count=registered_count %}
   {% endwith %}
+  {% include 'portal/conteneurs/_conteneurs_tabs.html' with tab='prepare' %}
 
   <!-- Sélecteur de séance cible -->
   <section class="flex flex-wrap items-center justify-between gap-3" aria-label="Séance cible">

@@ -11,6 +11,7 @@
   {% can 'container.prepare' as can_prepare %}
   {% url 'terminal:containers' as containers_url %}
   {% include 'components/page_header.html' with back_url=containers_url back_label="Retour aux conteneurs" title="Enregistrer une arrivée" count=registered_pool_count %}
+  {% include 'portal/conteneurs/_conteneurs_tabs.html' with tab='arrival' %}
 
   {% if duplicate_container %}
     <div class="border-l-2 border-status-pending-fg pl-4 py-2 space-y-2" role="alert">

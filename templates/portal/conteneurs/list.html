@@ -14,16 +14,9 @@
   {% url 'terminal:arrival_create' as arrival_url %}
   {% url 'terminal:prepare' as prepare_url %}
 
-  <!-- Bloc 1 : En-tête (UN seul bouton primaire selon le rôle) -->
-  {% with date_iso=selected_date|date:"Y-m-d" date_fr=selected_date|date:"d/m/Y" %}
-    {% if can_arrival %}
-      {% include 'components/page_header.html' with title="Conteneurs" count=stats.total primary_url=arrival_url primary_label="Nouvelle arrivée" %}
-    {% elif can_prepare %}
-      {% include 'components/page_header.html' with title="Conteneurs" count=stats.total primary_url=prepare_url|add:"?date="|add:date_iso primary_label="Préparer une liste" %}
-    {% else %}
-      {% include 'components/page_header.html' with title="Conteneurs" count=stats.total %}
-    {% endif %}
-  {% endwith %}
+  <!-- Bloc 1 : En-tête + navigation unifiée Conteneurs -->
+  {% include 'components/page_header.html' with title="Conteneurs" count=stats.total %}
+  {% include 'portal/conteneurs/_conteneurs_tabs.html' with tab='list' %}
 
   <!-- Bloc 2 : Séance, onglets de statut et recherche -->
   <section class="space-y-4" aria-label="Filtres et séance">

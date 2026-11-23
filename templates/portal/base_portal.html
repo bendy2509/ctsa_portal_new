@@ -22,11 +22,11 @@
   {% with current=request.resolver_match.url_name %}
   <div class="portal">
 
-    <!-- Voile et barre latérale (tiroir < 1024px, fixe >= 1024px, texte seul) -->
+    <!-- Voile et barre latérale (tiroir < 1024px, fixe >= 1024px) -->
     <div id="portal-nav-backdrop" class="portal-backdrop" hidden></div>
     <aside id="portal-nav" class="portal-sidebar" aria-label="Navigation de l’exploitation">
       <div class="portal-brand">
-        <a href="{% url 'terminal:dashboard' %}" class="flex items-center gap-2.5 text-text no-underline min-w-0">
+        <a href="{% url 'terminal:dashboard' %}" class="flex items-center gap-2.5 text-slate-900 no-underline min-w-0">
           <span class="portal-brand-mark" aria-hidden="true">CTSA</span>
           <span class="portal-brand-text">
             <strong>Portail RAMPE</strong>
@@ -43,35 +43,25 @@
           {% if can_dash %}
             <a href="{% url 'terminal:dashboard' %}"
                {% if current == 'dashboard' %}aria-current="page"{% endif %}
-               class="portal-nav-link">
+               class="portal-nav-link py-1.5 gap-2.5">
+              <svg class="portal-nav-icon w-4 h-4 shrink-0 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/>
+              </svg>
               <span>Tableau de bord</span>
             </a>
           {% endif %}
 
           {% can 'container.list' as can_list %}
-          {% if can_list %}
-            <a href="{% url 'terminal:containers' %}"
-               {% if current == 'containers' or current == 'container_detail' or current == 'container_edit' %}aria-current="page"{% endif %}
-               class="portal-nav-link">
-              <span>Conteneurs</span>
-            </a>
-          {% endif %}
-
           {% can 'container.arrival_create' as can_arrival %}
-          {% if can_arrival %}
-            <a href="{% url 'terminal:arrival_create' %}"
-               {% if current == 'arrival_create' %}aria-current="page"{% endif %}
-               class="portal-nav-link">
-              <span>Arrivées</span>
-            </a>
-          {% endif %}
-
           {% can 'container.prepare' as can_prepare %}
-          {% if can_prepare %}
-            <a href="{% url 'terminal:prepare' %}"
-               {% if current == 'prepare' %}aria-current="page"{% endif %}
-               class="portal-nav-link">
-              <span>Préparer</span>
+          {% if can_list or can_arrival or can_prepare %}
+            <a href="{% if can_list %}{% url 'terminal:containers' %}{% elif can_arrival %}{% url 'terminal:arrival_create' %}{% else %}{% url 'terminal:prepare' %}{% endif %}"
+               {% if current == 'containers' or current == 'container_detail' or current == 'container_edit' or current == 'arrival_create' or current == 'prepare' %}aria-current="page"{% endif %}
+               class="portal-nav-link py-1.5 gap-2.5">
+              <svg class="portal-nav-icon w-4 h-4 shrink-0 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/>
+              </svg>
+              <span>Conteneurs</span>
             </a>
           {% endif %}
 
@@ -79,10 +69,13 @@
           {% if can_verify %}
             <a href="{% url 'terminal:inspection' %}"
                {% if current == 'inspection' or current == 'carryover' %}aria-current="page"{% endif %}
-               class="portal-nav-link">
+               class="portal-nav-link py-1.5 gap-2.5">
+              <svg class="portal-nav-icon w-4 h-4 shrink-0 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/>
+              </svg>
               <span>Inspection</span>
               {% if portal_unverified_count %}
-                <span class="portal-nav-count">{{ portal_unverified_count }}</span>
+                <span class="ml-auto font-mono text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200/60 tabular-nums">{{ portal_unverified_count }}</span>
               {% endif %}
             </a>
           {% endif %}
@@ -91,7 +84,10 @@
           {% if can_reports %}
             <a href="{% url 'terminal:statistics' %}"
                {% if current == 'statistics' %}aria-current="page"{% endif %}
-               class="portal-nav-link">
+               class="portal-nav-link py-1.5 gap-2.5">
+              <svg class="portal-nav-icon w-4 h-4 shrink-0 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/>
+              </svg>
               <span>Statistiques</span>
             </a>
           {% endif %}
@@ -102,18 +98,24 @@
         {% can 'site_settings.manage' as can_settings %}
 
         {% if can_reports or can_shipping or can_users or can_settings %}
-        <div class="portal-nav-group">
-          <div class="portal-nav-title">Plus</div>
+        <div class="portal-nav-group mt-2 pt-2">
+          <div class="portal-nav-title pb-1">Plus</div>
 
           {% if can_reports %}
             <a href="{% url 'terminal:register' %}"
                {% if current == 'register' %}aria-current="page"{% endif %}
-               class="portal-nav-link">
+               class="portal-nav-link py-1.5 gap-2.5">
+              <svg class="portal-nav-icon w-4 h-4 shrink-0 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
+              </svg>
               <span>Registre</span>
             </a>
             <a href="{% url 'terminal:status_logs' %}"
                {% if current == 'status_logs' %}aria-current="page"{% endif %}
-               class="portal-nav-link">
+               class="portal-nav-link py-1.5 gap-2.5">
+              <svg class="portal-nav-icon w-4 h-4 shrink-0 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/>
+              </svg>
               <span>Historique</span>
             </a>
           {% endif %}
@@ -121,7 +123,10 @@
           {% if can_shipping %}
             <a href="{% url 'terminal:shipping_lines' %}"
                {% if current == 'shipping_lines' or current == 'shipping_line_create' or current == 'shipping_line_edit' %}aria-current="page"{% endif %}
-               class="portal-nav-link">
+               class="portal-nav-link py-1.5 gap-2.5">
+              <svg class="portal-nav-icon w-4 h-4 shrink-0 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/>
+              </svg>
               <span>Lignes maritimes</span>
             </a>
           {% endif %}
@@ -129,7 +134,10 @@
           {% if can_users %}
             <a href="{% url 'accounts:user_list' %}"
                {% if current == 'user_list' or current == 'user_create' or current == 'user_edit' %}aria-current="page"{% endif %}
-               class="portal-nav-link">
+               class="portal-nav-link py-1.5 gap-2.5">
+              <svg class="portal-nav-icon w-4 h-4 shrink-0 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+              </svg>
               <span>Utilisateurs</span>
             </a>
           {% endif %}
@@ -137,7 +145,10 @@
           {% if can_settings %}
             <a href="{% url 'terminal:site_settings' %}"
                {% if current == 'site_settings' or current == 'site_settings_texts' or current == 'site_settings_windows' or current == 'site_settings_carousel' or current == 'site_settings_motifs' %}aria-current="page"{% endif %}
-               class="portal-nav-link">
+               class="portal-nav-link py-1.5 gap-2.5">
+              <svg class="portal-nav-icon w-4 h-4 shrink-0 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/>
+              </svg>
               <span>Paramètres</span>
             </a>
           {% endif %}
@@ -145,25 +156,34 @@
         {% endif %}
       </nav>
 
-      <div class="portal-sidebar-foot space-y-1">
-        <div class="portal-user-card">
-          <div class="text-xs font-semibold text-text truncate leading-tight">{{ user.display_name }}</div>
-          <div class="text-xs text-text-muted truncate mt-0.5">{{ user.get_role_display }}</div>
+      <div class="portal-sidebar-foot space-y-0.5 pt-3">
+        <div class="portal-user-card pb-1.5">
+          <div class="text-sm font-semibold text-slate-900 truncate leading-tight">{{ user.full_name|default:user.get_full_name|default:user.username }}</div>
+          <div class="text-xs text-slate-500 truncate mt-0.5">{{ user.get_role_display }}</div>
         </div>
 
         <a href="{% url 'accounts:profile' %}"
            {% if current == 'profile' %}aria-current="page"{% endif %}
-           class="portal-nav-link">
+           class="portal-nav-link py-1.5 gap-2.5">
+          <svg class="portal-nav-icon w-4 h-4 shrink-0 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+          </svg>
           <span>Mon profil</span>
         </a>
 
-        <a href="{% url 'terminal:home' %}" class="portal-nav-link">
+        <a href="{% url 'terminal:home' %}" class="portal-nav-link py-1.5 gap-2.5">
+          <svg class="portal-nav-icon w-4 h-4 shrink-0 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+          </svg>
           <span>Portail public</span>
         </a>
 
         <form action="{% url 'accounts:logout' %}" method="post">
           {% csrf_token %}
-          <button type="submit" class="portal-nav-link portal-nav-link-logout w-full text-left border-0 bg-transparent cursor-pointer">
+          <button type="submit" class="portal-nav-link portal-nav-link-logout py-1.5 gap-2.5 w-full text-left border-0 bg-transparent cursor-pointer">
+            <svg class="portal-nav-icon w-4 h-4 shrink-0 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/>
+            </svg>
             <span>Déconnexion</span>
           </button>
         </form>
