@@ -1,30 +1,12 @@
-{# Composant badge : variantes de statut et de rôle (jetons @theme WCAG AA, sans icône décorative). #}
+{# Composant badge : libellé de statut coloré discret en 15 px, graisse 600, sans fond plein ni doublon. #}
 {% if variant == 'confirmed' or variant == 'verified' or variant == 'active' %}
-  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-success-surface text-success border border-success-border whitespace-nowrap">
-    {{ label }}
-  </span>
+  <span class="status-label status-confirmed">{{ label }}</span>
 {% elif variant == 'pending' or variant == 'warning' or variant == 'not_verified' %}
-  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-status-pending-bg text-status-pending-fg border border-status-pending-bd whitespace-nowrap">
-    {{ label }}
-  </span>
+  <span class="status-label status-pending">{{ label }}</span>
 {% elif variant == 'unavailable' or variant == 'danger' or variant == 'inactive' %}
-  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-status-unavailable-bg text-status-unavailable-fg border border-status-unavailable-bd whitespace-nowrap">
-    {{ label }}
-  </span>
-{% elif variant == 'not_inspected' %}
-  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-ctsa-surface text-text-muted border border-dashed border-status-registered-bd whitespace-nowrap">
-    {{ label }}
-  </span>
-{% elif variant == 'registered' %}
-  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-status-registered-bg text-status-registered-fg border border-status-registered-bd whitespace-nowrap">
-    {{ label }}
-  </span>
+  <span class="status-label status-unavailable">{{ label }}</span>
 {% elif variant == 'info' or variant == 'admin' or variant == 'manager' %}
-  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-status-info-bg text-status-info-fg border border-status-info-bd whitespace-nowrap">
-    {{ label }}
-  </span>
+  <span class="status-label status-info">{{ label }}</span>
 {% else %}
-  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-status-registered-bg text-text-muted border border-border whitespace-nowrap">
-    {{ label }}
-  </span>
+  <span class="status-label status-registered">{{ label }}</span>
 {% endif %}

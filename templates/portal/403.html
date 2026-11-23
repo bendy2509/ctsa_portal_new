@@ -6,15 +6,15 @@
 {% block content %}
 {% if not request.user.is_staff_member %}
   <div class="max-w-lg mx-auto px-4 sm:px-6 py-12 sm:py-16">
-    <section class="bg-surface rounded-xl p-6 sm:p-8 border border-border border-t-4 border-t-danger shadow-xs space-y-4">
-      <div class="text-xs font-heading uppercase tracking-wider text-danger font-bold">
+    <section class="bg-surface pt-4 pb-6 border-t-2 border-t-border-strong border-b border-b-border space-y-4">
+      <div class="text-xs font-mono font-medium text-status-unavailable-fg">
         Erreur 403 · Cap Terminal S.A.
       </div>
-      <h1 class="font-heading text-2xl font-bold text-text m-0">
+      <h1 class="font-heading text-xl font-semibold text-text m-0">
         Accès refusé
       </h1>
       <p class="text-sm text-text-muted m-0 leading-relaxed">
-        {{ error_message|default:"Vous n'avez pas les droits nécessaires pour accéder à cette ressource." }}
+        {{ error_message|default:"Vous n’avez pas les droits nécessaires pour accéder à cette ressource." }}
       </p>
       <div class="pt-2">
         {% if request.user.is_authenticated %}
@@ -23,7 +23,7 @@
           </a>
         {% else %}
           <a href="{% url 'terminal:home' %}" class="ui-btn ui-btn-primary">
-            Retour à l'accueil
+            Retour à l’accueil
           </a>
         {% endif %}
       </div>
@@ -34,23 +34,24 @@
 
 {% block portal_content %}
 {% if request.user.is_staff_member %}
-  <div class="max-w-lg mx-auto px-4 sm:px-6 py-10 sm:py-14">
-    <section class="bg-surface rounded-xl p-6 sm:p-8 border border-border border-t-4 border-t-danger shadow-xs space-y-4">
-      <div class="text-xs font-heading uppercase tracking-wider text-danger font-bold">
-        Erreur 403 · Cap Terminal S.A.
-      </div>
-      <h1 class="font-heading text-2xl font-bold text-text m-0">
+  <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-10 py-8 space-y-6">
+    <header class="pb-4 page-header-rule flex items-baseline justify-between gap-4">
+      <h1 class="text-xl font-heading font-semibold text-text m-0">
         Accès refusé
       </h1>
+      <span class="font-mono text-sm font-medium text-status-unavailable-fg">403</span>
+    </header>
+
+    <div class="py-4 border-b border-border space-y-4">
       <p class="text-sm text-text-muted m-0 leading-relaxed">
-        {{ error_message|default:"Vous n'avez pas les droits nécessaires pour accéder à cette ressource." }}
+        {{ error_message|default:"Vous n’avez pas les droits nécessaires pour accéder à cette ressource." }}
       </p>
-      <div class="pt-2">
+      <div>
         <a href="{% url 'terminal:dashboard' %}" class="ui-btn ui-btn-primary">
-          Retour au tableau de bord
+          Tableau de bord
         </a>
       </div>
-    </section>
+    </div>
   </div>
 {% endif %}
 {% endblock %}

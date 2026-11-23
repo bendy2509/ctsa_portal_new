@@ -1,23 +1,21 @@
-{# Composant pagination : navigation entre pages avec états clairs. #}
+{# Composant pagination : navigation sobre entre pages sur filet de 1 px. #}
 {% if page.paginator.num_pages > 1 %}
-  <nav aria-label="Pagination" class="bg-white rounded-xl border border-slate-200/80 px-4 py-3 flex flex-wrap items-center justify-between gap-3 shadow-xs">
-    <p class="m-0 text-xs sm:text-sm text-slate-600 tabular-nums font-medium">
+  <nav aria-label="Pagination" class="border-t border-border pt-4 flex flex-wrap items-center justify-between gap-3">
+    <p class="m-0 text-xs text-text-muted tabular-nums">
       Lignes {{ page.start_index }} à {{ page.end_index }} sur {{ page.paginator.count }}
     </p>
-    <div class="flex items-center gap-2">
+    <div class="flex items-center gap-3">
       {% if page.has_previous %}
-        <a href="?{% if page_query %}{{ page_query }}&amp;{% endif %}page={{ page.previous_page_number }}" class="ui-btn ui-btn-secondary" rel="prev">
-          <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
+        <a href="?{% if page_query %}{{ page_query }}&amp;{% endif %}page={{ page.previous_page_number }}" class="ui-btn ui-btn-secondary ui-btn-sm" rel="prev">
           <span>Précédente</span>
         </a>
       {% endif %}
-      <span class="text-xs sm:text-sm font-semibold text-ctsa-slate tabular-nums px-2" aria-current="page">
+      <span class="text-xs font-mono font-medium text-text tabular-nums px-1" aria-current="page">
         Page {{ page.number }} / {{ page.paginator.num_pages }}
       </span>
       {% if page.has_next %}
-        <a href="?{% if page_query %}{{ page_query }}&amp;{% endif %}page={{ page.next_page_number }}" class="ui-btn ui-btn-secondary" rel="next">
+        <a href="?{% if page_query %}{{ page_query }}&amp;{% endif %}page={{ page.next_page_number }}" class="ui-btn ui-btn-secondary ui-btn-sm" rel="next">
           <span>Suivante</span>
-          <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
         </a>
       {% endif %}
     </div>

@@ -1,27 +1,23 @@
-{# Composant page_header : en-tête épuré directement sur le canevas, compteur aligné et UN SEUL bouton primaire. #}
-<header class="flex flex-col gap-1.5 pb-4 border-b border-border">
+{# Composant page_header : titre 22 px avec filet marqué (emprunt C), sans phrase d’aide, un seul bouton primaire. #}
+<header class="flex flex-col gap-2 pb-4 page-header-rule">
   {% if back_url %}
     <div>
       <a href="{{ back_url }}"
-         class="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-text-muted hover:text-primary no-underline min-h-[36px]">
-        <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
+         class="inline-flex items-center text-xs font-semibold text-text-muted hover:text-primary no-underline min-h-[36px]">
         <span>{{ back_label|default:"Retour" }}</span>
       </a>
     </div>
   {% endif %}
 
-  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-    <div class="min-w-0">
-      <h1 class="text-xl sm:text-2xl font-heading font-bold tracking-tight text-text m-0 flex flex-wrap items-center gap-2.5">
-        <span>{{ title }}</span>
-        {% if count is not None %}
-          <span class="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-mono font-bold bg-primary-tint border border-primary-border text-primary tabular-nums">
-            {{ count }}
-          </span>
-        {% endif %}
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <div class="min-w-0 flex flex-wrap items-baseline gap-3">
+      <h1 class="text-xl font-heading font-semibold text-text m-0">
+        {{ title }}
       </h1>
-      {% if subtitle %}
-        <p class="text-xs sm:text-sm text-text-muted mt-1 mb-0">{{ subtitle }}</p>
+      {% if count is not None %}
+        <span class="font-mono text-sm font-medium text-text-muted tabular-nums">
+          {{ count }}
+        </span>
       {% endif %}
     </div>
 

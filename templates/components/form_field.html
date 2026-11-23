@@ -1,13 +1,13 @@
 {# Composant form_field : label visible, champ, aide et erreur en ligne. #}
 <div class="space-y-1.5">
-  <label for="{{ field_id }}" class="block text-sm font-heading font-bold text-ctsa-slate">
-    {{ label }}{% if required %} <span class="text-ctsa-red-text" aria-hidden="true">*</span>{% endif %}
+  <label for="{{ field_id }}" class="block text-sm font-semibold text-text">
+    {{ label }}{% if required %} <span class="text-status-unavailable-fg" aria-hidden="true">*</span>{% endif %}
   </label>
   {{ input }}
   {% if help_text %}
-    <p class="text-xs text-slate-500 m-0">{{ help_text }}</p>
+    <p class="text-xs text-text-muted m-0">{{ help_text }}</p>
   {% endif %}
   {% if error %}
-    <p class="text-xs font-bold text-ctsa-red-text m-0" role="alert">{{ error }}</p>
+    <p class="text-xs font-semibold text-status-unavailable-fg m-0" role="alert">{{ error }}</p>
   {% endif %}
 </div>

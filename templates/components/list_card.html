@@ -1,14 +1,14 @@
-{# Composant list_card : carte mobile à 2 lignes entièrement cliquable (>= 44px). #}
+{# Composant list_card : ligne mobile à 2 lignes séparée par un filet de 1 px (>= 44px). #}
 <a href="{{ url }}"
-   class="block bg-white rounded-xl border border-slate-200/80 p-3.5 shadow-xs no-underline text-inherit hover:border-slate-300 active:bg-slate-50 transition min-h-[64px]">
-  <div class="flex items-center justify-between gap-2">
-    <span class="font-mono text-base font-bold text-ctsa-slate truncate">{{ title }}</span>
+   class="block border-b border-border py-3.5 no-underline text-inherit hover:bg-ctsa-surface transition min-h-[64px]">
+  <div class="flex items-baseline justify-between gap-2">
+    <span class="font-mono text-lg font-medium text-text truncate">{{ title }}</span>
     {% if badge_label %}
       {% include 'components/badge.html' with variant=badge_variant label=badge_label %}
     {% endif %}
   </div>
   {% if meta_1 or meta_2 %}
-    <div class="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500">
+    <div class="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-text-muted">
       {% if meta_1 %}<span>{{ meta_1 }}</span>{% endif %}
       {% if meta_2 %}<span>{{ meta_2 }}</span>{% endif %}
       {% if meta_3 %}<span>{{ meta_3 }}</span>{% endif %}

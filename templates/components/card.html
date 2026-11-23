@@ -1,19 +1,18 @@
-{# Composant card : conteneur sobre et uniforme. #}
+{# Composant card : section structurée par un filet supérieur de 1 px (Direction A, zéro ombre). #}
 <section {% if id %}id="{{ id }}"{% endif %}
          {% if title_id %}aria-labelledby="{{ title_id }}"{% elif aria_label %}aria-label="{{ aria_label }}"{% endif %}
-         class="bg-white rounded-xl border border-slate-200/80 shadow-xs {{ extra_class }}">
+         class="bg-surface border-t border-border pt-4 {{ extra_class }}">
   {% if title %}
-    <div class="px-4 sm:px-5 py-3.5 border-b border-slate-200/80 flex items-center justify-between gap-3">
+    <div class="pb-3 flex items-center justify-between gap-3">
       <div>
-        <h2 {% if title_id %}id="{{ title_id }}"{% endif %} class="text-base font-heading font-extrabold text-ctsa-slate m-0">{{ title }}</h2>
-        {% if subtitle %}<p class="text-xs text-slate-500 mt-0.5 mb-0">{{ subtitle }}</p>{% endif %}
+        <h2 {% if title_id %}id="{{ title_id }}"{% endif %} class="text-lg font-heading font-semibold text-text m-0">{{ title }}</h2>
       </div>
       {% if action_url and action_label %}
         <a href="{{ action_url }}" class="text-sm font-semibold text-primary hover:underline shrink-0">{{ action_label }}</a>
       {% endif %}
     </div>
   {% endif %}
-  <div class="{{ body_class|default:'p-4 sm:p-5' }}">
+  <div class="{{ body_class|default:'py-2' }}">
     {{ content }}
   </div>
 </section>
