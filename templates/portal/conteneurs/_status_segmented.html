@@ -1,79 +1,74 @@
-{# Sélecteur segmenté 1-clic du statut d'un conteneur c (Enregistré -> Mettre en liste ; sinon Confirmé / En attente / Indisponible). #}
+{# Sélecteur segmenté 1-clic du statut d’un conteneur c (Enregistré -> Mettre en liste ; Vérifié -> Verrouillé ; sinon Confirmé / En attente / Indisponible). #}
 {% load permissions_tags %}
 {% can 'container.change_status' as can_change_status %}
 {% can 'container.prepare' as can_prepare %}
 
 {% if c.status == 'registered' %}
-  <div class="flex flex-wrap items-center gap-2">
-    {% include 'components/badge.html' with variant='registered' label='Enregistré (hors liste)' %}
+  <div class="flex flex-wrap items-center gap-3">
     {% if can_prepare and not c.archived_at %}
-      <form action="{% url 'terminal:registered_add_to_list' %}" method="post" class="inline-flex items-center gap-1.5">
+      <form action="{% url 'terminal:registered_add_to_list' %}" method="post" class="inline-flex items-center">
         {% csrf_token %}
         <input type="hidden" name="ids" value="{{ c.pk }}">
         <input type="hidden" name="scheduled_date" value="{{ selected_date|default:today|date:'Y-m-d' }}">
         <input type="hidden" name="next" value="{{ request.get_full_path }}">
-        <button type="submit" class="ui-btn ui-btn-primary ui-btn-sm">
-          + Mettre en liste{% if selected_date %} ({{ selected_date|date:"d/m/Y" }}){% endif %}
+        <button type="submit" class="ui-btn ui-btn-secondary ui-btn-sm">
+          Mettre en liste
         </button>
       </form>
+    {% else %}
+      <span class="status-label status-registered">Enregistré</span>
     {% endif %}
   </div>
-{% elif can_change_status and not c.is_verified and not c.verification_result %}
-  <div class="space-y-1.5">
-    <div class="flex flex-wrap items-center gap-2">
-      <div class="status-segmented" role="group" aria-label="Changer le statut de {{ c.container_number }}">
-        <form action="{% url 'terminal:container_update_status' c.pk %}" method="post">
-          {% csrf_token %}
-          <input type="hidden" name="status" value="confirmed">
-          <input type="hidden" name="next" value="{{ request.get_full_path }}">
-          <button type="submit"
-                  {% if c.status == 'confirmed' %}disabled{% endif %}
-                  class="status-seg-btn {% if c.status == 'confirmed' %}is-confirmed{% endif %}">
-            {% if c.status == 'confirmed' %}Confirmé{% else %}Confirmer{% endif %}
-          </button>
-        </form>
-
-        <form action="{% url 'terminal:container_update_status' c.pk %}" method="post">
-          {% csrf_token %}
-          <input type="hidden" name="status" value="pending">
-          <input type="hidden" name="next" value="{{ request.get_full_path }}">
-          <button type="submit"
-                  {% if c.status == 'pending' %}disabled{% endif %}
-                  class="status-seg-btn {% if c.status == 'pending' %}is-pending{% endif %}">
-            En attente
-          </button>
-        </form>
-
-        <button type="button"
-                data-toggle-unavailable="{{ c.pk }}"
-                data-unavailable-action="{% url 'terminal:container_update_status' c.pk %}"
-                data-unavailable-number="{{ c.container_number }}"
-                data-unavailable-note="{{ c.unavailability_note }}"
-                data-unavailable-next="{{ request.get_full_path }}"
-                class="status-seg-btn {% if c.status == 'unavailable' %}is-unavailable{% endif %}">
-          Indisponible
+{% elif c.is_verified %}
+  <span class="status-label status-confirmed">Vérifié · Verrouillé</span>
+{% elif can_change_status and not c.verification_result %}
+  <div class="space-y-1">
+    <div class="status-segmented" role="group" aria-label="Changer le statut de {{ c.container_number }}">
+      <form action="{% url 'terminal:container_update_status' c.pk %}" method="post">
+        {% csrf_token %}
+        <input type="hidden" name="status" value="confirmed">
+        <input type="hidden" name="next" value="{{ request.get_full_path }}">
+        <button type="submit"
+                {% if c.status == 'confirmed' %}disabled{% endif %}
+                class="status-seg-btn {% if c.status == 'confirmed' %}is-confirmed{% endif %}">
+          Confirmé
         </button>
-      </div>
+      </form>
 
-      {% if c.status == 'confirmed' %}
-        <span class="text-[11px] font-semibold text-success">✓ Éligible à vérifier</span>
-      {% elif c.status == 'pending' %}
-        <span class="text-[11px] text-text-muted">À confirmer pour vérifier</span>
-      {% endif %}
+      <form action="{% url 'terminal:container_update_status' c.pk %}" method="post">
+        {% csrf_token %}
+        <input type="hidden" name="status" value="pending">
+        <input type="hidden" name="next" value="{{ request.get_full_path }}">
+        <button type="submit"
+                {% if c.status == 'pending' %}disabled{% endif %}
+                class="status-seg-btn {% if c.status == 'pending' %}is-pending{% endif %}">
+          En attente
+        </button>
+      </form>
+
+      <button type="button"
+              data-toggle-unavailable="{{ c.pk }}"
+              data-unavailable-action="{% url 'terminal:container_update_status' c.pk %}"
+              data-unavailable-number="{{ c.container_number }}"
+              data-unavailable-note="{{ c.unavailability_note }}"
+              data-unavailable-next="{{ request.get_full_path }}"
+              class="status-seg-btn {% if c.status == 'unavailable' %}is-unavailable{% endif %}">
+        Indisponible
+      </button>
     </div>
 
     {% if c.status == 'unavailable' and c.full_reason_display %}
       <div class="text-xs font-semibold text-status-unavailable-fg">
-        Motif : {{ c.full_reason_display }}
+        Motif&nbsp;: {{ c.full_reason_display }}
       </div>
     {% endif %}
   </div>
 {% else %}
-  <div class="flex flex-wrap items-center gap-2">
+  <div class="space-y-1">
     {% include 'components/badge.html' with variant=c.status label=c.get_status_display %}
     {% if c.status == 'unavailable' and c.full_reason_display %}
-      <div class="text-xs font-semibold text-status-unavailable-fg w-full">
-        Motif : {{ c.full_reason_display }}
+      <div class="text-xs font-semibold text-status-unavailable-fg">
+        Motif&nbsp;: {{ c.full_reason_display }}
       </div>
     {% endif %}
   </div>

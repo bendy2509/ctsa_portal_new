@@ -1,100 +1,88 @@
 {% extends 'portal/base_portal.html' %}
 {% load permissions_tags %}
 
-{% block title %}Paramètres du site — Cap Terminal S.A.{% endblock %}
-{% block page_title %}Paramètres du site{% endblock %}
+{% block title %}Paramètres — Cap Terminal S.A.{% endblock %}
+{% block page_title %}Paramètres{% endblock %}
 
 {% block portal_content %}
-<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+<div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-10 py-6 sm:py-8 space-y-8">
 
-  {% include 'components/page_header.html' with title="Paramètres du site" subtitle="Configuration du portail public, des fenêtres temporelles, du carrousel et des motifs opérationnels." %}
+  {% include 'components/page_header.html' with title="Paramètres" %}
 
-  <!-- 4 cartes Pro vers les sous-pages dédiées -->
-  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-    <a href="{% url 'terminal:site_settings_texts' %}"
-       class="bg-surface rounded-xl border border-border p-5 no-underline hover:border-primary transition-colors flex flex-col justify-between gap-4">
-      <div class="space-y-2">
-        <span class="text-[11px] font-bold uppercase tracking-wider text-primary">Portail public</span>
-        <h2 class="text-base font-heading font-semibold text-text m-0">Textes &amp; coordonnées</h2>
-        <p class="text-xs text-text-muted m-0 leading-relaxed">
-          Identité, adresse, téléphone et textes publics FR / Kreyòl · {{ site_obj.contact_email }}{% if site_obj.contact_phone_primary %} · {{ site_obj.contact_phone_primary }}{% endif %}.
-        </p>
-      </div>
-      <div class="pt-3 border-t border-border flex items-center justify-between text-xs font-semibold text-primary">
-        <span>Configurer</span>
-        <span aria-hidden="true">→</span>
-      </div>
-    </a>
+  <ul class="list-none m-0 p-0 border-t border-border divide-y divide-border">
+    <li>
+      <a href="{% url 'terminal:site_settings_texts' %}"
+         class="flex items-center justify-between gap-4 py-4 min-h-[60px] text-inherit no-underline hover:bg-ctsa-surface transition-colors">
+        <div class="min-w-0">
+          <div class="text-base font-semibold text-text">Textes et coordonnées</div>
+          <div class="text-xs text-text-muted mt-0.5 truncate">{{ site_obj.contact_email }}{% if site_obj.contact_phone_primary %} · {{ site_obj.contact_phone_primary }}{% endif %}</div>
+        </div>
+        <span class="text-xs font-semibold text-primary shrink-0">Configurer</span>
+      </a>
+    </li>
 
-    <a href="{% url 'terminal:site_settings_windows' %}"
-       class="bg-surface rounded-xl border border-border p-5 no-underline hover:border-primary transition-colors flex flex-col justify-between gap-4">
-      <div class="space-y-2">
-        <span class="text-[11px] font-bold uppercase tracking-wider text-primary">Règles métier</span>
-        <h2 class="text-base font-heading font-semibold text-text m-0">Fenêtres de temps</h2>
-        <p class="text-xs text-text-muted m-0 leading-relaxed tabular-nums">
-          Correction : {{ site_obj.correction_window_minutes }} min · Suppression : {{ site_obj.delete_window_hours }} h · Alerte sans liste : {{ site_obj.unscheduled_alert_days }} j.
-        </p>
-      </div>
-      <div class="pt-3 border-t border-border flex items-center justify-between text-xs font-semibold text-primary">
-        <span>Ajuster les délais</span>
-        <span aria-hidden="true">→</span>
-      </div>
-    </a>
+    <li>
+      <a href="{% url 'terminal:site_settings_windows' %}"
+         class="flex items-center justify-between gap-4 py-4 min-h-[60px] text-inherit no-underline hover:bg-ctsa-surface transition-colors">
+        <div class="min-w-0">
+          <div class="text-base font-semibold text-text">Fenêtres de temps</div>
+          <div class="text-xs text-text-muted mt-0.5 tabular-nums">
+            Correction&nbsp;: {{ site_obj.correction_window_minutes }} min · Suppression&nbsp;: {{ site_obj.delete_window_hours }} h · Alerte&nbsp;: {{ site_obj.unscheduled_alert_days }} j
+          </div>
+        </div>
+        <span class="text-xs font-semibold text-primary shrink-0">Ajuster</span>
+      </a>
+    </li>
 
-    <a href="{% url 'terminal:site_settings_carousel' %}"
-       class="bg-surface rounded-xl border border-border p-5 no-underline hover:border-primary transition-colors flex flex-col justify-between gap-4">
-      <div class="space-y-2">
-        <span class="text-[11px] font-bold uppercase tracking-wider text-primary">Vitrine</span>
-        <h2 class="text-base font-heading font-semibold text-text m-0">Carrousel d'accueil</h2>
-        <p class="text-xs text-text-muted m-0 leading-relaxed tabular-nums">
-          {{ active_slides_count }} diapositive{{ active_slides_count|pluralize }} active{{ active_slides_count|pluralize }} sur {{ slides|length }} (limite : {{ site_obj.hero_carousel_limit }}).
-        </p>
-      </div>
-      <div class="pt-3 border-t border-border flex items-center justify-between text-xs font-semibold text-primary">
-        <span>Gérer les visuels</span>
-        <span aria-hidden="true">→</span>
-      </div>
-    </a>
+    <li>
+      <a href="{% url 'terminal:site_settings_carousel' %}"
+         class="flex items-center justify-between gap-4 py-4 min-h-[60px] text-inherit no-underline hover:bg-ctsa-surface transition-colors">
+        <div class="min-w-0">
+          <div class="text-base font-semibold text-text">Carrousel d’accueil</div>
+          <div class="text-xs text-text-muted mt-0.5 tabular-nums">
+            {{ active_slides_count }} active{{ active_slides_count|pluralize }} sur {{ slides|length }}
+          </div>
+        </div>
+        <span class="text-xs font-semibold text-primary shrink-0">Gérer</span>
+      </a>
+    </li>
 
     {% can 'motif.manage' as can_motifs %}
     {% if can_motifs %}
-      <a href="{% url 'terminal:site_settings_motifs' %}"
-         class="bg-surface rounded-xl border border-border p-5 no-underline hover:border-primary transition-colors flex flex-col justify-between gap-4">
-        <div class="space-y-2">
-          <span class="text-[11px] font-bold uppercase tracking-wider text-primary">Inspection &amp; rampe</span>
-          <h2 class="text-base font-heading font-semibold text-text m-0">Motifs prédéfinis</h2>
-          <p class="text-xs text-text-muted m-0 leading-relaxed tabular-nums">
-            {{ motifs_unavailable|length }} motif{{ motifs_unavailable|length|pluralize }} d'indisponibilité · {{ motifs_not_verified|length }} motif{{ motifs_not_verified|length|pluralize }} de non-vérification.
-          </p>
-        </div>
-        <div class="pt-3 border-t border-border flex items-center justify-between text-xs font-semibold text-primary">
-          <span>Gérer les motifs</span>
-          <span aria-hidden="true">→</span>
-        </div>
-      </a>
+      <li>
+        <a href="{% url 'terminal:site_settings_motifs' %}"
+           class="flex items-center justify-between gap-4 py-4 min-h-[60px] text-inherit no-underline hover:bg-ctsa-surface transition-colors">
+          <div class="min-w-0">
+            <div class="text-base font-semibold text-text">Motifs prédéfinis</div>
+            <div class="text-xs text-text-muted mt-0.5 tabular-nums">
+              {{ motifs_unavailable|length }} indisponibilité · {{ motifs_not_verified|length }} non-vérification
+            </div>
+          </div>
+          <span class="text-xs font-semibold text-primary shrink-0">Gérer</span>
+        </a>
+      </li>
     {% endif %}
-  </div>
+  </ul>
 
-  <!-- Journal des dernières modifications de paramètres -->
   {% if settings_logs %}
-    <section aria-labelledby="settings-audit-title" class="bg-surface rounded-xl border border-border overflow-hidden">
-      <div class="px-5 py-3.5 border-b border-border bg-ctsa-surface/60">
-        <h2 id="settings-audit-title" class="text-sm font-heading font-semibold text-text m-0">Dernières modifications</h2>
-      </div>
-      <ul class="list-none m-0 p-0 divide-y divide-border">
+    <details class="border-t border-border pt-4">
+      <summary class="text-sm font-semibold text-primary cursor-pointer list-none py-2">
+        Voir plus&nbsp;: Dernières modifications ({{ settings_logs|length }})
+      </summary>
+      <ul class="list-none m-0 pt-3 p-0 border-t border-border divide-y divide-border">
         {% for entry in settings_logs %}
-          <li class="px-5 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 text-sm">
+          <li class="py-2.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 text-sm">
             <div class="min-w-0">
-              <strong class="font-mono text-xs text-text">{{ entry.target_label }}</strong>
+              <span class="font-mono text-xs font-medium text-text">{{ entry.target_label }}</span>
               <span class="text-xs text-text-muted ml-2">{{ entry.new_value|truncatechars:80 }}</span>
             </div>
-            <span class="text-xs text-text-muted tabular-nums shrink-0">
+            <span class="font-mono text-xs text-text-muted tabular-nums shrink-0">
               {{ entry.changed_at|date:"d/m/Y H:i" }}{% if entry.changed_by %} · {{ entry.changed_by.display_name }}{% endif %}
             </span>
           </li>
         {% endfor %}
       </ul>
-    </section>
+    </details>
   {% endif %}
 
 </div>

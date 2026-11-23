@@ -1,358 +1,267 @@
 {% extends 'portal/base_portal.html' %}
 
 {% block title %}Préparer une liste — Cap Terminal S.A.{% endblock %}
-{% block page_title %}02 · Préparer une liste{% endblock %}
+{% block page_title %}Préparer une liste{% endblock %}
 {% block portal_body_extra %}portal-has-form-actions{% endblock %}
 
 {% block portal_content %}
-<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+<div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-10 py-6 sm:py-8 space-y-8">
 
   {% url 'terminal:containers' as containers_url %}
   {% with date_iso=selected_date|date:"Y-m-d" date_fr=selected_date|date:"d/m/Y" %}
-    {% include 'components/page_header.html' with back_url=containers_url|add:"?date="|add:date_iso back_label="Conteneurs du "|add:date_fr title="Étape 2 · Préparer une liste de vérification" subtitle="Sélectionnez les conteneurs enregistrés (arrivés) ou saisissez des numéros pour les mettre dans la liste (statut En attente)." count=registered_count %}
+    {% include 'components/page_header.html' with back_url=containers_url|add:"?date="|add:date_iso back_label="Conteneurs du "|add:date_fr title="Préparer une liste" count=registered_count %}
   {% endwith %}
 
-  <!-- Bandeau visuel du flux en 3 étapes -->
-  <div class="grid grid-cols-1 md:grid-cols-3 bg-surface rounded-xl border border-border overflow-hidden divide-y md:divide-y-0 md:divide-x divide-border">
-    <a href="{% url 'terminal:arrival_create' %}" class="p-3.5 hover:bg-ctsa-surface flex items-start gap-3 no-underline">
-      <span class="inline-flex items-center justify-center w-7 h-7 rounded-md bg-ctsa-bgalt text-text-muted font-mono text-xs font-bold shrink-0">01</span>
-      <div class="min-w-0">
-        <div class="text-xs font-bold uppercase tracking-wider text-text">1. Arrivés &amp; Enregistrés</div>
-        <div class="text-xs text-text-muted leading-snug">{{ available_registered_count }} disponible{{ available_registered_count|pluralize }} à mettre en liste</div>
-      </div>
-    </a>
-    <div class="p-3.5 bg-primary-tint/50 border-t-2 border-t-primary flex items-start gap-3">
-      <span class="inline-flex items-center justify-center w-7 h-7 rounded-md bg-primary text-white font-mono text-xs font-bold shrink-0">02</span>
-      <div class="min-w-0">
-        <div class="text-xs font-bold uppercase tracking-wider text-primary">2. Mise en liste ({{ selected_date|date:"d/m/Y" }})</div>
-        <div class="text-xs text-text-muted leading-snug">{{ registered_count }} inscrit{{ registered_count|pluralize }} (statut initial : En attente)</div>
-      </div>
-    </div>
-    <a href="{% url 'terminal:containers' %}?date={{ selected_date|date:'Y-m-d' }}" class="p-3.5 hover:bg-ctsa-surface flex items-start gap-3 no-underline">
-      <span class="inline-flex items-center justify-center w-7 h-7 rounded-md bg-ctsa-bgalt text-text-muted font-mono text-xs font-bold shrink-0">03</span>
-      <div class="min-w-0">
-        <div class="text-xs font-bold uppercase tracking-wider text-text">3. Confirmer → Vérifier</div>
-        <div class="text-xs text-text-muted leading-snug">Statut « Confirmé » requis pour vérifier →</div>
-      </div>
-    </a>
-  </div>
-
-  <!-- Barre de pilotage de la séance cible -->
-  <div class="bg-surface rounded-xl border border-border px-4 py-2.5 flex flex-wrap items-center justify-between gap-3">
-    <div class="flex flex-wrap items-center gap-2">
-      <span class="text-xs font-semibold uppercase tracking-wider text-text-muted mr-1">Liste cible</span>
-      <div class="inline-flex rounded-lg border border-border bg-ctsa-surface overflow-hidden">
-        <a href="{% url 'terminal:prepare' %}?date={{ today|date:'Y-m-d' }}"
-           {% if selected_date == today %}aria-current="true"{% endif %}
-           class="px-3.5 py-1.5 min-h-[40px] inline-flex items-center text-xs font-semibold border-r border-border no-underline {% if selected_date == today %}bg-primary-tint text-primary{% else %}text-text-muted hover:text-text hover:bg-surface{% endif %}">
-          Aujourd'hui
-        </a>
-        <a href="{% url 'terminal:prepare' %}?date={{ tomorrow|date:'Y-m-d' }}"
-           {% if selected_date == tomorrow %}aria-current="true"{% endif %}
-           class="px-3.5 py-1.5 min-h-[40px] inline-flex items-center text-xs font-semibold no-underline {% if selected_date == tomorrow %}bg-primary-tint text-primary{% else %}text-text-muted hover:text-text hover:bg-surface{% endif %}">
-          Demain
-        </a>
-      </div>
+  <!-- Sélecteur de séance cible -->
+  <section class="flex flex-wrap items-center justify-between gap-3" aria-label="Séance cible">
+    <div class="flex flex-wrap items-center gap-3">
+      <a href="{% url 'terminal:prepare' %}?date={{ today|date:'Y-m-d' }}"
+         {% if selected_date == today %}aria-current="true"{% endif %}
+         class="text-xs font-semibold no-underline {% if selected_date == today %}text-primary underline{% else %}text-text-muted hover:text-text{% endif %}">
+        Aujourd’hui
+      </a>
+      <a href="{% url 'terminal:prepare' %}?date={{ tomorrow|date:'Y-m-d' }}"
+         {% if selected_date == tomorrow %}aria-current="true"{% endif %}
+         class="text-xs font-semibold no-underline {% if selected_date == tomorrow %}text-primary underline{% else %}text-text-muted hover:text-text{% endif %}">
+        Demain
+      </a>
 
       <form action="{% url 'terminal:prepare' %}" method="get" class="inline-flex items-center">
-        <label for="prepare-date" class="visually-hidden">Choisir une autre date</label>
+        <label for="prepare-date" class="visually-hidden">Choisir une date</label>
         <input type="date"
                id="prepare-date"
                name="date"
                min="{{ today|date:'Y-m-d' }}"
                value="{{ selected_date|date:'Y-m-d' }}"
                data-auto-submit-date
-               class="border border-border rounded-lg px-3 py-1.5 min-h-[40px] text-xs font-semibold text-text bg-surface">
+               class="font-mono text-xs font-medium text-text bg-surface border border-border-ui rounded px-2.5 py-1.5 min-h-[44px]">
       </form>
     </div>
 
-    <a href="{% url 'terminal:containers' %}?date={{ selected_date|date:'Y-m-d' }}"
-       class="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline no-underline">
-      <span>Étape 3 : Confirmer les conteneurs de la liste ({{ registered_count }})</span>
-      <span aria-hidden="true">→</span>
-    </a>
-  </div>
-
-  {% if backlog.total %}
-    <div class="rounded-xl border border-status-pending-bd bg-status-pending-bg px-4 py-3 flex flex-wrap items-center justify-between gap-2">
-      <p class="text-xs sm:text-sm font-semibold text-status-pending-fg m-0">
-        {{ backlog.total }} conteneur{{ backlog.total|pluralize }} non vérifié{{ backlog.total|pluralize }} des séances passées.
-      </p>
-      <a href="{% url 'terminal:carryover' %}?date={{ selected_date|date:'Y-m-d' }}"
-         class="text-xs sm:text-sm font-bold text-primary underline underline-offset-2 hover:text-primary-hover">
-        Voir les non vérifiés à reprendre →
+    <div class="flex items-center gap-4">
+      {% if backlog.total %}
+        <a href="{% url 'terminal:carryover' %}?date={{ selected_date|date:'Y-m-d' }}"
+           class="text-xs font-semibold text-status-pending-fg hover:underline no-underline">
+          Non vérifiés ({{ backlog.total }})
+        </a>
+      {% endif %}
+      <a href="{% url 'terminal:containers' %}?date={{ selected_date|date:'Y-m-d' }}"
+         class="text-xs font-semibold text-primary hover:underline no-underline">
+        Voir la liste ({{ registered_count }})
       </a>
     </div>
-  {% endif %}
+  </section>
 
-  <!-- Grille 12 colonnes : Console d'ajout à la liste (7 col.) | Conteneurs Enregistrés disponibles & Derniers ajouts (5 col.) -->
-  <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+  <!-- Modes d’ajout à la liste -->
+  <section aria-label="Inscrire des conteneurs" class="space-y-6">
+    <div class="list-tabs" role="tablist" aria-label="Mode d’inscription">
+      <button type="button" data-tab-target="panel-single-add" aria-selected="{% if active_tab == 'bulk' %}false{% else %}true{% endif %}" class="tab-btn list-tab border-t-0 border-x-0 bg-transparent cursor-pointer">
+        Un conteneur
+      </button>
+      <button type="button" data-tab-target="panel-bulk-add" aria-selected="{% if active_tab == 'bulk' %}true{% else %}false{% endif %}" class="tab-btn list-tab border-t-0 border-x-0 bg-transparent cursor-pointer">
+        Coller une liste
+      </button>
+      <button type="button" data-tab-target="panel-search-registered" aria-selected="false" class="tab-btn list-tab border-t-0 border-x-0 bg-transparent cursor-pointer">
+        Enregistrés <span class="list-tab-count">{{ available_registered_count }}</span>
+      </button>
+    </div>
 
-    <!-- Console d'inscription (7/12) -->
-    <section aria-labelledby="prepare-add-title" class="lg:col-span-7 bg-surface rounded-xl border border-border overflow-hidden">
-      <div class="px-5 py-4 border-b border-border bg-ctsa-surface/60">
-        <h2 id="prepare-add-title" class="text-sm font-heading font-semibold text-text m-0">
-          Inscrire des conteneurs dans la liste du {{ selected_date|date:"d/m/Y" }}
-        </h2>
-        <p class="text-xs text-text-muted mt-0.5 mb-0">
-          Ajoutés à l'état « En attente ». Ils devront ensuite être « Confirmés » dans la liste pour être éligibles à la vérification.
-        </p>
-      </div>
+    <!-- Un seul conteneur -->
+    <div id="panel-single-add" {% if active_tab == 'bulk' %}hidden{% endif %}>
+      <form action="{% url 'terminal:container_add_single' %}" method="post" class="space-y-6">
+        {% csrf_token %}
+        <input type="hidden" name="scheduled_date" value="{{ selected_date|date:'Y-m-d' }}">
+        <input type="hidden" name="next" value="{{ request.get_full_path }}">
+        <input type="hidden" name="status" value="pending">
 
-      <!-- Barre de modes sur une ligne pleine largeur -->
-      <div class="list-tabs bg-surface" role="tablist" aria-label="Mode d'enregistrement">
-        <button type="button" data-tab-target="panel-single-add" aria-selected="{% if active_tab == 'bulk' %}false{% else %}true{% endif %}" class="tab-btn list-tab border-t-0 border-x-0 bg-transparent cursor-pointer">
-          Un conteneur
-        </button>
-        <button type="button" data-tab-target="panel-bulk-add" aria-selected="{% if active_tab == 'bulk' %}true{% else %}false{% endif %}" class="tab-btn list-tab border-t-0 border-x-0 bg-transparent cursor-pointer">
-          Coller une liste
-        </button>
-        <button type="button" data-tab-target="panel-search-registered" aria-selected="false" class="tab-btn list-tab border-t-0 border-x-0 bg-transparent cursor-pointer">
-          Enregistrés ({{ available_registered_count }})
-        </button>
-      </div>
-
-      <!-- Un seul conteneur -->
-      <div id="panel-single-add" {% if active_tab == 'bulk' %}hidden{% endif %} class="p-5 sm:p-6">
-        <form action="{% url 'terminal:container_add_single' %}" method="post" class="space-y-4">
-          {% csrf_token %}
-          <input type="hidden" name="scheduled_date" value="{{ selected_date|date:'Y-m-d' }}">
-          <input type="hidden" name="next" value="{{ request.get_full_path }}">
-          <input type="hidden" name="status" value="pending">
-
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div class="space-y-1.5">
-              <label for="add-single-number" class="block text-xs font-bold uppercase tracking-wider text-text-muted">
-                Numéro du conteneur <span class="text-danger" aria-hidden="true">*</span>
-              </label>
-              <input type="text"
-                     id="add-single-number"
-                     name="container_number"
-                     value="{{ single_number_value }}"
-                     required
-                     pattern="\s*[A-Za-z]{4}(?:[\s-]*[0-9]){7}\s*"
-                     autocomplete="off"
-                     autocapitalize="characters"
-                     spellcheck="false"
-                     placeholder="ex. CMAU4052450"
-                     data-error="add-single-err"
-                     class="w-full min-h-[44px] rounded-lg border border-border-ui px-3.5 py-2 text-base font-mono uppercase tracking-wider text-text bg-surface">
-              <p class="text-xs text-text-muted m-0">4 lettres + 7 chiffres (tirets et espaces acceptés).</p>
-              <div id="add-single-err" class="error-msg">4 lettres et 7 chiffres requis.</div>
-            </div>
-
-            <div class="space-y-1.5">
-              <label for="add-single-line" class="block text-xs font-bold uppercase tracking-wider text-text-muted">
-                Ligne maritime <span class="font-normal text-text-muted">(optionnel)</span>
-              </label>
-              <select id="add-single-line"
-                      name="shipping_line"
-                      class="w-full min-h-[44px] rounded-lg border border-border-ui px-3.5 py-2 text-sm font-medium text-text bg-surface">
-                {% if shipping_lines %}
-                  <option value="" {% if not single_line_value %}selected{% endif %}>— Aucune / Non renseignée —</option>
-                  {% for line in shipping_lines %}
-                    <option value="{{ line.id }}" {% if line.id|stringformat:'s' == single_line_value %}selected{% endif %}>{{ line.name }}</option>
-                  {% endfor %}
-                {% else %}
-                  <option value="">Aucune ligne configurée</option>
-                {% endif %}
-              </select>
-            </div>
-          </div>
-
-          <div class="pt-3 border-t border-border flex flex-wrap items-center justify-end gap-3">
-            {% if confirm_verified %}
-              <div class="w-full rounded-xl bg-status-pending-bg border border-status-pending-bd p-3.5 space-y-2.5">
-                <p class="text-xs sm:text-sm font-semibold text-status-pending-fg m-0">
-                  Le conteneur <strong class="font-mono">{{ confirm_verified.number }}</strong> a déjà été marqué vérifié le <strong>{{ confirm_verified.verified_date }}</strong>. Voulez-vous tout de même l'enregistrer ?
-                </p>
-                <button type="submit" name="confirm_already_verified" value="1" data-submit-guard class="ui-btn ui-btn-primary w-full sm:w-auto">
-                  Confirmer l'inscription (déjà vérifié le {{ confirm_verified.verified_date }})
-                </button>
-              </div>
-            {% else %}
-              <button type="submit" data-submit-guard class="ui-btn ui-btn-primary w-full sm:w-auto">
-                Ajouter le conteneur
-              </button>
-            {% endif %}
-          </div>
-        </form>
-      </div>
-
-      <!-- Coller une liste -->
-      <div id="panel-bulk-add" {% if active_tab != 'bulk' %}hidden{% endif %} class="p-5 sm:p-6">
-        <form action="{% url 'terminal:container_add_bulk' %}" method="post" class="space-y-4">
-          {% csrf_token %}
-          <input type="hidden" name="scheduled_date" value="{{ selected_date|date:'Y-m-d' }}">
-          <input type="hidden" name="next" value="{{ request.get_full_path }}">
-          <input type="hidden" name="default_status" value="pending">
-
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
           <div class="space-y-1.5">
-            <label for="bulk-container-list" class="block text-xs font-bold uppercase tracking-wider text-text-muted">
-              Numéros, un par ligne <span class="text-danger" aria-hidden="true">*</span>
+            <label for="add-single-number" class="block text-sm font-semibold text-text">
+              Numéro du conteneur <span class="text-status-unavailable-fg" aria-hidden="true">*</span>
             </label>
-            <textarea id="bulk-container-list"
-                      name="container_list"
-                      rows="5"
-                      required
-                      autocomplete="off"
-                      autocapitalize="characters"
-                      spellcheck="false"
-                      placeholder="CMAU4052450&#10;ASJU2190841"
-                      class="w-full rounded-lg border border-border-ui px-3.5 py-2 text-base font-mono uppercase tracking-wider text-text bg-surface">{{ bulk_list_value }}</textarea>
-            <p class="text-xs text-text-muted m-0">Séparez les numéros par retour à la ligne, virgule ou point-virgule.</p>
+            <input type="text"
+                   id="add-single-number"
+                   name="container_number"
+                   value="{{ single_number_value }}"
+                   required
+                   pattern="\s*[A-Za-z]{4}(?:[\s-]*[0-9]){7}\s*"
+                   autocomplete="off"
+                   autocapitalize="characters"
+                   spellcheck="false"
+                   placeholder="Ex. CMAU4052450"
+                   data-error="add-single-err"
+                   class="form-control w-full font-mono text-lg uppercase">
+            <div id="add-single-err" class="error-msg">4 lettres et 7 chiffres requis.</div>
           </div>
 
           <div class="space-y-1.5">
-            <label for="bulk-line" class="block text-xs font-bold uppercase tracking-wider text-text-muted">
-              Ligne maritime <span class="font-normal text-text-muted">(optionnel)</span>
+            <label for="add-single-line" class="block text-sm font-semibold text-text">
+              Ligne maritime <span class="font-normal text-text-muted">(facultative)</span>
             </label>
-            <select id="bulk-line"
-                    name="shipping_line"
-                    class="w-full min-h-[44px] rounded-lg border border-border-ui px-3.5 py-2 text-sm font-medium text-text bg-surface">
+            <select id="add-single-line" name="shipping_line" class="form-control w-full">
               {% if shipping_lines %}
-                <option value="" {% if not bulk_line_value %}selected{% endif %}>— Aucune / Non renseignée —</option>
+                <option value="" {% if not single_line_value %}selected{% endif %}>Non renseignée</option>
                 {% for line in shipping_lines %}
-                  <option value="{{ line.id }}" {% if line.id|stringformat:'s' == bulk_line_value %}selected{% endif %}>{{ line.name }}</option>
+                  <option value="{{ line.id }}" {% if line.id|stringformat:'s' == single_line_value %}selected{% endif %}>{{ line.name }}</option>
                 {% endfor %}
               {% else %}
                 <option value="">Aucune ligne configurée</option>
               {% endif %}
             </select>
           </div>
-
-          <div class="pt-3 border-t border-border flex justify-end">
-            {% if confirm_verified_bulk %}
-              <div class="w-full rounded-xl bg-status-pending-bg border border-status-pending-bd p-3.5 space-y-2.5">
-                <p class="text-xs sm:text-sm font-semibold text-status-pending-fg m-0">
-                  Conteneur(s) déjà vérifié(s) : <strong>{{ confirm_verified_bulk }}</strong>. Voulez-vous tout de même enregistrer cette liste ?
-                </p>
-                <button type="submit" name="confirm_already_verified" value="1" data-submit-guard class="ui-btn ui-btn-primary w-full sm:w-auto">
-                  Confirmer l'enregistrement de la liste
-                </button>
-              </div>
-            {% else %}
-              <button type="submit" data-submit-guard class="ui-btn ui-btn-primary w-full sm:w-auto">
-                Enregistrer la liste
-              </button>
-            {% endif %}
-          </div>
-        </form>
-      </div>
-
-      <!-- Chercher un conteneur enregistré -->
-      <div id="panel-search-registered" hidden class="p-5 sm:p-6 space-y-4">
-        <div class="space-y-1.5">
-          <label for="registered-search-input" class="block text-xs font-bold uppercase tracking-wider text-text-muted">
-            Rechercher un conteneur arrivé sans liste
-          </label>
-          <input type="search"
-                 id="registered-search-input"
-                 autocomplete="off"
-                 autocapitalize="characters"
-                 spellcheck="false"
-                 placeholder="Saisissez au moins 2 caractères (ex. MSKU)..."
-                 data-search-url="{% url 'terminal:registered_search_json' %}"
-                 data-target-date="{{ selected_date|date:'Y-m-d' }}"
-                 class="w-full min-h-[44px] rounded-lg border border-border-ui px-3.5 py-2 text-base font-mono uppercase tracking-wider text-text bg-surface">
-          <p class="text-xs text-text-muted m-0">Affiche jusqu'à 10 conteneurs Enregistrés pas encore présents sur la liste du {{ selected_date|date:"d/m/Y" }}.</p>
         </div>
 
-        <form action="{% url 'terminal:registered_add_to_list' %}" method="post" id="registered-add-form" class="space-y-3">
-          {% csrf_token %}
-          <input type="hidden" name="scheduled_date" value="{{ selected_date|date:'Y-m-d' }}">
-          <input type="hidden" name="next" value="{{ request.get_full_path }}">
-
-          <div id="registered-search-results" class="divide-y divide-border border border-border rounded-xl overflow-hidden hidden" aria-live="polite"></div>
-          <p id="registered-search-empty" class="text-xs text-text-muted m-0 hidden">Aucun conteneur enregistré correspondant.</p>
-
-          <div id="registered-add-actions" class="hidden pt-2">
-            <button type="submit" data-submit-guard class="ui-btn ui-btn-primary w-full sm:w-auto">
-              Ajouter la sélection à la liste (En attente)
+        {% if confirm_verified %}
+          <div class="border-l-2 border-status-pending-fg pl-4 py-2 space-y-2">
+            <p class="text-sm font-semibold text-status-pending-fg m-0">
+              Le conteneur <span class="font-mono">{{ confirm_verified.number }}</span> a déjà été vérifié le {{ confirm_verified.verified_date }}.
+            </p>
+            <button type="submit" name="confirm_already_verified" value="1" data-submit-guard class="ui-btn ui-btn-primary">
+              Confirmer l’inscription
             </button>
           </div>
-        </form>
-      </div>
-    </section>
+        {% else %}
+          {% include 'components/form_actions.html' with cancel_url=containers_url cancel_label="Annuler" submit_label="Enregistrer" %}
+        {% endif %}
+      </form>
+    </div>
 
-    <!-- Panneau latéral (5/12) : Sélection directe des conteneurs Enregistrés disponibles + Derniers ajouts -->
-    <aside class="lg:col-span-5 space-y-5">
-      <!-- Sélection 1-clic des conteneurs arrivés et enregistrés -->
-      <section aria-label="Conteneurs enregistrés prêts à mettre en liste" class="bg-surface rounded-xl border border-border overflow-hidden">
-        <div class="px-5 py-3.5 border-b border-border bg-ctsa-surface/60 flex items-center justify-between gap-2">
-          <div>
-            <h2 class="text-xs font-heading font-bold uppercase tracking-wider text-text m-0">
-              1. Conteneurs enregistrés disponibles ({{ available_registered_count }})
-            </h2>
-            <p class="text-xs text-text-muted mt-0.5 mb-0">Arrivés au terminal — cochez pour les mettre dans la liste</p>
-          </div>
-          <a href="{% url 'terminal:arrival_create' %}" class="text-xs font-semibold text-primary hover:underline no-underline">+ Arrivée</a>
+    <!-- Coller une liste -->
+    <div id="panel-bulk-add" {% if active_tab != 'bulk' %}hidden{% endif %}>
+      <form action="{% url 'terminal:container_add_bulk' %}" method="post" class="space-y-6">
+        {% csrf_token %}
+        <input type="hidden" name="scheduled_date" value="{{ selected_date|date:'Y-m-d' }}">
+        <input type="hidden" name="next" value="{{ request.get_full_path }}">
+        <input type="hidden" name="default_status" value="pending">
+
+        <div class="space-y-1.5">
+          <label for="bulk-container-list" class="block text-sm font-semibold text-text">
+            Numéros, un par ligne <span class="text-status-unavailable-fg" aria-hidden="true">*</span>
+          </label>
+          <textarea id="bulk-container-list"
+                    name="container_list"
+                    rows="5"
+                    required
+                    autocomplete="off"
+                    autocapitalize="characters"
+                    spellcheck="false"
+                    placeholder="CMAU4052450&#10;ASJU2190841"
+                    class="form-control w-full font-mono uppercase">{{ bulk_list_value }}</textarea>
         </div>
 
+        <div class="max-w-sm space-y-1.5">
+          <label for="bulk-line" class="block text-sm font-semibold text-text">
+            Ligne maritime <span class="font-normal text-text-muted">(facultative)</span>
+          </label>
+          <select id="bulk-line" name="shipping_line" class="form-control w-full">
+            {% if shipping_lines %}
+              <option value="" {% if not bulk_line_value %}selected{% endif %}>Non renseignée</option>
+              {% for line in shipping_lines %}
+                <option value="{{ line.id }}" {% if line.id|stringformat:'s' == bulk_line_value %}selected{% endif %}>{{ line.name }}</option>
+              {% endfor %}
+            {% else %}
+              <option value="">Aucune ligne configurée</option>
+            {% endif %}
+          </select>
+        </div>
+
+        {% if confirm_verified_bulk %}
+          <div class="border-l-2 border-status-pending-fg pl-4 py-2 space-y-2">
+            <p class="text-sm font-semibold text-status-pending-fg m-0">
+              Conteneur(s) déjà vérifié(s)&nbsp;: {{ confirm_verified_bulk }}.
+            </p>
+            <button type="submit" name="confirm_already_verified" value="1" data-submit-guard class="ui-btn ui-btn-primary">
+              Confirmer l’inscription
+            </button>
+          </div>
+        {% else %}
+          {% include 'components/form_actions.html' with cancel_url=containers_url cancel_label="Annuler" submit_label="Enregistrer" %}
+        {% endif %}
+      </form>
+    </div>
+
+    <!-- Chercher un conteneur enregistré -->
+    <div id="panel-search-registered" hidden class="space-y-4">
+      <div class="space-y-1.5">
+        <label for="registered-search-input" class="block text-sm font-semibold text-text">
+          Rechercher un conteneur enregistré
+        </label>
+        <input type="search"
+               id="registered-search-input"
+               autocomplete="off"
+               autocapitalize="characters"
+               spellcheck="false"
+               placeholder="Au moins 2 caractères (ex. MSKU)…"
+               data-search-url="{% url 'terminal:registered_search_json' %}"
+               data-target-date="{{ selected_date|date:'Y-m-d' }}"
+               class="form-control w-full font-mono uppercase">
+      </div>
+
+      <form action="{% url 'terminal:registered_add_to_list' %}" method="post" id="registered-add-form" class="space-y-3">
+        {% csrf_token %}
+        <input type="hidden" name="scheduled_date" value="{{ selected_date|date:'Y-m-d' }}">
+        <input type="hidden" name="next" value="{{ request.get_full_path }}">
+
+        <div id="registered-search-results" class="divide-y divide-border border-t border-b border-border hidden" aria-live="polite"></div>
+        <p id="registered-search-empty" class="text-sm text-text-muted m-0 hidden">Aucun conteneur enregistré correspondant.</p>
+
+        <div id="registered-add-actions" class="hidden pt-2">
+          <button type="submit" data-submit-guard class="ui-btn ui-btn-primary">
+            Ajouter à la liste
+          </button>
+        </div>
+      </form>
+    </div>
+  </section>
+
+  <!-- Voir plus : enregistrés disponibles et derniers ajouts -->
+  <details class="border-t border-border pt-4">
+    <summary class="text-sm font-semibold text-primary cursor-pointer list-none py-2">
+      Voir plus
+    </summary>
+    <div class="pt-4 grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <section aria-label="Conteneurs enregistrés disponibles" class="space-y-3">
+        <h2 class="text-sm font-semibold text-text m-0">Enregistrés disponibles ({{ available_registered_count }})</h2>
         {% if available_registered %}
-          <form action="{% url 'terminal:registered_add_to_list' %}" method="post">
+          <form action="{% url 'terminal:registered_add_to_list' %}" method="post" class="space-y-3">
             {% csrf_token %}
             <input type="hidden" name="scheduled_date" value="{{ selected_date|date:'Y-m-d' }}">
             <input type="hidden" name="next" value="{{ request.get_full_path }}">
-            <ul class="divide-y divide-border m-0 p-0 list-none max-h-72 overflow-y-auto">
+            <ul class="divide-y divide-border m-0 p-0 list-none border-t border-b border-border max-h-64 overflow-y-auto">
               {% for rc in available_registered %}
-                <li class="px-5 py-2.5 flex items-center justify-between gap-2 hover:bg-ctsa-surface">
+                <li class="py-2.5 flex items-center justify-between gap-2">
                   <label class="flex items-center gap-2.5 cursor-pointer min-w-0 flex-1">
-                    <input type="checkbox" name="ids" value="{{ rc.pk }}" class="w-4 h-4 rounded shrink-0">
-                    <span class="font-mono text-sm font-bold text-text tabular-nums">{{ rc.container_number }}</span>
+                    <input type="checkbox" name="ids" value="{{ rc.pk }}" class="w-4 h-4 shrink-0">
+                    <span class="font-mono text-sm font-medium text-text tabular-nums">{{ rc.container_number }}</span>
                     <span class="text-xs text-text-muted truncate">{{ rc.shipping_line.name|default:"—" }}</span>
                   </label>
-                  {% if rc.arrived_at %}
-                    <span class="text-[11px] font-mono text-text-muted tabular-nums shrink-0">{{ rc.arrived_at|date:"d/m H:i" }}</span>
-                  {% endif %}
                 </li>
               {% endfor %}
             </ul>
-            <div class="px-5 py-3 border-t border-border bg-ctsa-surface/60">
-              <button type="submit" class="ui-btn ui-btn-secondary ui-btn-sm w-full">
-                + Mettre la sélection dans la liste du {{ selected_date|date:"d/m/Y" }}
-              </button>
-            </div>
+            <button type="submit" class="ui-btn ui-btn-secondary ui-btn-sm">Ajouter la sélection</button>
           </form>
         {% else %}
-          <p class="px-5 py-6 text-center text-xs text-text-muted m-0">
-            Aucun conteneur à l'état « Enregistré » en attente de mise en liste.
-          </p>
+          <p class="text-xs text-text-muted m-0">Aucun conteneur enregistré disponible.</p>
         {% endif %}
       </section>
 
-      <!-- Derniers ajouts à la liste de cette séance -->
-      <section aria-label="Derniers ajouts de la séance" class="bg-surface rounded-xl border border-border overflow-hidden">
-        <div class="px-5 py-3.5 border-b border-border bg-ctsa-surface/60 flex items-center justify-between gap-2">
-          <div>
-            <h2 class="text-xs font-heading font-bold uppercase tracking-wider text-text m-0">
-              2. Dans la liste du {{ selected_date|date:"d/m/Y" }} ({{ registered_count }})
-            </h2>
-            <p class="text-xs text-text-muted mt-0.5 mb-0">À confirmer à l'étape 3 pour rendre éligibles à vérifier</p>
-          </div>
-          <a href="{% url 'terminal:containers' %}?date={{ selected_date|date:'Y-m-d' }}" class="text-xs font-semibold text-primary hover:underline no-underline">Confirmer →</a>
-        </div>
+      <section aria-label="Derniers ajouts" class="space-y-3">
+        <h2 class="text-sm font-semibold text-text m-0">Derniers ajouts ({{ registered_count }})</h2>
         {% if recent %}
-          <ul class="divide-y divide-border m-0 p-0 list-none">
+          <ul class="divide-y divide-border m-0 p-0 list-none border-t border-border">
             {% for item in recent %}
-              <li class="px-5 py-2.5 flex items-center justify-between gap-2 text-sm">
-                <div class="min-w-0">
-                  <a href="{% url 'terminal:container_detail' item.pk %}" class="font-mono font-semibold text-primary hover:underline no-underline">{{ item.container_number }}</a>
-                  <span class="text-xs text-text-muted ml-1.5 truncate">{{ item.shipping_line.name|default:"—" }}</span>
-                </div>
+              <li class="py-2.5 flex items-center justify-between gap-2 text-sm">
+                <a href="{% url 'terminal:container_detail' item.pk %}" class="font-mono font-medium text-primary hover:underline no-underline">{{ item.container_number }}</a>
                 {% include 'components/badge.html' with variant=item.status label=item.get_status_display %}
               </li>
             {% endfor %}
           </ul>
         {% else %}
-          <p class="px-5 py-6 text-center text-xs text-text-muted m-0">
-            Aucun conteneur inscrit sur cette liste pour le moment.
-          </p>
+          <p class="text-xs text-text-muted m-0">Aucun conteneur inscrit sur cette liste.</p>
         {% endif %}
       </section>
-    </aside>
-
-  </div>
+    </div>
+  </details>
 
 </div>
 {% endblock %}

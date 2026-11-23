@@ -4,72 +4,62 @@
 {% block page_title %}Non vérifiés{% endblock %}
 
 {% block portal_content %}
-<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-5">
+<div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-10 py-6 sm:py-8 space-y-6">
 
-  {% include 'components/page_header.html' with title="Non vérifiés à reprendre" subtitle="Conteneurs programmés non vérifiés : reprenez-les sur la séance suivante ou rejetez-les." count=breakdown.total %}
-  {% include 'portal/inspection/_inspection_tabs.html' with tab='backlog' %}
+  <header class="space-y-4">
+    {% include 'components/page_header.html' with title="Non vérifiés" count=breakdown.total %}
+    {% include 'portal/inspection/_inspection_tabs.html' with tab='backlog' %}
+  </header>
 
-  <!-- Bandeau KPI unifié (4 cellules séparées par des filets) -->
-  <section aria-label="Synthèse des conteneurs non vérifiés" class="bg-surface rounded-xl border border-border overflow-hidden">
-    <div class="grid grid-cols-2 lg:grid-cols-4 divide-y lg:divide-y-0 divide-x divide-border">
-      <div class="p-4 sm:p-5 flex flex-col justify-between gap-1.5">
-        <span class="text-[11px] font-bold uppercase tracking-wider text-text-muted">À suivre</span>
-        <span class="text-2xl sm:text-3xl font-heading font-bold tracking-tight text-text tabular-nums">{{ breakdown.total }}</span>
-        <span class="text-xs text-text-muted">
-          {% if oldest and not status_filter and not line_filter %}Plus ancien : {{ oldest.days_since_first_scheduled }} j{% else %}Total filtré{% endif %}
-        </span>
-      </div>
-      <div class="p-4 sm:p-5 flex flex-col justify-between gap-1.5">
-        <span class="text-[11px] font-bold uppercase tracking-wider text-text-muted">Confirmés</span>
-        <span class="text-2xl sm:text-3xl font-heading font-bold tracking-tight text-success tabular-nums">{{ breakdown.confirmed }}</span>
-        <span class="text-xs text-text-muted">Non vérifiés</span>
-      </div>
-      <div class="p-4 sm:p-5 flex flex-col justify-between gap-1.5">
-        <span class="text-[11px] font-bold uppercase tracking-wider text-text-muted">En attente</span>
-        <span class="text-2xl sm:text-3xl font-heading font-bold tracking-tight text-status-pending-fg tabular-nums">{{ breakdown.pending }}</span>
-        <span class="text-xs text-text-muted">Jamais positionnés</span>
-      </div>
-      <div class="p-4 sm:p-5 flex flex-col justify-between gap-1.5">
-        <span class="text-[11px] font-bold uppercase tracking-wider text-text-muted">Indisponibles</span>
-        <span class="text-2xl sm:text-3xl font-heading font-bold tracking-tight text-status-unavailable-fg tabular-nums">{{ breakdown.unavailable }}</span>
-        <span class="text-xs text-text-muted">Motif indiqué</span>
-      </div>
+  <!-- 4 chiffres clés silencieux (IBM Plex Mono 32 px) -->
+  <section aria-label="Synthèse des conteneurs non vérifiés" class="kpi-strip">
+    <div class="kpi-cell">
+      <span class="kpi-label">À suivre</span>
+      <span class="kpi-value">{{ breakdown.total }}</span>
+    </div>
+    <div class="kpi-cell">
+      <span class="kpi-label">Confirmés</span>
+      <span class="kpi-value">{{ breakdown.confirmed }}</span>
+    </div>
+    <div class="kpi-cell">
+      <span class="kpi-label">En attente</span>
+      <span class="kpi-value">{{ breakdown.pending }}</span>
+    </div>
+    <div class="kpi-cell">
+      <span class="kpi-label">Indisponibles</span>
+      <span class="kpi-value">{{ breakdown.unavailable }}</span>
     </div>
   </section>
 
-  <!-- Feuille opérationnelle unifiée : séance cible + actions par lot + filtres + tableau -->
-  <section aria-label="Gestion des non vérifiés" class="bg-surface rounded-xl border border-border overflow-hidden">
-    <!-- Ligne 1 : Séance cible & état -->
-    <div class="px-4 py-3 border-b border-border bg-ctsa-surface/60 flex flex-wrap items-center justify-between gap-3">
-      <form action="{% url 'terminal:carryover' %}" method="get" class="flex flex-wrap items-center gap-2">
-        <label for="carry-date" class="text-xs font-bold uppercase tracking-wider text-text-muted">Séance cible :</label>
-        <input type="date"
-               id="carry-date"
-               name="date"
-               min="{{ today|date:'Y-m-d' }}"
-               value="{{ target_date|date:'Y-m-d' }}"
-               data-auto-submit-date
-               class="border border-border rounded-lg px-3 py-1.5 min-h-[40px] text-xs font-semibold text-text bg-surface">
-        {% if status_filter %}<input type="hidden" name="status" value="{{ status_filter }}">{% endif %}
-        {% if line_filter %}<input type="hidden" name="line" value="{{ line_filter }}">{% endif %}
-        <noscript><button type="submit" class="ui-btn ui-btn-secondary ui-btn-sm">Afficher</button></noscript>
-      </form>
+  <!-- Séance cible, actions par lot et filtres -->
+  <section aria-label="Gestion des non vérifiés" class="space-y-4">
+    <div class="flex flex-wrap items-center justify-between gap-3">
+      <div class="flex flex-wrap items-center gap-3">
+        <form action="{% url 'terminal:carryover' %}" method="get" class="flex flex-wrap items-center gap-2">
+          <label for="carry-date" class="text-xs font-semibold text-text-muted">Séance cible&nbsp;:</label>
+          <input type="date"
+                 id="carry-date"
+                 name="date"
+                 min="{{ today|date:'Y-m-d' }}"
+                 value="{{ target_date|date:'Y-m-d' }}"
+                 data-auto-submit-date
+                 class="font-mono text-xs font-medium text-text bg-surface border border-border-ui rounded px-2.5 py-1.5 min-h-[44px]">
+          {% if status_filter %}<input type="hidden" name="status" value="{{ status_filter }}">{% endif %}
+          {% if line_filter %}<input type="hidden" name="line" value="{{ line_filter }}">{% endif %}
+        </form>
+        {% if list_started %}
+          {% include 'components/badge.html' with variant='info' label="Séance cible active" %}
+        {% else %}
+          {% include 'components/badge.html' with variant='neutral' label="Séance cible non démarrée" %}
+        {% endif %}
+      </div>
 
-      {% if list_started %}
-        {% include 'components/badge.html' with variant='info' label="Séance cible active" %}
-      {% else %}
-        {% include 'components/badge.html' with variant='neutral' label="Séance cible non démarrée" %}
-      {% endif %}
-    </div>
-
-    <!-- Ligne 2 : Actions par lot & filtres -->
-    <div class="px-4 py-3 border-b border-border flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
       <form id="carry-bulk-form" action="{% url 'terminal:carryover_decide' %}" method="post" class="flex flex-wrap items-center gap-2">
         {% csrf_token %}
         <input type="hidden" name="date" value="{{ target_date|date:'Y-m-d' }}">
         <input type="hidden" name="next" value="{{ request.get_full_path }}">
         <button type="submit" name="decision" value="carry" class="ui-btn ui-btn-primary ui-btn-sm">
-          Reprendre la sélection ({{ target_date|date:"d/m/Y" }})
+          Reprendre ({{ target_date|date:"d/m" }})
         </button>
         <button type="submit" name="decision" value="reject"
                 data-confirm-title="Rejeter la sélection ?"
@@ -82,57 +72,55 @@
           Rejeter
         </button>
       </form>
-
-      <search>
-        <form action="{% url 'terminal:carryover' %}" method="get" class="flex flex-wrap items-center gap-2">
-          <input type="hidden" name="date" value="{{ target_date|date:'Y-m-d' }}">
-          <label for="carry-status" class="visually-hidden">Filtrer par dernier statut</label>
-          <select id="carry-status" name="status" data-auto-submit-select class="border border-border rounded-lg px-3 py-1.5 min-h-[40px] text-xs font-medium bg-surface text-text">
-            <option value="">Tous les statuts</option>
-            {% for val, label in status_choices %}
-              <option value="{{ val }}" {% if status_filter == val %}selected{% endif %}>{{ label }}</option>
-            {% endfor %}
-          </select>
-          <label for="carry-line" class="visually-hidden">Filtrer par ligne maritime</label>
-          <select id="carry-line" name="line" data-auto-submit-select class="border border-border rounded-lg px-3 py-1.5 min-h-[40px] text-xs font-medium bg-surface text-text">
-            <option value="">Toutes les lignes</option>
-            {% for line in shipping_lines %}
-              <option value="{{ line.id }}" {% if line_filter == line.id|stringformat:"s" %}selected{% endif %}>{{ line.name }}</option>
-            {% endfor %}
-          </select>
-          <button type="submit" class="ui-btn ui-btn-secondary ui-btn-sm">Filtrer</button>
-          {% if status_filter or line_filter %}
-            <a href="{% url 'terminal:carryover' %}?date={{ target_date|date:'Y-m-d' }}" class="text-xs font-semibold text-primary hover:underline no-underline">Réinitialiser</a>
-          {% endif %}
-        </form>
-      </search>
     </div>
 
+    <search>
+      <form action="{% url 'terminal:carryover' %}" method="get" class="flex flex-wrap items-center gap-2">
+        <input type="hidden" name="date" value="{{ target_date|date:'Y-m-d' }}">
+        <label for="carry-status" class="visually-hidden">Filtrer par statut</label>
+        <select id="carry-status" name="status" data-auto-submit-select class="form-control">
+          <option value="">Tous les statuts</option>
+          {% for val, label in status_choices %}
+            <option value="{{ val }}" {% if status_filter == val %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+        <label for="carry-line" class="visually-hidden">Filtrer par ligne maritime</label>
+        <select id="carry-line" name="line" data-auto-submit-select class="form-control">
+          <option value="">Toutes les lignes</option>
+          {% for line in shipping_lines %}
+            <option value="{{ line.id }}" {% if line_filter == line.id|stringformat:"s" %}selected{% endif %}>{{ line.name }}</option>
+          {% endfor %}
+        </select>
+        {% if status_filter or line_filter %}
+          <a href="{% url 'terminal:carryover' %}?date={{ target_date|date:'Y-m-d' }}" class="text-xs font-semibold text-primary hover:underline no-underline px-1">Effacer</a>
+        {% endif %}
+      </form>
+    </search>
+
     {% if rows %}
-      <!-- Mobile : liste compacte -->
-      <div class="lg:hidden divide-y divide-border" aria-label="Liste mobile des non vérifiés">
+      <div class="lg:hidden border-t border-border divide-y divide-border" aria-label="Liste mobile des non vérifiés">
         {% for c in rows %}
-          <article class="p-4 space-y-3">
-            <div class="flex items-start gap-2.5">
+          <article class="py-4 space-y-3">
+            <div class="flex items-start gap-3">
               <input type="checkbox"
                      name="ids"
                      value="{{ c.pk }}"
                      form="carry-bulk-form"
                      data-check-group="carry"
                      aria-label="Sélectionner {{ c.container_number }}"
-                     class="mt-1 w-5 h-5 rounded shrink-0">
-              <a href="{% url 'terminal:container_detail' c.pk %}" class="min-w-0 flex-1 no-underline block">
-                <div class="flex items-center justify-between gap-2">
-                  <span class="text-base font-semibold font-mono tabular-nums text-text">{{ c.container_number }}</span>
+                     class="mt-1 w-5 h-5 shrink-0">
+              <div class="min-w-0 flex-1">
+                <div class="flex items-baseline justify-between gap-2">
+                  <a href="{% url 'terminal:container_detail' c.pk %}" class="font-mono text-lg font-medium text-text hover:text-primary no-underline tabular-nums">{{ c.container_number }}</a>
                   {% include 'components/badge.html' with variant=c.status label=c.get_status_display %}
                 </div>
                 <p class="text-xs text-text-muted mt-0.5 mb-0 truncate tabular-nums">
-                  {{ c.shipping_line.name|default:"Ligne non renseignée" }} · 1re prog. {{ c.first_scheduled_date|date:"d/m/Y" }} ({{ c.session_count }} séance{{ c.session_count|pluralize }})
+                  {{ c.shipping_line.name|default:"—" }} · {{ c.first_scheduled_date|date:"d/m/Y" }} ({{ c.session_count }} séance{{ c.session_count|pluralize }})
                 </p>
-              </a>
+              </div>
             </div>
 
-            <div class="flex flex-wrap items-center justify-between gap-2">
+            <div class="flex flex-wrap items-center gap-2">
               {% if list_started %}
                 <form action="{% url 'terminal:carryover_decide' %}" method="post" class="flex-1">
                   {% csrf_token %}
@@ -140,9 +128,7 @@
                   <input type="hidden" name="ids" value="{{ c.pk }}">
                   <input type="hidden" name="date" value="{{ target_date|date:'Y-m-d' }}">
                   <input type="hidden" name="next" value="{{ request.get_full_path }}">
-                  <button type="submit" class="ui-btn ui-btn-secondary ui-btn-sm w-full">
-                    Reprendre ({{ target_date|date:"d/m/Y" }})
-                  </button>
+                  <button type="submit" class="ui-btn ui-btn-secondary ui-btn-sm w-full">Reprendre</button>
                 </form>
               {% endif %}
               <form action="{% url 'terminal:carryover_decide' %}" method="post">
@@ -152,8 +138,8 @@
                 <input type="hidden" name="date" value="{{ target_date|date:'Y-m-d' }}">
                 <input type="hidden" name="next" value="{{ request.get_full_path }}">
                 <button type="submit"
-                        data-confirm-title="Rejeter {{ c.container_number }} ?"
-                        data-confirm="{{ c.container_number }} sortira du suivi des non vérifiés et ne sera plus proposé."
+                        data-confirm-title="Rejeter {{ c.container_number }}&nbsp;?"
+                        data-confirm="{{ c.container_number }} sortira du suivi des non vérifiés."
                         data-confirm-label="Rejeter"
                         data-confirm-tone="danger"
                         class="ui-btn ui-btn-ghost ui-btn-sm text-status-unavailable-fg">
@@ -165,21 +151,19 @@
         {% endfor %}
       </div>
 
-      <!-- Desktop : tableau pleine largeur intégré -->
-      <div class="hidden lg:block overflow-x-auto" aria-label="Tableau des non vérifiés">
+      <div class="hidden lg:block table-wrapper" aria-label="Tableau des non vérifiés">
         <table class="ctsa-table w-full">
           <thead>
             <tr>
               <th scope="col">
-                <label class="inline-flex items-center gap-2 cursor-pointer">
-                  <input type="checkbox" data-check-all="carry" class="w-4 h-4 rounded">
+                <label class="inline-flex items-center gap-2.5 cursor-pointer">
+                  <input type="checkbox" data-check-all="carry" class="w-4 h-4">
                   <span>Conteneur</span>
                 </label>
               </th>
               <th scope="col">Ligne maritime</th>
               <th scope="col">1re programmation</th>
-              <th scope="col">Séances</th>
-              <th scope="col">Dernier statut</th>
+              <th scope="col">Statut</th>
               <th scope="col" class="text-right">Action</th>
             </tr>
           </thead>
@@ -187,19 +171,15 @@
             {% for c in rows %}
               <tr>
                 <th scope="row">
-                  <div class="flex items-center gap-2">
-                    <input type="checkbox" name="ids" value="{{ c.pk }}" form="carry-bulk-form" data-check-group="carry" class="w-4 h-4 rounded">
-                    <a href="{% url 'terminal:container_detail' c.pk %}" class="font-mono text-sm font-semibold text-primary hover:underline no-underline tabular-nums">
+                  <div class="flex items-center gap-2.5">
+                    <input type="checkbox" name="ids" value="{{ c.pk }}" form="carry-bulk-form" data-check-group="carry" aria-label="Sélectionner {{ c.container_number }}" class="w-4 h-4">
+                    <a href="{% url 'terminal:container_detail' c.pk %}" class="font-mono text-lg font-medium text-text hover:text-primary no-underline tabular-nums whitespace-nowrap">
                       {{ c.container_number }}
                     </a>
                   </div>
                 </th>
-                <td class="font-medium text-text">{{ c.shipping_line.name|default:"Non renseignée" }}</td>
-                <td class="tabular-nums">
-                  <span class="font-semibold">{{ c.first_scheduled_date|date:"d/m/Y" }}</span>
-                  <div class="text-xs text-text-muted">{% if c.days_since_first_scheduled %}il y a {{ c.days_since_first_scheduled }} j{% else %}aujourd'hui{% endif %}</div>
-                </td>
-                <td class="tabular-nums font-medium">{{ c.session_count }}</td>
+                <td class="text-sm text-text">{{ c.shipping_line.name|default:"—" }}</td>
+                <td class="font-mono text-xs text-text-muted tabular-nums">{{ c.first_scheduled_date|date:"d/m/Y" }}</td>
                 <td>{% include 'components/badge.html' with variant=c.status label=c.get_status_display %}</td>
                 <td class="text-right">
                   <div class="inline-flex items-center gap-2">
@@ -210,9 +190,7 @@
                         <input type="hidden" name="ids" value="{{ c.pk }}">
                         <input type="hidden" name="date" value="{{ target_date|date:'Y-m-d' }}">
                         <input type="hidden" name="next" value="{{ request.get_full_path }}">
-                        <button type="submit" class="ui-btn ui-btn-secondary ui-btn-sm">
-                          Reprendre ({{ target_date|date:"d/m/Y" }})
-                        </button>
+                        <button type="submit" class="ui-btn ui-btn-secondary ui-btn-sm">Reprendre</button>
                       </form>
                     {% endif %}
                     <form action="{% url 'terminal:carryover_decide' %}" method="post">
@@ -238,10 +216,7 @@
         </table>
       </div>
     {% else %}
-      <div class="px-6 py-12 text-center space-y-1.5">
-        <p class="text-sm font-semibold text-text m-0">Aucun conteneur à reprendre</p>
-        <p class="text-sm text-text-muted m-0">Tout est à jour : aucun conteneur programmé n'attend de vérification.</p>
-      </div>
+      {% include 'components/empty_state.html' with title="Aucun conteneur à reprendre." %}
     {% endif %}
   </section>
 

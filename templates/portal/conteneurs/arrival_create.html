@@ -2,187 +2,125 @@
 {% load permissions_tags %}
 
 {% block title %}Enregistrer une arrivée — Cap Terminal S.A.{% endblock %}
-{% block page_title %}01 · Enregistrer une arrivée{% endblock %}
+{% block page_title %}Enregistrer une arrivée{% endblock %}
 {% block portal_body_extra %}portal-has-form-actions{% endblock %}
 
 {% block portal_content %}
-<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+<div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-10 py-6 sm:py-8 space-y-8">
 
   {% can 'container.prepare' as can_prepare %}
   {% url 'terminal:containers' as containers_url %}
-  {% include 'components/page_header.html' with back_url=containers_url back_label="Retour aux conteneurs" title="Étape 1 · Enregistrer une arrivée" subtitle="Un conteneur arrivé au terminal est d'abord Enregistré (hors liste), puis mis dans une liste (En attente) et Confirmé pour être vérifié." count=registered_pool_count %}
-
-  <!-- Bandeau visuel du flux en 3 étapes -->
-  <div class="grid grid-cols-1 md:grid-cols-3 bg-surface rounded-xl border border-border overflow-hidden divide-y md:divide-y-0 md:divide-x divide-border">
-    <div class="p-3.5 bg-primary-tint/50 border-t-2 border-t-primary flex items-start gap-3">
-      <span class="inline-flex items-center justify-center w-7 h-7 rounded-md bg-primary text-white font-mono text-xs font-bold shrink-0">01</span>
-      <div class="min-w-0">
-        <div class="text-xs font-bold uppercase tracking-wider text-primary">1. Arrivé &amp; Enregistré</div>
-        <div class="text-xs text-text-muted leading-snug">{{ registered_pool_count }} conteneur{{ registered_pool_count|pluralize }} enregistré{{ registered_pool_count|pluralize }} hors liste</div>
-      </div>
-    </div>
-    <a href="{% url 'terminal:prepare' %}" class="p-3.5 hover:bg-ctsa-surface flex items-start gap-3 no-underline">
-      <span class="inline-flex items-center justify-center w-7 h-7 rounded-md bg-ctsa-bgalt text-text-muted font-mono text-xs font-bold shrink-0">02</span>
-      <div class="min-w-0">
-        <div class="text-xs font-bold uppercase tracking-wider text-text">2. Mettre dans une liste</div>
-        <div class="text-xs text-text-muted leading-snug">Passe à l'état « En attente » sur la séance →</div>
-      </div>
-    </a>
-    <a href="{% url 'terminal:containers' %}" class="p-3.5 hover:bg-ctsa-surface flex items-start gap-3 no-underline">
-      <span class="inline-flex items-center justify-center w-7 h-7 rounded-md bg-ctsa-bgalt text-text-muted font-mono text-xs font-bold shrink-0">03</span>
-      <div class="min-w-0">
-        <div class="text-xs font-bold uppercase tracking-wider text-text">3. Confirmer → Vérifier</div>
-        <div class="text-xs text-text-muted leading-snug">Statut « Confirmé » requis pour vérifier →</div>
-      </div>
-    </a>
-  </div>
+  {% include 'components/page_header.html' with back_url=containers_url back_label="Retour aux conteneurs" title="Enregistrer une arrivée" count=registered_pool_count %}
 
   {% if duplicate_container %}
-    <div class="rounded-xl border border-status-pending-bd bg-status-pending-bg p-4 space-y-2" role="alert">
-      <div class="text-sm font-bold text-status-pending-fg">
-        Doublon détecté : {{ duplicate_container.container_number }}
+    <div class="border-l-2 border-status-pending-fg pl-4 py-2 space-y-2" role="alert">
+      <div class="text-sm font-semibold text-status-pending-fg">
+        Doublon détecté&nbsp;: <span class="font-mono">{{ duplicate_container.container_number }}</span>
       </div>
-      <p class="text-xs text-status-pending-fg m-0">
-        Une fiche active existe déjà pour ce numéro (statut : <strong>{{ duplicate_container.get_status_display }}</strong>
-        {% if duplicate_container.scheduled_date %} · séance du {{ duplicate_container.scheduled_date|date:"d/m/Y" }}{% endif %}).
+      <p class="text-xs text-text-muted m-0">
+        Fiche active existante ({{ duplicate_container.get_status_display }}{% if duplicate_container.scheduled_date %} · séance du {{ duplicate_container.scheduled_date|date:"d/m/Y" }}{% endif %}).
       </p>
-      <a href="{% url 'terminal:container_detail' duplicate_container.pk %}" class="ui-btn ui-btn-secondary ui-btn-sm">
+      <a href="{% url 'terminal:container_detail' duplicate_container.pk %}" class="text-xs font-semibold text-primary hover:underline no-underline">
         Ouvrir la fiche existante
       </a>
     </div>
   {% endif %}
 
-  <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-    <!-- Formulaire principal (7/12) -->
-    <form method="post" action="{% url 'terminal:arrival_create' %}" class="lg:col-span-7 space-y-4">
-      {% csrf_token %}
+  <!-- Formulaire court (numéro, ligne facultative) -->
+  <form method="post" action="{% url 'terminal:arrival_create' %}" class="space-y-6">
+    {% csrf_token %}
 
-      <section class="bg-surface rounded-xl border border-border overflow-hidden">
-        <div class="px-5 py-4 border-b border-border bg-ctsa-surface/60">
-          <h2 class="text-sm font-heading font-semibold text-text m-0">Saisir un conteneur arrivé au terminal</h2>
-          <p class="text-xs text-text-muted mt-0.5 mb-0">Le conteneur sera créé à l'état <strong>Enregistré</strong> (hors liste). Vous pourrez ensuite l'inclure dans une liste de vérification.</p>
-        </div>
-
-        <div class="p-5 sm:p-6 space-y-5">
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div class="space-y-1.5">
-              <label for="id_arrival_number" class="block text-xs font-bold uppercase tracking-wider text-text-muted">
-                Numéro de conteneur <span aria-hidden="true" class="text-danger">*</span>
-              </label>
-              <input type="text"
-                     id="id_arrival_number"
-                     name="container_number"
-                     value="{{ raw_number }}"
-                     required
-                     maxlength="20"
-                     autocapitalize="characters"
-                     autocomplete="off"
-                     spellcheck="false"
-                     placeholder="Ex. CMAU4052450"
-                     class="w-full min-h-[44px] rounded-lg border {% if errors.container_number %}border-danger{% else %}border-border-ui{% endif %} px-3.5 py-2 font-mono text-base tracking-wider uppercase text-text bg-surface">
-              <p class="text-xs text-text-muted m-0">Format ISO 6346 : 3 lettres + U, J ou Z + 7 chiffres.</p>
-              {% if errors.container_number %}
-                <p class="text-xs font-semibold text-danger m-0" role="alert">{{ errors.container_number }}</p>
-              {% endif %}
-            </div>
-
-            <div class="space-y-1.5">
-              <label for="id_arrival_line" class="block text-xs font-bold uppercase tracking-wider text-text-muted">
-                Ligne maritime <span class="font-normal text-text-muted">(optionnelle)</span>
-              </label>
-              <select id="id_arrival_line" name="shipping_line" class="w-full min-h-[44px] rounded-lg border border-border-ui px-3.5 py-2 text-sm font-medium text-text bg-surface">
-                <option value="">Non renseignée</option>
-                {% for line in shipping_lines %}
-                  <option value="{{ line.pk }}" {% if raw_line == line.pk|stringformat:"s" %}selected{% endif %}>
-                    {{ line.name }}
-                  </option>
-                {% endfor %}
-              </select>
-              {% if errors.shipping_line %}
-                <p class="text-xs font-semibold text-danger m-0" role="alert">{{ errors.shipping_line }}</p>
-              {% endif %}
-            </div>
-          </div>
-
-          <div class="rounded-lg bg-ctsa-surface border border-border px-4 py-3 text-xs text-text-muted flex items-center justify-between gap-2">
-            <span>Date et heure d'arrivée (automatiques)</span>
-            <strong class="font-mono text-text tabular-nums">{{ now_preview|date:"d/m/Y H:i" }}</strong>
-          </div>
-
-          {% if iso_warning %}
-            <div class="rounded-xl border border-status-pending-bd bg-status-pending-bg p-4 space-y-2.5" role="alert">
-              <div class="text-sm font-bold text-status-pending-fg">
-                Clé de contrôle ISO 6346 invalide
-              </div>
-              <p class="text-xs text-status-pending-fg m-0">
-                Le chiffre de contrôle du numéro saisi ne correspond pas au standard ISO 6346. Vérifiez votre saisie ou confirmez pour enregistrer malgré tout.
-              </p>
-              <label class="inline-flex items-center gap-2 text-xs font-bold text-text cursor-pointer">
-                <input type="checkbox" name="confirm_iso" value="1" required class="w-4 h-4 rounded border-border-ui">
-                <span>Je confirme ce numéro malgré l'avertissement ISO 6346</span>
-              </label>
-            </div>
-          {% endif %}
-        </div>
-
-        <div class="border-t border-border bg-ctsa-surface/60 px-5 py-3.5 flex items-center justify-end gap-3">
-          <a href="{{ containers_url }}" class="ui-btn ui-btn-secondary">Annuler</a>
-          <button type="submit" data-submit-guard class="ui-btn ui-btn-primary">Enregistrer l'arrivée</button>
-        </div>
-      </section>
-    </form>
-
-    <!-- Panneau latéral (5/12) : Conteneurs Enregistrés prêts à mettre en liste -->
-    <aside class="lg:col-span-5 space-y-4">
-      <section class="bg-surface rounded-xl border border-border overflow-hidden">
-        <div class="px-5 py-3.5 border-b border-border bg-ctsa-surface/60 flex items-center justify-between gap-2">
-          <div>
-            <h3 class="text-xs font-heading font-bold uppercase tracking-wider text-text m-0">
-              Enregistrés en attente de liste ({{ registered_pool_count }})
-            </h3>
-            <p class="text-xs text-text-muted mt-0.5 mb-0">Prêts à passer à l'étape 2 (Mise en liste)</p>
-          </div>
-          {% if can_prepare %}
-            <a href="{% url 'terminal:prepare' %}" class="text-xs font-semibold text-primary hover:underline no-underline">
-              Préparer une liste →
-            </a>
-          {% endif %}
-        </div>
-
-        {% if recent_arrivals %}
-          <ul class="divide-y divide-border m-0 p-0 list-none">
-            {% for rc in recent_arrivals %}
-              <li class="px-5 py-3 flex items-center justify-between gap-2">
-                <div class="min-w-0">
-                  <a href="{% url 'terminal:container_detail' rc.pk %}" class="font-mono text-sm font-bold text-primary hover:underline no-underline">
-                    {{ rc.container_number }}
-                  </a>
-                  <div class="text-xs text-text-muted truncate">
-                    {{ rc.shipping_line.name|default:"Ligne non renseignée" }}{% if rc.arrived_at %} · arrivé le {{ rc.arrived_at|date:"d/m H:i" }}{% endif %}
-                  </div>
-                </div>
-                {% if can_prepare %}
-                  <form action="{% url 'terminal:registered_add_to_list' %}" method="post" class="shrink-0">
-                    {% csrf_token %}
-                    <input type="hidden" name="ids" value="{{ rc.pk }}">
-                    <input type="hidden" name="scheduled_date" value="{{ now_preview|date:'Y-m-d' }}">
-                    <input type="hidden" name="next" value="{{ request.get_full_path }}">
-                    <button type="submit" class="ui-btn ui-btn-secondary ui-btn-sm">
-                      + Mettre en liste
-                    </button>
-                  </form>
-                {% endif %}
-              </li>
-            {% endfor %}
-          </ul>
-        {% else %}
-          <p class="px-5 py-8 text-center text-xs text-text-muted m-0">
-            Aucun conteneur enregistré en attente de mise en liste.
-          </p>
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+      <div class="space-y-1.5">
+        <label for="id_arrival_number" class="block text-sm font-semibold text-text">
+          Numéro de conteneur <span aria-hidden="true" class="text-status-unavailable-fg">*</span>
+        </label>
+        <input type="text"
+               id="id_arrival_number"
+               name="container_number"
+               value="{{ raw_number }}"
+               required
+               maxlength="20"
+               autocapitalize="characters"
+               autocomplete="off"
+               spellcheck="false"
+               placeholder="Ex. CMAU4052450"
+               class="form-control w-full font-mono text-lg uppercase">
+        {% if errors.container_number %}
+          <p class="text-xs font-semibold text-status-unavailable-fg m-0" role="alert">{{ errors.container_number }}</p>
         {% endif %}
-      </section>
-    </aside>
-  </div>
+      </div>
+
+      <div class="space-y-1.5">
+        <label for="id_arrival_line" class="block text-sm font-semibold text-text">
+          Ligne maritime <span class="font-normal text-text-muted">(facultative)</span>
+        </label>
+        <select id="id_arrival_line" name="shipping_line" class="form-control w-full">
+          <option value="">Non renseignée</option>
+          {% for line in shipping_lines %}
+            <option value="{{ line.pk }}" {% if raw_line == line.pk|stringformat:"s" %}selected{% endif %}>
+              {{ line.name }}
+            </option>
+          {% endfor %}
+        </select>
+        {% if errors.shipping_line %}
+          <p class="text-xs font-semibold text-status-unavailable-fg m-0" role="alert">{{ errors.shipping_line }}</p>
+        {% endif %}
+      </div>
+    </div>
+
+    {% if iso_warning %}
+      <div class="border-l-2 border-status-pending-fg pl-4 py-2 space-y-2" role="alert">
+        <div class="text-sm font-semibold text-status-pending-fg">
+          Clé de contrôle ISO 6346 invalide
+        </div>
+        <label class="inline-flex items-center gap-2.5 text-sm text-text cursor-pointer min-h-[44px]">
+          <input type="checkbox" name="confirm_iso" value="1" required class="w-4 h-4">
+          <span>Confirmer ce numéro malgré l’avertissement ISO 6346</span>
+        </label>
+      </div>
+    {% endif %}
+
+    {% include 'components/form_actions.html' with cancel_url=containers_url cancel_label="Annuler" submit_label="Enregistrer" %}
+  </form>
+
+  <!-- Arrivées récentes repliées derrière « Voir plus » -->
+  <details class="border-t border-border pt-4">
+    <summary class="text-sm font-semibold text-primary cursor-pointer list-none py-2">
+      Enregistrés en attente de liste ({{ registered_pool_count }})
+    </summary>
+    <div class="pt-3 space-y-3">
+      {% if recent_arrivals %}
+        <ul class="divide-y divide-border m-0 p-0 list-none border-t border-border">
+          {% for rc in recent_arrivals %}
+            <li class="py-3 flex items-center justify-between gap-3">
+              <div class="min-w-0">
+                <a href="{% url 'terminal:container_detail' rc.pk %}" class="font-mono text-base font-medium text-text hover:text-primary no-underline">
+                  {{ rc.container_number }}
+                </a>
+                <div class="text-xs text-text-muted truncate">
+                  {{ rc.shipping_line.name|default:"Ligne non renseignée" }}{% if rc.arrived_at %} · {{ rc.arrived_at|date:"d/m H:i" }}{% endif %}
+                </div>
+              </div>
+              {% if can_prepare %}
+                <form action="{% url 'terminal:registered_add_to_list' %}" method="post" class="shrink-0">
+                  {% csrf_token %}
+                  <input type="hidden" name="ids" value="{{ rc.pk }}">
+                  <input type="hidden" name="scheduled_date" value="{{ now_preview|date:'Y-m-d' }}">
+                  <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                  <button type="submit" class="ui-btn ui-btn-secondary ui-btn-sm">
+                    Mettre en liste
+                  </button>
+                </form>
+              {% endif %}
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p class="text-sm text-text-muted m-0">Aucun conteneur enregistré en attente.</p>
+      {% endif %}
+    </div>
+  </details>
 
 </div>
 {% endblock %}

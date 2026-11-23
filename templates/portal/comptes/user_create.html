@@ -5,24 +5,22 @@
 {% block portal_body_extra %}portal-has-form-actions{% endblock %}
 
 {% block portal_content %}
-<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+<div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-10 py-6 sm:py-8 space-y-8">
 
   {% url 'accounts:user_list' as users_url %}
-  {% include 'components/page_header.html' with back_url=users_url back_label="Retour aux utilisateurs" title="Nouvel utilisateur" subtitle="Créez un compte du personnel ou client." %}
+  {% include 'components/page_header.html' with back_url=users_url back_label="Retour aux utilisateurs" title="Nouvel utilisateur" %}
 
-  <form action="{% url 'accounts:user_create' %}" method="post" class="space-y-5">
+  <form action="{% url 'accounts:user_create' %}" method="post" class="space-y-8">
     {% csrf_token %}
     <input type="hidden" name="is_active" value="on">
 
-    <section aria-labelledby="section-account" class="bg-surface rounded-xl border border-border shadow-xs p-4 sm:p-6 space-y-4">
-      <div class="pb-3 border-b border-border">
-        <h2 id="section-account" class="text-base font-heading font-bold text-text m-0">Identifiants &amp; rôle</h2>
-      </div>
+    <fieldset class="border-0 p-0 m-0 space-y-4">
+      <legend class="text-lg font-heading font-semibold text-text p-0">Identifiants et rôle</legend>
 
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div class="space-y-1.5">
           <label for="u-username" class="block text-sm font-semibold text-text">
-            Identifiant de connexion <span class="text-danger" aria-hidden="true">*</span>
+            Identifiant <span class="text-status-unavailable-fg" aria-hidden="true">*</span>
           </label>
           <input type="text"
                  id="u-username"
@@ -32,16 +30,16 @@
                  autocomplete="off"
                  autocapitalize="none"
                  spellcheck="false"
-                 placeholder="ex. jdupont"
-                 class="w-full min-h-[44px] rounded-lg border {% if form.username.errors %}border-danger{% else %}border-border-ui{% endif %} px-3.5 py-2 text-base text-text bg-surface">
+                 placeholder="Ex. jdupont"
+                 class="form-control w-full">
           {% if form.username.errors %}
-            <p class="text-xs font-semibold text-danger m-0" role="alert">{{ form.username.errors.0 }}</p>
+            <p class="text-xs font-semibold text-status-unavailable-fg m-0" role="alert">{{ form.username.errors.0 }}</p>
           {% endif %}
         </div>
 
         <div class="space-y-1.5">
           <label for="u-fullname" class="block text-sm font-semibold text-text">
-            Nom complet <span class="text-danger" aria-hidden="true">*</span>
+            Nom complet <span class="text-status-unavailable-fg" aria-hidden="true">*</span>
           </label>
           <input type="text"
                  id="u-fullname"
@@ -49,17 +47,17 @@
                  value="{{ form.full_name.value|default:'' }}"
                  required
                  placeholder="Nom et prénom"
-                 class="w-full min-h-[44px] rounded-lg border {% if form.full_name.errors %}border-danger{% else %}border-border-ui{% endif %} px-3.5 py-2 text-base text-text bg-surface">
+                 class="form-control w-full">
           {% if form.full_name.errors %}
-            <p class="text-xs font-semibold text-danger m-0" role="alert">{{ form.full_name.errors.0 }}</p>
+            <p class="text-xs font-semibold text-status-unavailable-fg m-0" role="alert">{{ form.full_name.errors.0 }}</p>
           {% endif %}
         </div>
 
         <div class="space-y-1.5">
           <label for="u-role" class="block text-sm font-semibold text-text">
-            Rôle attribué <span class="text-danger" aria-hidden="true">*</span>
+            Rôle <span class="text-status-unavailable-fg" aria-hidden="true">*</span>
           </label>
-          <select id="u-role" name="role" required class="w-full min-h-[44px] rounded-lg border border-border-ui px-3.5 py-2 text-base text-text bg-surface">
+          <select id="u-role" name="role" required class="form-control w-full">
             {% for val, label in role_choices %}
               <option value="{{ val }}" {% if form.role.value == val %}selected{% endif %}>{{ label }}</option>
             {% endfor %}
@@ -68,7 +66,7 @@
 
         <div class="space-y-1.5">
           <label for="u-password" class="block text-sm font-semibold text-text">
-            Mot de passe initial <span class="text-danger" aria-hidden="true">*</span>
+            Mot de passe <span class="text-status-unavailable-fg" aria-hidden="true">*</span>
           </label>
           <input type="password"
                  id="u-password"
@@ -76,37 +74,34 @@
                  required
                  minlength="8"
                  autocomplete="new-password"
-                 class="w-full min-h-[44px] rounded-lg border {% if form.password.errors %}border-danger{% else %}border-border-ui{% endif %} px-3.5 py-2 text-base text-text bg-surface">
-          <p class="text-xs text-text-muted m-0">Minimum 8 caractères.</p>
+                 class="form-control w-full">
           {% if form.password.errors %}
-            <p class="text-xs font-semibold text-danger m-0" role="alert">{{ form.password.errors.0 }}</p>
+            <p class="text-xs font-semibold text-status-unavailable-fg m-0" role="alert">{{ form.password.errors.0 }}</p>
           {% endif %}
         </div>
       </div>
-    </section>
+    </fieldset>
 
-    <section aria-labelledby="section-contact" class="bg-surface rounded-xl border border-border shadow-xs p-4 sm:p-6 space-y-4">
-      <div class="pb-3 border-b border-border">
-        <h2 id="section-contact" class="text-base font-heading font-bold text-text m-0">Coordonnées (facultatif)</h2>
-      </div>
+    <fieldset class="border-t border-border pt-6 border-x-0 border-b-0 p-0 m-0 space-y-4">
+      <legend class="text-lg font-heading font-semibold text-text p-0">Coordonnées</legend>
 
       <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div class="space-y-1.5">
           <label for="u-company" class="block text-sm font-semibold text-text">Service ou entreprise</label>
-          <input type="text" id="u-company" name="company_name" value="{{ form.company_name.value|default:'' }}" placeholder="Ex. Exploitation RAMPE" class="w-full min-h-[44px] rounded-lg border border-border-ui px-3.5 py-2 text-base text-text bg-surface">
+          <input type="text" id="u-company" name="company_name" value="{{ form.company_name.value|default:'' }}" class="form-control w-full">
         </div>
         <div class="space-y-1.5">
           <label for="u-email" class="block text-sm font-semibold text-text">Courriel</label>
-          <input type="email" id="u-email" name="email" value="{{ form.email.value|default:'' }}" placeholder="nom@capterminal.com" class="w-full min-h-[44px] rounded-lg border border-border-ui px-3.5 py-2 text-base text-text bg-surface">
+          <input type="email" id="u-email" name="email" value="{{ form.email.value|default:'' }}" class="form-control w-full">
         </div>
         <div class="space-y-1.5">
           <label for="u-phone" class="block text-sm font-semibold text-text">Téléphone</label>
-          <input type="tel" id="u-phone" name="phone" value="{{ form.phone.value|default:'' }}" placeholder="+509 ..." class="w-full min-h-[44px] rounded-lg border border-border-ui px-3.5 py-2 text-base text-text bg-surface">
+          <input type="tel" id="u-phone" name="phone" value="{{ form.phone.value|default:'' }}" class="form-control w-full">
         </div>
       </div>
-    </section>
+    </fieldset>
 
-    {% include 'components/form_actions.html' with cancel_url=users_url cancel_label="Annuler" submit_label="Créer le compte" %}
+    {% include 'components/form_actions.html' with cancel_url=users_url cancel_label="Annuler" submit_label="Enregistrer" %}
   </form>
 
 </div>

@@ -1,44 +1,40 @@
 {% extends 'portal/base_portal.html' %}
 {% load permissions_tags %}
 
-{% block title %}Historique des Statuts — Cap Terminal S.A.{% endblock %}
+{% block title %}Historique des statuts — Cap Terminal S.A.{% endblock %}
 {% block page_title %}Historique{% endblock %}
 
 {% block portal_content %}
-<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-5">
+<div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-10 py-6 sm:py-8 space-y-6">
 
-  {% include 'components/page_header.html' with title="Historique des statuts" subtitle="Suivi chronologique des inscriptions et des modifications." count=page.paginator.count %}
+  {% include 'components/page_header.html' with title="Historique des statuts" count=page.paginator.count %}
 
-  <!-- Feuille opérationnelle unifiée : recherche + tableau -->
-  <section aria-label="Historique des opérations" class="bg-surface rounded-xl border border-border overflow-hidden">
-    <div class="p-4 border-b border-border bg-ctsa-surface/50">
-      <search>
-        <form action="{% url 'terminal:status_logs' %}" method="get" class="flex flex-col sm:flex-row sm:items-center gap-2">
-          <label for="log-q" class="visually-hidden">Rechercher dans l'historique</label>
-          <input type="search"
-                 id="log-q"
-                 name="q"
-                 value="{{ q }}"
-                 placeholder="Conteneur, opérateur, motif..."
-                 class="flex-1 min-h-[40px] border border-border rounded-lg px-3 py-1.5 text-sm bg-surface text-text">
-          <div class="flex items-center gap-2">
-            <button type="submit" class="ui-btn ui-btn-secondary ui-btn-sm flex-1 sm:flex-initial">Rechercher</button>
-            {% if q %}
-              <a href="{% url 'terminal:status_logs' %}" class="text-xs font-semibold text-primary hover:underline px-2 no-underline">Réinitialiser</a>
-            {% endif %}
-          </div>
-        </form>
-      </search>
-    </div>
+  <section aria-label="Historique des opérations" class="space-y-4">
+    <search>
+      <form action="{% url 'terminal:status_logs' %}" method="get" class="flex flex-col sm:flex-row sm:items-center gap-3">
+        <label for="log-q" class="visually-hidden">Rechercher dans l’historique</label>
+        <input type="search"
+               id="log-q"
+               name="q"
+               value="{{ q }}"
+               placeholder="Conteneur, opérateur, motif…"
+               class="form-control flex-1">
+        <div class="flex items-center gap-2">
+          <button type="submit" class="ui-btn ui-btn-secondary shrink-0">Rechercher</button>
+          {% if q %}
+            <a href="{% url 'terminal:status_logs' %}" class="text-xs font-semibold text-primary hover:underline px-2 no-underline">Effacer</a>
+          {% endif %}
+        </div>
+      </form>
+    </search>
 
     {% if logs %}
-      <!-- Mobile : liste compacte -->
-      <div class="lg:hidden divide-y divide-border" aria-label="Liste mobile de l'historique">
+      <div class="lg:hidden border-t border-border divide-y divide-border" aria-label="Liste mobile de l’historique">
         {% for log in logs %}
           <a href="{% url 'terminal:container_detail' log.container.pk %}"
-             class="block p-4 no-underline hover:bg-ctsa-surface space-y-1.5">
-            <div class="flex items-center justify-between gap-2">
-              <span class="font-mono text-sm font-semibold text-text tabular-nums">{{ log.container.container_number }}</span>
+             class="block py-3.5 no-underline hover:bg-ctsa-surface space-y-1">
+            <div class="flex items-baseline justify-between gap-2">
+              <span class="font-mono text-lg font-medium text-text tabular-nums">{{ log.container.container_number }}</span>
               {% if log.action == 'verified' %}
                 {% include 'components/badge.html' with variant='verified' label='Vérifié' %}
               {% elif log.action == 'not_verified' %}
@@ -56,8 +52,7 @@
         {% endfor %}
       </div>
 
-      <!-- Desktop : tableau intégré -->
-      <div class="hidden lg:block overflow-x-auto" aria-label="Tableau de l'historique">
+      <div class="hidden lg:block table-wrapper" aria-label="Tableau de l’historique">
         <table class="ctsa-table w-full">
           <thead>
             <tr>
@@ -65,7 +60,7 @@
               <th scope="col">Séance</th>
               <th scope="col">Modification</th>
               <th scope="col">Motif</th>
-              <th scope="col">Date et heure</th>
+              <th scope="col">Date</th>
               <th scope="col">Opérateur</th>
             </tr>
           </thead>
@@ -73,11 +68,11 @@
             {% for log in logs %}
               <tr>
                 <th scope="row">
-                  <a href="{% url 'terminal:container_detail' log.container.pk %}" class="font-mono text-sm font-semibold text-primary hover:underline no-underline tabular-nums">
+                  <a href="{% url 'terminal:container_detail' log.container.pk %}" class="font-mono text-lg font-medium text-text hover:text-primary no-underline tabular-nums whitespace-nowrap">
                     {{ log.container.container_number }}
                   </a>
                 </th>
-                <td class="tabular-nums text-sm">{{ log.container.scheduled_date|date:"d/m/Y" }}</td>
+                <td class="font-mono text-xs text-text-muted tabular-nums">{{ log.container.scheduled_date|date:"d/m/Y" }}</td>
                 <td>
                   {% if log.action == 'verified' %}
                     {% include 'components/badge.html' with variant='verified' label='Vérifié' %}
@@ -86,15 +81,12 @@
                   {% elif log.action != 'status_change' %}
                     {% include 'components/badge.html' with variant='neutral' label=log.get_action_display %}
                   {% else %}
-                    <span class="text-xs text-text-muted mr-1">
-                      {% if log.old_status %}{{ log.get_old_status_display }}{% else %}Initial{% endif %} →
-                    </span>
                     {% include 'components/badge.html' with variant=log.new_status label=log.get_new_status_display %}
                   {% endif %}
                 </td>
                 <td class="text-xs text-text-muted">{{ log.reason_text|default:"—" }}</td>
-                <td class="text-xs font-mono text-text-muted tabular-nums">{{ log.changed_at|date:"d/m/Y H:i" }}</td>
-                <td class="text-xs font-semibold text-text">
+                <td class="font-mono text-xs text-text-muted tabular-nums">{{ log.changed_at|date:"d/m/Y H:i" }}</td>
+                <td class="text-xs text-text">
                   {% if log.changed_by %}{{ log.changed_by.display_name }}{% else %}Système{% endif %}
                 </td>
               </tr>
@@ -103,10 +95,7 @@
         </table>
       </div>
     {% else %}
-      <div class="px-6 py-12 text-center space-y-1.5">
-        <p class="text-sm font-semibold text-text m-0">Aucune opération trouvée</p>
-        <p class="text-sm text-text-muted m-0">Aucune modification de statut ne correspond à cette recherche.</p>
-      </div>
+      {% include 'components/empty_state.html' with title="Aucune opération trouvée." %}
     {% endif %}
   </section>
 
@@ -115,16 +104,16 @@
   {% endif %}
 
   {% if archived_containers %}
-    <section class="bg-surface rounded-xl border border-border overflow-hidden">
-      <div class="px-5 py-3.5 border-b border-border bg-ctsa-surface/60">
-        <h2 class="text-sm font-heading font-semibold text-text m-0">Conteneurs archivés</h2>
-      </div>
-      <div class="divide-y divide-border">
+    <details class="border-t border-border pt-4">
+      <summary class="text-sm font-semibold text-primary cursor-pointer list-none py-2">
+        Voir plus&nbsp;: Conteneurs archivés ({{ archived_containers|length }})
+      </summary>
+      <div class="pt-3 divide-y divide-border border-t border-border">
         {% can 'container.restore' as can_restore %}
         {% for ac in archived_containers %}
-          <div class="p-4 sm:px-5 flex flex-wrap items-center justify-between gap-3">
+          <div class="py-3 flex flex-wrap items-center justify-between gap-3">
             <div>
-              <div class="font-mono text-sm font-semibold text-text">{{ ac.container_number }}</div>
+              <div class="font-mono text-sm font-medium text-text">{{ ac.container_number }}</div>
               <div class="text-xs text-text-muted">
                 Archivé le {{ ac.archived_at|date:"d/m/Y H:i" }} par {{ ac.archived_by.display_name|default:"Système" }}
                 {% if ac.archive_reason %} · {{ ac.archive_reason }}{% endif %}
@@ -139,7 +128,7 @@
           </div>
         {% endfor %}
       </div>
-    </section>
+    </details>
   {% endif %}
 
 </div>

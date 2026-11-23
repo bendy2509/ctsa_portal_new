@@ -1,53 +1,47 @@
 {% extends 'portal/base_portal.html' %}
 
-{% block title %}Lignes Maritimes — Cap Terminal S.A.{% endblock %}
+{% block title %}Lignes maritimes — Cap Terminal S.A.{% endblock %}
 {% block page_title %}Lignes maritimes{% endblock %}
 
 {% block portal_content %}
-<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-5">
+<div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-10 py-6 sm:py-8 space-y-6">
 
   {% url 'terminal:shipping_line_create' as create_line_url %}
-  {% include 'components/page_header.html' with title="Lignes maritimes" subtitle="Compagnies maritimes proposées lors de la préparation des listes et de l'enregistrement des arrivées." count=lines|length primary_url=create_line_url primary_label="Ajouter" %}
+  {% include 'components/page_header.html' with title="Lignes maritimes" count=lines|length primary_url=create_line_url primary_label="Ajouter" %}
 
   {% if lines %}
-    <section class="bg-surface rounded-xl border border-border overflow-hidden" aria-label="Liste des lignes maritimes">
-      <!-- Mobile : liste compacte -->
-      <div class="lg:hidden divide-y divide-border" aria-label="Liste mobile des lignes maritimes">
+    <section aria-label="Liste des lignes maritimes">
+      <div class="lg:hidden border-t border-border divide-y divide-border" aria-label="Liste mobile des lignes maritimes">
         {% for line in lines %}
           <a href="{% url 'terminal:shipping_line_edit' line.pk %}"
-             class="block p-4 no-underline hover:bg-ctsa-surface">
-            <div class="flex items-center justify-between gap-2">
+             class="block py-3.5 no-underline hover:bg-ctsa-surface">
+            <div class="flex items-baseline justify-between gap-2">
               <span class="text-sm font-semibold text-text">{{ line.name }}</span>
-              <span class="text-xs font-semibold text-primary shrink-0">Modifier ›</span>
+              <span class="text-xs font-semibold text-primary shrink-0">Modifier</span>
             </div>
             <p class="text-xs text-text-muted mt-1 mb-0 tabular-nums">
-              {{ line.container_count }} conteneur{{ line.container_count|pluralize }} lié{{ line.container_count|pluralize }}
+              {{ line.container_count }} conteneur{{ line.container_count|pluralize }}
             </p>
           </a>
         {% endfor %}
       </div>
 
-      <!-- Desktop : tableau intégré -->
-      <div class="hidden lg:block overflow-x-auto" aria-label="Tableau des lignes maritimes">
+      <div class="hidden lg:block table-wrapper" aria-label="Tableau des lignes maritimes">
         <table class="ctsa-table w-full">
           <thead>
             <tr>
               <th scope="col">Ligne maritime</th>
-              <th scope="col">Conteneurs liés</th>
+              <th scope="col" class="text-right">Conteneurs liés</th>
               <th scope="col" class="text-right">Action</th>
             </tr>
           </thead>
           <tbody>
             {% for line in lines %}
               <tr>
-                <th scope="row">{{ line.name }}</th>
-                <td class="tabular-nums text-sm text-text-muted">
-                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-ctsa-surface border border-border text-text tabular-nums">
-                    {{ line.container_count }} conteneur{{ line.container_count|pluralize }}
-                  </span>
-                </td>
+                <th scope="row" class="font-semibold text-text">{{ line.name }}</th>
+                <td class="text-right font-mono tabular-nums text-text">{{ line.container_count }}</td>
                 <td class="text-right">
-                  <a href="{% url 'terminal:shipping_line_edit' line.pk %}" class="ui-btn ui-btn-ghost ui-btn-sm">
+                  <a href="{% url 'terminal:shipping_line_edit' line.pk %}" class="text-xs font-semibold text-primary hover:underline no-underline">
                     Modifier
                   </a>
                 </td>
@@ -58,7 +52,7 @@
       </div>
     </section>
   {% else %}
-    {% include 'components/empty_state.html' with title="Aucune ligne maritime" description="Ajoutez une première ligne maritime pour l'associer aux conteneurs." cta_url=create_line_url cta_label="Ajouter une ligne" %}
+    {% include 'components/empty_state.html' with title="Aucune ligne maritime." cta_url=create_line_url cta_label="Ajouter" %}
   {% endif %}
 
 </div>

@@ -4,17 +4,16 @@
 {% block page_title %}Utilisateurs{% endblock %}
 
 {% block portal_content %}
-<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-5">
+<div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-10 py-6 sm:py-8 space-y-6">
 
   {% url 'accounts:user_create' as create_user_url %}
-  {% include 'components/page_header.html' with title="Utilisateurs et rôles" subtitle="Gérez les comptes du personnel et des clients." count=page.paginator.count primary_url=create_user_url primary_label="Ajouter" %}
+  {% include 'components/page_header.html' with title="Utilisateurs" count=page.paginator.count primary_url=create_user_url primary_label="Ajouter" %}
 
-  <!-- Feuille opérationnelle unifiée : onglets par rôle + recherche + tableau -->
-  <section aria-label="Gestion des utilisateurs" class="bg-surface rounded-xl border border-border overflow-hidden">
-    <nav class="list-tabs bg-ctsa-surface/50" aria-label="Filtrer par rôle">
+  <section aria-label="Gestion des utilisateurs" class="space-y-4">
+    <nav class="list-tabs" aria-label="Filtrer par rôle">
       <a href="{% url 'accounts:user_list' %}{% if q %}?q={{ q|urlencode }}{% endif %}"
          class="list-tab" {% if not role_filter %}aria-current="true"{% endif %}>
-        Tous les rôles
+        Tous
       </a>
       {% for val, label in role_choices %}
         <a href="{% url 'accounts:user_list' %}?role={{ val }}{% if q %}&amp;q={{ q|urlencode }}{% endif %}"
@@ -24,61 +23,50 @@
       {% endfor %}
     </nav>
 
-    <div class="p-4 border-b border-border">
-      <search>
-        <form action="{% url 'accounts:user_list' %}" method="get" class="flex flex-col sm:flex-row sm:items-center gap-2">
-          {% if role_filter %}<input type="hidden" name="role" value="{{ role_filter }}">{% endif %}
-          <label for="user-q" class="visually-hidden">Rechercher un utilisateur</label>
-          <input type="search"
-                 id="user-q"
-                 name="q"
-                 value="{{ q }}"
-                 placeholder="Nom, identifiant, entreprise..."
-                 class="flex-1 min-h-[40px] border border-border rounded-lg px-3 py-1.5 text-sm bg-ctsa-surface/50 focus:bg-surface text-text">
-          <div class="flex items-center gap-2">
-            <button type="submit" class="ui-btn ui-btn-secondary ui-btn-sm flex-1 sm:flex-initial">Filtrer</button>
-            {% if role_filter or q %}
-              <a href="{% url 'accounts:user_list' %}" class="text-xs font-semibold text-primary hover:underline px-2 no-underline">Réinitialiser</a>
-            {% endif %}
-          </div>
-        </form>
-      </search>
-    </div>
+    <search>
+      <form action="{% url 'accounts:user_list' %}" method="get" class="flex flex-col sm:flex-row sm:items-center gap-3">
+        {% if role_filter %}<input type="hidden" name="role" value="{{ role_filter }}">{% endif %}
+        <label for="user-q" class="visually-hidden">Rechercher un utilisateur</label>
+        <input type="search"
+               id="user-q"
+               name="q"
+               value="{{ q }}"
+               placeholder="Nom, identifiant, entreprise…"
+               class="form-control flex-1">
+        <div class="flex items-center gap-2">
+          <button type="submit" class="ui-btn ui-btn-secondary shrink-0">Filtrer</button>
+          {% if role_filter or q %}
+            <a href="{% url 'accounts:user_list' %}" class="text-xs font-semibold text-primary hover:underline px-2 no-underline">Effacer</a>
+          {% endif %}
+        </div>
+      </form>
+    </search>
 
     {% if users %}
-      <!-- Mobile : liste compacte -->
-      <div class="lg:hidden divide-y divide-border" aria-label="Liste mobile des utilisateurs">
+      <div class="lg:hidden border-t border-border divide-y divide-border" aria-label="Liste mobile des utilisateurs">
         {% for u in users %}
           <a href="{% url 'accounts:user_edit' u.pk %}"
-             class="block p-4 no-underline hover:bg-ctsa-surface space-y-1.5">
-            <div class="flex items-center justify-between gap-2">
-              <div class="min-w-0">
-                <span class="text-sm font-semibold text-text truncate block">{{ u.display_name }}</span>
-                <span class="text-xs font-mono text-text-muted">{{ u.username }}</span>
-              </div>
-              <div class="flex items-center gap-1.5 shrink-0">
-                {% include 'components/badge.html' with variant=u.role label=u.get_role_display %}
-                {% if not u.is_active %}
-                  {% include 'components/badge.html' with variant='inactive' label='Désactivé' %}
-                {% endif %}
-              </div>
+             class="block py-3.5 no-underline hover:bg-ctsa-surface space-y-1">
+            <div class="flex items-baseline justify-between gap-2">
+              <span class="text-sm font-semibold text-text truncate">{{ u.display_name }}</span>
+              {% include 'components/badge.html' with variant=u.role label=u.get_role_display %}
             </div>
             <p class="text-xs text-text-muted m-0 truncate">
-              {{ u.company_name|default:"—" }}{% if u.email %} · {{ u.email }}{% endif %}
+              <span class="font-mono">{{ u.username }}</span> · {{ u.company_name|default:"—" }}
+              {% if not u.is_active %} · Désactivé{% endif %}
             </p>
           </a>
         {% endfor %}
       </div>
 
-      <!-- Desktop : tableau intégré -->
-      <div class="hidden lg:block overflow-x-auto" aria-label="Tableau des utilisateurs">
+      <div class="hidden lg:block table-wrapper" aria-label="Tableau des utilisateurs">
         <table class="ctsa-table w-full">
           <thead>
             <tr>
               <th scope="col">Utilisateur</th>
               <th scope="col">Identifiant</th>
               <th scope="col">Rôle</th>
-              <th scope="col">Service / Entreprise</th>
+              <th scope="col">Entreprise</th>
               <th scope="col">État</th>
               <th scope="col" class="text-right">Action</th>
             </tr>
@@ -86,14 +74,7 @@
           <tbody>
             {% for u in users %}
               <tr>
-                <th scope="row">
-                  <div class="flex items-center gap-2.5">
-                    <span class="inline-flex items-center justify-center w-7 h-7 rounded-full bg-primary-tint border border-primary-border text-primary text-xs font-bold shrink-0" aria-hidden="true">
-                      {{ u.display_name|slice:":1"|upper }}
-                    </span>
-                    <span class="font-semibold text-text">{{ u.display_name }}</span>
-                  </div>
-                </th>
+                <th scope="row" class="font-semibold text-text">{{ u.display_name }}</th>
                 <td class="font-mono text-xs text-text-muted">{{ u.username }}</td>
                 <td>{% include 'components/badge.html' with variant=u.role label=u.get_role_display %}</td>
                 <td class="text-sm text-text-muted">{{ u.company_name|default:"—" }}</td>
@@ -105,7 +86,7 @@
                   {% endif %}
                 </td>
                 <td class="text-right">
-                  <a href="{% url 'accounts:user_edit' u.pk %}" class="ui-btn ui-btn-ghost ui-btn-sm">
+                  <a href="{% url 'accounts:user_edit' u.pk %}" class="text-xs font-semibold text-primary hover:underline no-underline">
                     Modifier
                   </a>
                 </td>
@@ -115,10 +96,7 @@
         </table>
       </div>
     {% else %}
-      <div class="px-6 py-12 text-center space-y-2">
-        <p class="text-sm font-semibold text-text m-0">Aucun utilisateur trouvé</p>
-        <p class="text-sm text-text-muted m-0">Aucun compte ne correspond aux critères sélectionnés.</p>
-      </div>
+      {% include 'components/empty_state.html' with title="Aucun utilisateur trouvé." %}
     {% endif %}
   </section>
 

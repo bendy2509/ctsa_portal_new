@@ -5,7 +5,7 @@
 {% block page_title %}{{ container.container_number }}{% endblock %}
 
 {% block portal_content %}
-<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+<div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-10 py-6 sm:py-8 space-y-8">
 
   {% can 'container.change_status' as can_change_status %}
   {% can 'container.prepare' as can_prepare %}
@@ -15,210 +15,111 @@
   {% url 'terminal:containers' as containers_url %}
   {% url 'terminal:container_edit' container.pk as edit_url %}
 
-  {% with date_iso=container.scheduled_date|date:"Y-m-d" %}
-    {% if can_change_status and container.status != 'registered' and not container.is_verified and not container.archived_at %}
-      {% include 'components/page_header.html' with back_url=containers_url|add:"?date="|add:date_iso back_label="Retour aux conteneurs" title=container.container_number subtitle=container.shipping_line.name|default:"Ligne maritime non renseignée" primary_url=edit_url primary_label="Modifier" %}
-    {% else %}
-      {% include 'components/page_header.html' with back_url=containers_url back_label="Retour aux conteneurs" title=container.container_number subtitle=container.shipping_line.name|default:"Ligne maritime non renseignée" %}
-    {% endif %}
-  {% endwith %}
-
-  <!-- Parcours opérationnel du conteneur en 3 étapes : Arrivée (Enregistré) -> Mise en liste (En attente) -> Confirmé = Éligible à vérifier -->
-  <section aria-label="Parcours de vérification du conteneur" class="bg-surface rounded-xl border border-border overflow-hidden">
-    <div class="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-border">
-      <div class="p-4 flex items-start gap-3 {% if container.status == 'registered' %}bg-primary-tint/40{% endif %}">
-        <span class="inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold shrink-0 {% if container.status == 'registered' %}bg-primary text-white{% else %}bg-success-surface text-success border border-success-border{% endif %}">1</span>
-        <div class="min-w-0">
-          <div class="text-xs font-bold uppercase tracking-wider text-text">1. Arrivée &amp; Enregistrement</div>
-          <p class="text-xs text-text-muted mt-0.5 mb-0">
-            {% if container.status == 'registered' %}
-              Enregistré hors liste{% if container.arrived_at %} le {{ container.arrived_at|date:"d/m/Y à H:i" }}{% endif %}. Prêt à être mis dans une liste.
-            {% else %}
-              Enregistré dans le système.
-            {% endif %}
-          </p>
-        </div>
-      </div>
-
-      <div class="p-4 flex items-start gap-3 {% if container.status == 'pending' or container.status == 'unavailable' %}bg-status-pending-bg/40{% endif %}">
-        <span class="inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold shrink-0 {% if container.status == 'registered' %}bg-ctsa-bgalt text-text-muted{% elif container.status == 'pending' or container.status == 'unavailable' %}bg-status-pending-fg text-white{% else %}bg-success-surface text-success border border-success-border{% endif %}">2</span>
-        <div class="min-w-0">
-          <div class="text-xs font-bold uppercase tracking-wider text-text">2. Mise en liste &amp; Confirmation</div>
-          <p class="text-xs text-text-muted mt-0.5 mb-0">
-            {% if container.status == 'registered' %}
-              Pas encore affecté à une liste de vérification.
-            {% elif container.status == 'pending' %}
-              Inscrit sur la liste du <strong>{{ container.scheduled_date|date:"d/m/Y" }}</strong> (En attente). Doit être <strong>Confirmé</strong> pour devenir éligible à vérifier.
-            {% elif container.status == 'unavailable' %}
-              Inscrit sur la liste du <strong>{{ container.scheduled_date|date:"d/m/Y" }}</strong> (Indisponible — non éligible à vérifier).
-            {% else %}
-              Confirmé sur la liste du <strong>{{ container.scheduled_date|date:"d/m/Y" }}</strong>.
-            {% endif %}
-          </p>
-        </div>
-      </div>
-
-      <div class="p-4 flex items-start gap-3 {% if container.status == 'confirmed' %}bg-success-surface/40{% endif %}">
-        <span class="inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold shrink-0 {% if container.is_verified %}bg-success text-white{% elif container.status == 'confirmed' %}bg-primary text-white{% else %}bg-ctsa-bgalt text-text-muted{% endif %}">3</span>
-        <div class="min-w-0">
-          <div class="text-xs font-bold uppercase tracking-wider text-text">3. Éligible à la vérification</div>
-          <p class="text-xs text-text-muted mt-0.5 mb-0">
-            {% if container.verification_result == 'verified' %}
-              Vérifié{% if container.verified_at %} le {{ container.verified_at|date:"d/m/Y à H:i" }}{% endif %}.
-            {% elif container.verification_result == 'not_verified' %}
-              Non vérifié (avec motif).
-            {% elif container.status == 'confirmed' %}
-              <strong class="text-success">Éligible à l'inspection</strong> sur la séance du {{ container.scheduled_date|date:"d/m/Y" }}.
-            {% else %}
-              Verrouillé tant que le statut dans la liste n'est pas <strong>Confirmé</strong>.
-            {% endif %}
-          </p>
-        </div>
-      </div>
+  <!-- Bloc 1 : Numéro en grand (32 px IBM Plex Mono), statut, action secondaire -->
+  <header class="flex flex-col gap-3 pb-4 page-header-rule">
+    <div>
+      <a href="{{ containers_url }}{% if container.scheduled_date %}?date={{ container.scheduled_date|date:'Y-m-d' }}{% endif %}"
+         class="inline-flex items-center text-xs font-semibold text-text-muted hover:text-primary no-underline min-h-[36px]">
+        Retour aux conteneurs
+      </a>
     </div>
+
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div class="flex flex-wrap items-baseline gap-4">
+        <h1 class="font-mono text-3xl font-medium text-text m-0 tabular-nums">{{ container.container_number }}</h1>
+        {% include 'components/badge.html' with variant=container.status label=container.get_status_display %}
+        {% if container.verification_result == 'verified' %}
+          <span class="status-label status-confirmed">Vérifié · Verrouillé</span>
+        {% elif container.verification_result == 'not_verified' %}
+          {% include 'components/badge.html' with variant='not_verified' label='Non vérifié' %}
+        {% else %}
+          {% include 'components/badge.html' with variant='not_inspected' label='Non inspecté' %}
+        {% endif %}
+      </div>
+
+      {% if can_change_status and container.status != 'registered' and not container.is_verified and not container.archived_at %}
+        <a href="{{ edit_url }}" class="ui-btn ui-btn-secondary shrink-0">Modifier</a>
+      {% endif %}
+    </div>
+  </header>
+
+  <!-- Bloc 2 : 3 informations clés + changement de statut -->
+  <section aria-label="Informations clés" class="space-y-6">
+    <dl class="kpi-strip m-0">
+      <div class="kpi-cell">
+        <dt class="kpi-label">Ligne maritime</dt>
+        <dd class="mt-2 text-lg font-semibold text-text m-0">{{ container.shipping_line.name|default:"Non renseignée" }}</dd>
+      </div>
+      <div class="kpi-cell">
+        <dt class="kpi-label">Séance programmée</dt>
+        <dd class="mt-2 text-lg font-mono font-medium text-text m-0 tabular-nums">{{ container.scheduled_date|date:"d/m/Y"|default:"Hors liste" }}</dd>
+      </div>
+      <div class="kpi-cell col-span-2">
+        <dt class="kpi-label">Dernière mise à jour</dt>
+        <dd class="mt-2 text-sm text-text m-0 tabular-nums">
+          {{ container.updated_at|date:"d/m/Y à H:i" }}{% if container.updated_by %} · {{ container.updated_by.display_name }}{% endif %}
+        </dd>
+      </div>
+    </dl>
+
+    {% if container.status == 'unavailable' and container.full_reason_display %}
+      <div class="py-3 border-b border-border text-sm text-status-unavailable-fg font-semibold">
+        Motif d’indisponibilité&nbsp;: {{ container.full_reason_display }}
+      </div>
+    {% endif %}
+
+    {% if container.verification_note %}
+      <div class="py-3 border-b border-border text-sm text-text">
+        <span class="font-semibold">Note d’inspection&nbsp;:</span> {{ container.verification_note }}
+      </div>
+    {% endif %}
+
+    {% if container.status == 'registered' and not container.archived_at and can_prepare %}
+      <div class="py-4 border-b border-border flex flex-wrap items-center justify-between gap-4">
+        <span class="text-sm font-semibold text-text">Mettre dans une liste</span>
+        <form action="{% url 'terminal:registered_add_to_list' %}" method="post" class="flex flex-wrap items-center gap-2">
+          {% csrf_token %}
+          <input type="hidden" name="ids" value="{{ container.pk }}">
+          <input type="hidden" name="next" value="{{ request.get_full_path }}">
+          <label for="detail-schedule-date" class="visually-hidden">Date de séance</label>
+          <input type="date"
+                 id="detail-schedule-date"
+                 name="scheduled_date"
+                 min="{{ today|date:'Y-m-d' }}"
+                 value="{{ default_schedule_date|default:today|date:'Y-m-d' }}"
+                 class="font-mono text-xs font-medium text-text bg-surface border border-border-ui rounded px-2.5 py-1.5 min-h-[44px]">
+          <button type="submit" class="ui-btn ui-btn-primary">Ajouter à la liste</button>
+        </form>
+      </div>
+    {% elif can_change_status and not container.archived_at %}
+      <div class="py-4 border-b border-border flex flex-wrap items-center justify-between gap-4">
+        <span class="text-sm font-semibold text-text">Disponibilité sur la rampe</span>
+        <div class="flex flex-wrap items-center gap-4">
+          {% include 'portal/conteneurs/_status_segmented.html' with c=container %}
+          {% if container.status == 'confirmed' and can_verify %}
+            <a href="{% url 'terminal:inspection' %}?date={{ container.scheduled_date|date:'Y-m-d' }}&amp;q={{ container.container_number }}"
+               class="text-xs font-semibold text-primary hover:underline no-underline">
+              Inspecter
+            </a>
+          {% endif %}
+        </div>
+      </div>
+    {% endif %}
   </section>
 
-  <!-- Grille 12 colonnes : Dossier & Statut (7 col.) | Historique des statuts (5 col.) -->
-  <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-
-    <!-- Informations du conteneur (7/12) -->
-    <section aria-labelledby="container-info-heading" class="lg:col-span-7 bg-surface rounded-xl border border-border overflow-hidden">
-      <div class="px-5 py-3.5 border-b border-border bg-ctsa-surface/60 flex flex-wrap items-center justify-between gap-2">
-        <h2 id="container-info-heading" class="text-sm font-heading font-semibold text-text m-0">
-          Informations du conteneur
-        </h2>
-        <div class="flex flex-wrap items-center gap-2">
-          {% include 'components/badge.html' with variant=container.status label=container.get_status_display %}
-          {% if container.verification_result %}
-            {% include 'components/badge.html' with variant=container.verification_result label=container.get_verification_result_display %}
-          {% else %}
-            {% include 'components/badge.html' with variant='not_inspected' label='Non inspecté' %}
-          {% endif %}
-        </div>
-      </div>
-
-      <div class="p-5 space-y-5">
-        <dl class="grid grid-cols-1 sm:grid-cols-2 gap-4 m-0">
-          <div>
-            <dt class="text-[11px] font-bold uppercase tracking-wider text-text-muted">Numéro</dt>
-            <dd class="mt-1 text-base font-mono font-bold text-text m-0 tabular-nums">{{ container.container_number }}</dd>
-          </div>
-          <div>
-            <dt class="text-[11px] font-bold uppercase tracking-wider text-text-muted">Séance programmée</dt>
-            <dd class="mt-1 text-sm font-semibold text-text m-0 tabular-nums">{{ container.scheduled_date|date:"d/m/Y"|default:"Hors liste (Enregistré)" }}</dd>
-          </div>
-          <div>
-            <dt class="text-[11px] font-bold uppercase tracking-wider text-text-muted">Ligne maritime</dt>
-            <dd class="mt-1 text-sm font-semibold text-text m-0">{{ container.shipping_line.name|default:"Non renseignée" }}</dd>
-          </div>
-          <div>
-            <dt class="text-[11px] font-bold uppercase tracking-wider text-text-muted">Dernière mise à jour</dt>
-            <dd class="mt-1 text-sm text-text-muted m-0 tabular-nums">
-              {{ container.updated_at|date:"d/m/Y H:i" }}{% if container.updated_by %} · {{ container.updated_by.display_name }}{% endif %}
-            </dd>
-          </div>
-          {% if container.carried_from %}
-            <div class="sm:col-span-2">
-              <dt class="text-[11px] font-bold uppercase tracking-wider text-text-muted">Origine</dt>
-              <dd class="mt-1 text-sm text-text m-0">Repris de la séance du {{ container.carried_from.scheduled_date|date:"d/m/Y" }}</dd>
-            </div>
-          {% endif %}
-          {% if container.status == 'unavailable' and container.full_reason_display %}
-            <div class="sm:col-span-2 rounded-lg bg-status-unavailable-bg border border-status-unavailable-bd px-3.5 py-2.5">
-              <dt class="text-[11px] font-bold uppercase tracking-wider text-status-unavailable-fg">Motif d'indisponibilité</dt>
-              <dd class="mt-1 text-sm font-semibold text-status-unavailable-fg m-0">{{ container.full_reason_display }}</dd>
-            </div>
-          {% endif %}
-          {% if container.verification_note %}
-            <div class="sm:col-span-2 rounded-lg bg-ctsa-surface border border-border px-3.5 py-2.5">
-              <dt class="text-[11px] font-bold uppercase tracking-wider text-text-muted">Note d'inspection</dt>
-              <dd class="mt-1 text-sm text-text m-0">{{ container.verification_note }}</dd>
-            </div>
-          {% endif %}
-        </dl>
-
-        {% if container.status == 'registered' and not container.archived_at %}
-          <!-- Étape 2 : Mettre ce conteneur enregistré dans une liste de vérification -->
-          {% if can_prepare %}
-            <div class="pt-4 border-t border-border space-y-2.5">
-              <p class="text-[11px] font-bold uppercase tracking-wider text-text-muted m-0">
-                Étape suivante : Mettre dans une liste de vérification
-              </p>
-              <p class="text-xs text-text-muted m-0">
-                Ce conteneur est arrivé et enregistré. Ajoutez-le à une séance : il passera à l'état <strong>En attente</strong>, puis devra être <strong>Confirmé</strong> pour être vérifié.
-              </p>
-              <form action="{% url 'terminal:registered_add_to_list' %}" method="post" class="flex flex-wrap items-center gap-2 pt-1">
-                {% csrf_token %}
-                <input type="hidden" name="ids" value="{{ container.pk }}">
-                <input type="hidden" name="next" value="{{ request.get_full_path }}">
-                <label for="detail-schedule-date" class="text-xs font-semibold text-text">Séance :</label>
-                <input type="date"
-                       id="detail-schedule-date"
-                       name="scheduled_date"
-                       min="{{ today|date:'Y-m-d' }}"
-                       value="{{ default_schedule_date|default:today|date:'Y-m-d' }}"
-                       class="border border-border rounded-lg px-3 py-1.5 min-h-[40px] text-xs font-semibold text-text bg-surface">
-                <button type="submit" class="ui-btn ui-btn-primary ui-btn-sm">
-                  + Mettre dans la liste (En attente)
-                </button>
-              </form>
-            </div>
-          {% endif %}
-        {% elif can_change_status and not container.archived_at %}
-          <div class="pt-4 border-t border-border space-y-2.5">
-            <div class="flex flex-wrap items-center justify-between gap-2">
-              <p class="text-[11px] font-bold uppercase tracking-wider text-text-muted m-0">Statut dans la liste (doit être Confirmé pour vérifier)</p>
-              {% if container.status == 'confirmed' and can_verify %}
-                <a href="{% url 'terminal:inspection' %}?date={{ container.scheduled_date|date:'Y-m-d' }}&amp;q={{ container.container_number }}"
-                   class="text-xs font-semibold text-primary hover:underline no-underline">
-                  Ouvrir dans l'inspection →
-                </a>
-              {% endif %}
-            </div>
-            {% include 'portal/conteneurs/_status_segmented.html' with c=container %}
-          </div>
-        {% endif %}
-
-        {% if container.archived_at and can_restore %}
-          <div class="pt-4 border-t border-border flex flex-wrap items-center justify-between gap-2">
-            <p class="text-xs text-text-muted m-0">Ce conteneur est archivé.</p>
-            <form action="{% url 'terminal:container_restore' container.pk %}" method="post">
-              {% csrf_token %}
-              <button type="submit" class="ui-btn ui-btn-secondary ui-btn-sm">Restaurer</button>
-            </form>
-          </div>
-        {% elif can_archive and not container.is_verified and not container.archived_at %}
-          <div class="pt-4 border-t border-border flex flex-wrap items-center justify-between gap-2">
-            <p class="text-xs text-text-muted m-0">Retirer ce conteneur de la séance active.</p>
-            <button type="button"
-                    class="ui-btn ui-btn-danger ui-btn-sm"
-                    data-confirm-modal
-                    data-confirm-action="{% url 'terminal:container_delete' container.pk %}"
-                    data-confirm-title="Supprimer {{ container.container_number }} ?"
-                    data-confirm-message="Ce conteneur sera retiré de la séance du {{ container.scheduled_date|date:'d/m/Y' }}."
-                    data-confirm-label="Supprimer">
-              Supprimer
-            </button>
-          </div>
-        {% endif %}
-      </div>
-    </section>
-
-    <!-- Historique des statuts (5/12) -->
-    <section aria-labelledby="container-history-heading" class="lg:col-span-5 bg-surface rounded-xl border border-border overflow-hidden">
-      <div class="px-5 py-3.5 border-b border-border bg-ctsa-surface/60">
-        <h2 id="container-history-heading" class="text-sm font-heading font-semibold text-text m-0">
-          Historique des statuts
-        </h2>
-      </div>
-
-      <div class="p-5">
+  <!-- Bloc 3 : Historique replié & zone de suppression discrète -->
+  <section aria-label="Historique et suppression" class="space-y-4">
+    <details class="border-b border-border pb-4">
+      <summary class="text-sm font-semibold text-text cursor-pointer list-none py-2">
+        Historique des mouvements ({{ logs|length }})
+      </summary>
+      <div class="pt-3">
         {% if logs %}
-          <ol class="divide-y divide-border m-0 p-0 list-none">
+          <ol class="divide-y divide-border m-0 p-0 list-none border-t border-border">
             {% for log in logs %}
-              <li class="py-3 first:pt-0 last:pb-0 flex flex-col gap-1">
-                <div class="flex items-center justify-between gap-2">
-                  <span class="text-sm font-semibold text-text">
+              <li class="py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 text-sm">
+                <div>
+                  <span class="font-semibold text-text">
                     {% if log.action == 'verified' %}
                       Vérifié
                     {% elif log.action == 'not_verified' %}
@@ -226,27 +127,49 @@
                     {% elif log.action != 'status_change' %}
                       {{ log.get_action_display }}
                     {% else %}
-                      {% if log.old_status %}{{ log.get_old_status_display }} → {% endif %}{{ log.get_new_status_display }}
+                      {% if log.old_status %}{{ log.get_old_status_display }} vers {% endif %}{{ log.get_new_status_display }}
                     {% endif %}
                   </span>
-                  <span class="text-xs font-mono text-text-muted tabular-nums shrink-0">{{ log.changed_at|date:"d/m/Y H:i" }}</span>
+                  {% if log.changed_by %}
+                    <span class="text-xs text-text-muted ml-2">{{ log.changed_by.display_name }}</span>
+                  {% endif %}
+                  {% if log.reason_text %}
+                    <span class="text-xs text-text-muted block sm:inline sm:ml-2">· {{ log.reason_text }}</span>
+                  {% endif %}
                 </div>
-                {% if log.reason_text %}
-                  <p class="text-xs text-text-muted m-0">{{ log.reason_text }}</p>
-                {% endif %}
-                {% if log.changed_by %}
-                  <span class="text-xs text-text-muted">Opérateur : {{ log.changed_by.display_name }}</span>
-                {% endif %}
+                <span class="font-mono text-xs text-text-muted tabular-nums shrink-0">{{ log.changed_at|date:"d/m/Y H:i" }}</span>
               </li>
             {% endfor %}
           </ol>
         {% else %}
-          <p class="text-sm text-text-muted m-0">Aucun changement de statut enregistré pour ce conteneur.</p>
+          <p class="text-sm text-text-muted m-0">Aucun mouvement enregistré.</p>
         {% endif %}
       </div>
-    </section>
+    </details>
 
-  </div>
+    {% if container.archived_at and can_restore %}
+      <div class="flex flex-wrap items-center justify-between gap-3 py-2">
+        <span class="text-xs text-text-muted">Ce conteneur est archivé.</span>
+        <form action="{% url 'terminal:container_restore' container.pk %}" method="post">
+          {% csrf_token %}
+          <button type="submit" class="ui-btn ui-btn-secondary ui-btn-sm">Restaurer</button>
+        </form>
+      </div>
+    {% elif can_archive and not container.is_verified and not container.archived_at %}
+      <div class="flex flex-wrap items-center justify-between gap-3 py-2">
+        <span class="text-xs text-text-muted">Retirer ce conteneur de la séance active</span>
+        <button type="button"
+                class="text-xs font-semibold text-status-unavailable-fg hover:underline bg-transparent border-0 cursor-pointer py-2 px-1"
+                data-confirm-modal
+                data-confirm-action="{% url 'terminal:container_delete' container.pk %}"
+                data-confirm-title="Supprimer {{ container.container_number }} ?"
+                data-confirm-message="Ce conteneur sera retiré de la séance{% if container.scheduled_date %} du {{ container.scheduled_date|date:'d/m/Y' }}{% endif %}."
+                data-confirm-label="Supprimer">
+          Retirer de la séance
+        </button>
+      </div>
+    {% endif %}
+  </section>
 
 </div>
 {% endblock %}
