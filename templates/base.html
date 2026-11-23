@@ -13,11 +13,9 @@
   <meta name="apple-mobile-web-app-title" content="CTSA RAMPE">
   <link rel="icon" type="image/png" href="{% static 'img/cap-terminal-logo.png' %}">
   <link rel="apple-touch-icon" href="{% static 'img/icon-192.png' %}">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&family=Raleway:wght@600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="{% static 'css/ctsa.css' %}">
-  <link rel="stylesheet" href="{% static 'css/output.css' %}">
+  <link rel="preload" href="{% static 'fonts/ibm-plex-sans-400.woff2' %}" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="{% static 'css/ctsa.css' %}?v=designv2">
+  <link rel="stylesheet" href="{% static 'css/output.css' %}?v=designv2">
 </head>
 <body class="min-h-screen flex flex-col bg-slate-50 text-slate-800 {% block body_class %}{% endblock %}">
 

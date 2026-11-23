@@ -3,92 +3,120 @@
 @source "../js";
 
 @theme {
-  /* Typographie auto-hébergée (MASTER.md — Data-Dense Operational Dashboard) */
-  --font-sans: "Fira Sans", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  --font-heading: "Fira Sans", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  --font-mono: "Fira Code", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  /* Typographie auto-hébergée (IBM Plex Sans 400/600 + IBM Plex Mono 400/500) */
+  --font-sans: "IBM Plex Sans", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-heading: "IBM Plex Sans", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 
-  /* Couleurs principales et de marque (MASTER.md) */
+  /* Échelle typographique courte : 13 / 15 / 17 / 22 / 32 px */
+  --text-xs: 0.8125rem;
+  --text-xs--line-height: 1.4;
+  --text-sm: 0.9375rem;
+  --text-sm--line-height: 1.5;
+  --text-base: 0.9375rem;
+  --text-base--line-height: 1.5;
+  --text-lg: 1.0625rem;
+  --text-lg--line-height: 1.4;
+  --text-xl: 1.375rem;
+  --text-xl--line-height: 1.25;
+  --text-2xl: 1.375rem;
+  --text-2xl--line-height: 1.25;
+  --text-3xl: 2rem;
+  --text-3xl--line-height: 1.15;
+
+  /* Accent unique CTSA (#1A6394 — 6.45:1 sur blanc) */
   --color-primary: #1a6394;
-  --color-primary-hover: #144d73;
-  --color-primary-tint: #edf4fa;
+  --color-primary-hover: #134b70;
+  --color-primary-tint: #eff6fb;
   --color-primary-border: #c5ddf0;
   --color-ctsa-blue: #1a6394;
-  --color-ctsa-blue-dark: #144d73;
-  --color-ctsa-bluehover: #144d73;
+  --color-ctsa-blue-dark: #134b70;
+  --color-ctsa-bluehover: #134b70;
 
-  /* Vert marque CTSA : réservé au logo et aux filets de marque (jamais aux boutons ni statuts) */
+  /* Vert marque CTSA (#008751 — 4.58:1 sur blanc) : exclusivement pour le logo */
   --color-brand-green: #008751;
   --color-ctsa-green: #008751;
-  --color-ctsa-green-bg: #ecfdf5;
 
-  /* Surfaces, chrome et neutres (Atelier Clair) */
-  --color-ctsa-surface: #f6f8fa;
+  /* Surfaces, textes et filets (Direction A + emprunts C) */
   --color-surface: #ffffff;
-  --color-chrome-dark: #1e293b;
-  --color-chrome-darker: #0f172a;
+  --color-ctsa-surface: #f7f9fb;
+  --color-ctsa-bgalt: #f1f5f9;
+  --color-chrome-dark: #0f172a;
+  --color-chrome-darker: #0a0f18;
   --color-ctsa-slate: #0f172a;
-  --color-ctsa-slatedark: #0f172a;
+  --color-ctsa-slatedark: #0a0f18;
   --color-ctsa-secondary: #1e293b;
   --color-ctsa-subnav: #475569;
+
   --color-text: #0f172a;
   --color-text-muted: #475569;
-  --color-border: #e2e8f0;
-  --color-border-ui: #cbd5e1;
-  --color-ctsa-bgalt: #f1f5f9;
-  --color-ctsa-border: #e2e8f0;
+  --color-placeholder: #526071;
+  --color-disabled-fg: #526071;
+  --color-disabled-bg: #f1f5f9;
 
-  /* Statuts opérationnels (contrastes mesurés WCAG AA — MASTER.md) */
+  /* Filets de 1 px (#E2E8F0), bordure de contrôle (#64748B — 4.76:1) et filet marqué H1 (#0F172A) */
+  --color-border: #e2e8f0;
+  --color-ctsa-border: #e2e8f0;
+  --color-border-ui: #64748b;
+  --color-border-strong: #0f172a;
+
+  /* Couleurs sémantiques de statut (libellé coloré discret en 15 px graisse 600, sans fond plein) */
   --color-status-confirmed-fg: #065f46;
-  --color-status-confirmed-bg: #ecfdf5;
-  --color-status-confirmed-bd: #a7f3d0;
+  --color-status-confirmed-bg: #f7f9fb;
+  --color-status-confirmed-bd: #cbd5e1;
 
   --color-status-pending-fg: #92400e;
-  --color-status-pending-bg: #fef3c7;
-  --color-status-pending-bd: #fcd34d;
+  --color-status-pending-bg: #f7f9fb;
+  --color-status-pending-bd: #cbd5e1;
 
   --color-status-unavailable-fg: #991b1b;
   --color-status-unavailable-bg: #fef2f2;
   --color-status-unavailable-bd: #fecaca;
 
-  --color-status-registered-fg: #1e293b;
-  --color-status-registered-bg: #f1f5f9;
+  --color-status-registered-fg: #334155;
+  --color-status-registered-bg: #f7f9fb;
   --color-status-registered-bd: #cbd5e1;
 
   --color-status-info-fg: #1a6394;
-  --color-status-info-bg: #eff6ff;
-  --color-status-info-bd: #bfdbfe;
+  --color-status-info-bg: #eff6fb;
+  --color-status-info-bd: #c5ddf0;
 
-  /* Alias sémantiques rétrocompatibles */
+  /* Alias sémantiques */
   --color-success: #065f46;
-  --color-success-surface: #ecfdf5;
-  --color-success-border: #a7f3d0;
+  --color-success-surface: #f7f9fb;
+  --color-success-border: #cbd5e1;
   --color-warning: #92400e;
-  --color-warning-surface: #fef3c7;
+  --color-warning-surface: #f7f9fb;
   --color-danger: #991b1b;
   --color-danger-surface: #fef2f2;
   --color-neutral: #475569;
-  --color-neutral-surface: #f1f5f9;
+  --color-neutral-surface: #f7f9fb;
 
-  --color-ctsa-pending: #f59e0b;
+  --color-ctsa-pending: #92400e;
   --color-ctsa-pending-text: #92400e;
-  --color-ctsa-pending-bg: #fef3c7;
-  --color-ctsa-pending-border: #fcd34d;
+  --color-ctsa-pending-bg: #f7f9fb;
+  --color-ctsa-pending-border: #cbd5e1;
   --color-ctsa-red: #991b1b;
   --color-ctsa-red-text: #991b1b;
   --color-ctsa-red-bg: #fef2f2;
-  --color-ctsa-info-bg: #eff6ff;
+  --color-ctsa-info-bg: #eff6fb;
 
-  /* Échelle d'espacement (4 / 8 / 12 / 16 / 24) */
+  /* Espacement base 8 généreux */
   --spacing-1: 0.25rem;
   --spacing-2: 0.5rem;
   --spacing-3: 0.75rem;
   --spacing-4: 1rem;
   --spacing-6: 1.5rem;
+  --spacing-8: 2rem;
 
-  /* Rayons & ombres */
-  --radius-card: 0.75rem;
-  --radius-control: 0.5rem;
-  --shadow-card: 0 1px 2px rgba(15, 23, 42, 0.04), 0 1px 3px rgba(15, 23, 42, 0.03);
-  --shadow-float: 0 16px 36px -8px rgba(15, 23, 42, 0.28), 0 4px 12px rgba(15, 23, 42, 0.12);
+  /* Rayons uniformes de 4 px (0.25rem) & ombre réservée exclusivement à la couche flottante */
+  --radius-card: 0.25rem;
+  --radius-control: 0.25rem;
+  --radius-sm: 0.25rem;
+  --radius-md: 0.25rem;
+  --radius-lg: 0.25rem;
+  --radius-xl: 0.25rem;
+  --radius-2xl: 0.25rem;
+  --shadow-card: none;
+  --shadow-float: 0 16px 36px -8px rgba(15, 23, 42, 0.24), 0 4px 12px rgba(15, 23, 42, 0.1);
 }
